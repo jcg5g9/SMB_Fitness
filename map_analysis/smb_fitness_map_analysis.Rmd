@@ -1,0 +1,144 @@
+---
+title: "Analysis 1: Generating Species Native Range Maps"
+author: "Joe Gunn"
+date: "9/11/2019"
+output: html_document
+---
+
+## Project: Effects of admixture on fitness in Neosho Bass populations 
+We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard parameterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.
+
+## Specific Aim: Generating species range maps for Smallmouth Bass and Neosho Bass
+In this analysis, we generate easily readable maps displaying the geographic scope of the study area. The following code generates two types of maps: 1) a map of the Central Interior Highlands ecoregion, including U.S.A. state outlines, major rivers, and the parapatric native ranges of the two focal species (Neosho Bass and Smallmouth Bass); and 2) a close-up map of the two streams of interest for this study (Big Sugar Creek and Elk River). These are geo-referenced outline maps only. Shapes representing stream sites and/or populations were superimposed <i>a posteriori</i> on the maps in PowerPoint for publication figures.
+
+## Phases of analysis
+### Phase 1: Generate maps
+
+## Libraries needed for analysis
+```{r setup, echo = FALSE, include = FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+library(riverdist)
+library(sp)
+library(maps)
+library(mapdata)
+library(maptools)
+library(stringr)
+library(rgdal)
+library(sf)
+library(ggsn)
+library(raster)
+library(ggmap)
+```
+
+## PHASE 1: GENERATE MAPS
+In this phase of analysis, we are generating two types of species native range maps: 1) a map of the Central Interior Highlands ecoregion, including U.S.A. state outlines, major rivers, and the parapatric native ranges of the two focal species, Neosho Bass (<i>Micropterus velox</i>) and Smallmouth Bass (<i>M. dolomieu</i>); and 2) a close-up map of the two streams of interest for this study (Big Sugar Creek and Elk River). We are reading in the following data layers, which were downloaded from publically avaialbe online GIS databases:
+
+<b>Data layers used:</b> <br><br>
+North America <br>
+States of the United States <br>
+Rivers of the CIH <br>
+Smallmouth Bass species range <br>
+Neosho Bass species range <br>
+
+### STEP 1: Read-in shape files for each of the above-listed data layers; run the Rmd chunk below:
+
+##### Read in shape files
+```{r, include = FALSE}
+# Read in shape files for North America
+shape_na <- readOGR(dsn = "data/north_america_shape_files", 
+                    layer = "north_america")
+
+# Read in shape files for the states of the United States
+shape_state <- readOGR(dsn = "data/states_shape_files",
+                       layer = "states")
+
+# Read in shape files for rivers in the area of interest
+shape_river <- readOGR(dsn = "data/river_shape_files", 
+                       layer = "rivers")
+
+# Read in shape files for the Smallmouth Bass native range
+shape_smb <- readOGR(dsn = "data/species_range_shape_files/smb", 
+                     layer = "smb") 
+
+# Read in shape files for the Neosho Bass native range
+shape_neosho <- readOGR(dsn = "data/species_range_shape_files/neosho", 
+                        layer = "neosho") 
+```
+
+### STEP 2: Generate maps
+
+#### 2a: Generate a map of the CIH, including states of the United States, rivers in the CIH, the Smallmouth Bass native range, and the Neosho Bass native range. 
+
+### IMPORTANT NOTE: Order of plotting data layers matters for this analysis.
+
+##### 2a.1. Run the Rmd chunk below to generate a CIH range map:
+
+##### Generate CIH range map: `figures/cih.pdf`
+```{r}
+# Generate full range map
+pdf("figures/cih.pdf", width = 9, height = 8) 
+
+# Plot states first
+plot(shape_state, 
+     col=alpha("white", 0.3), 
+     border = "black", 
+     axes = T, 
+     ylim = c(35,38), 
+     xlim = c(-96,-91), 
+     cex.axis = 1.6)
+
+# Plot smallmouth bass range second
+plot(shape_smb, 
+     add = T, 
+     col = "gray94",
+     border = T, 
+     axes=TRUE, 
+     ylim = c(35,38), 
+     xlim = c(-96,-91), 
+     cex.axis = 2)
+
+# Plot neosho bass range third
+plot(shape_neosho, 
+     add = T, 
+     col = "grey74", 
+     border = T, 
+     axes = TRUE, 
+     ylim = c(35,38), 
+     xlim = c(-96,-91), 
+     cex.axis = 2)
+
+# Plot rivers fourth
+plot(shape_river, 
+     add = T, 
+     col="blue", 
+     border = F, 
+     axes = T, 
+     ylim = c(35,38), 
+     xlim = c(-96,-91), 
+     cex.axis = 2)
+
+# Plot scalebar last
+scalebar(transform = T,
+         location = "bottomleft",
+         x.min = -96,
+         x.max = -91,
+         y.min = 35,
+         y.max = 38,
+         dist = 50,
+         dist_unit = "km")
+
+dev.off()
+```
+This figure was used as the basis for Figure 1a in the manuscript. See below for more details on final ms map making.
+
+### STEP 3: Create fine-scale map of Big Sugar Creek and the Elk River 
+We generated an additional base relief map (showing elevation as grayscale shading) at a fine scale to show the convergence of Big Sugar Creek and the Elk River in the Central Interior Highlands (CIH). This map was generated by Dr. K. Budd in ArcMap Pro and was further edited in PowerPoint to overlay mapping of genetic structure results (see Analysis 2: Ancestry Inference).
+
+### STEP 4: Edit maps for publication-ready figure.
+After generating outline maps, colored-in shapes and other map details were superimposed on the figures manually in PowerPoint to approximate GPS coordinates (not accurate or to scale). All final manuscript figure preparation was conducted in PowerPoint
+
+## ------------------------ END OF PHASE 1: GENERATE MAPS ----------------------- ##
+
+## ------------------------ END OF MAP ANALYSIS  ----------------------- ##

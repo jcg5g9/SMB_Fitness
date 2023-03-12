@@ -1,0 +1,13 @@
+---
+title: "Project Notes"
+author: "Joe Gunn"
+date: "2022-09-18"
+output: html_document
+---
+
+# Project: Smallmouth Bass Ecology and Evolution Review
+<font size="+1">Synthesizing research on ecology and evolution in the Smallmouth Bass species complex (Smallmouth BAss, <i>Micropterus dolomieu</i>; Neosho Bass, <i>M. velox</i>; Ouachita Bass, <i>M. cf. dolomieu</i> Ouachita River; Little River Bass, <i>M. cf. dolomieu</i> Little River).</font>
+
+## Project Notes
+
+### September 18, 2022
