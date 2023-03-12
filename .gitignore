@@ -1,6 +1,9 @@
+#Files
+smb_fitness_project_notes.Rmd
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 
-/figures
+#Folders
+figures/
