@@ -32,7 +32,7 @@ library(writexl)
 ## PHASE 1: DATA PREPARATION 
 
 ### STEP 1: Read in full dataset and generate metadata
-In this step, we read in the raw data file (which includes sample metadata and SNP genotype data; `..raw_data/snolh_genotype_data.xlsx`), manipulate and clean the data, and generat separate data frames for the metadata (without SNP genotype data) and for the SNP genotype data (without metadata).
+In this step, we read in the raw data file (which includes sample metadata and SNP genotype data; `../raw_data/snolh_genotype_data.xlsx`), manipulate and clean the data, and generat separate data frames for the metadata (without SNP genotype data) and for the SNP genotype data (without metadata).
 
 #### 1a: Read in, clean, and save full dataset. 
 As part of data cleaning, we are omitting three samples representing Shoal Bass (<i>M. cataractae</i>) due to low sample size and because we are not explicitly interested in Shoal Bass hybridization or population structure.
