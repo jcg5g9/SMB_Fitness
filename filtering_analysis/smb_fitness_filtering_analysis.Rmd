@@ -240,7 +240,7 @@ phenotype_data %>%
 
 Aside from the expected discrepancy in samples with the reference set (no reference samples in the phenotype data), we found that the phenotype data file contained three samples (FBS47, FBS48, FBS49) that were not represented in the metadata data. These three samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses by merging the genotype, metadata, and phenotype files (see Step 4 below).
 
-### STEP 4: Merge all datasets (metadata, phenotype_data, genotype_data)
+### STEP 4: Merge all datasets (metadata, phenotype_data, genotype_data) and summarize the full datasets
 In this step, we create two working datasets: 1) metadata and genotype data (`data/processed_raw_data/full_genotype_data.Rda`), and 2) metadata and phenotype_data (`data/processed_raw_data/full_phenotype_data.Rda`). These files will be used in subsequent analyses and subsetted where necessary.
 
 #### 4a. Merge data sets; run the Rmd chunk below.
@@ -263,6 +263,9 @@ full_genotype_data <- merge(metadata,
                    genotype_data,
                    by = "sample_id")
 
+# Save the full genotype data
+save(full_genotype_data, file = "data/processed_raw_data/full_genotype_data.Rda")
+
 ## Full phenotype data
 
 # Get full phenotype dataset
@@ -273,6 +276,30 @@ full_phenotype_data <- merge(metadata,
 # Omit sample FER71 from full phenotype data
 full_phenotype_data <- full_phenotype_data %>%
   filter(sample_id != "FER71")
+
+# Save the full phenotype data
+save(full_phenotype_data, file = "data/processed_raw_data/full_phenotype_data.Rda")
 ```
 
+#### 4b. Summarize the full datasets.
+In this step, we are fully enumerating the genotype and phenotype datasets so that we know how many samples belong to each group of interest for the final manuscript.
 
+##### 4b.1. Summarize the full genotype data set; run the Rmd chunk below:
+
+##### Summarize full genotype data
+```{r}
+# Load in full genotype data
+load("data/processed_raw_data/full_genotype_data.Rda")
+
+
+```
+
+##### 4b.2. Summarize the full phenotype data set; run the Rmd chunk below:
+
+##### Summarize full phenotype data
+```{r}
+# Load in full phenotype data
+load("data/processed_raw_data/full_phenotype_data.Rda")
+
+
+```
