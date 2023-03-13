@@ -28,7 +28,7 @@ library(genepopedit)
 ## PHASE 1: DATA READ-IN AND PREPARATION
 
 ### STEP 1: Read in metadata for samples (all fish collected from the Neosho Bass range) and references (all fish collected from the Smallmouth Bass range)
-In this step, we read in previously curated metadata files for the sample set of fish collected from two streams within the Neosho Bass native range (`../raw_data/sample_metadata.xlsx`) and for the reference set of fish collected from three streams within the Smallmouth Bass native range (`../raw_data/reference_metadata.xlsx`). We manipulate and clean the dataset, and enumerate samples in STEP 4 below.
+In this step, we read in previously curated metadata files for the sample set of fish collected from two streams within the Neosho Bass native range (`../raw_data/sample_metadata.xlsx`) and for the reference set of fish collected from three streams within the Smallmouth Bass native range (`../raw_data/reference_metadata.xlsx`). We manipulate, clean and enumerate the dataset, and fully summarize all samples in STEP 4 below.
 
 #### 1a. Read in and clean sample metadata; run the Rmd chunk below.
 
@@ -73,14 +73,43 @@ reference_metadata <- reference_metadata %>%
 ##### Read in and clean reference metadata:
 ```{r}
 # Rbind sample and reference metadata
-metadata <- rbind(sample_metadata, reference_metadata)
+metadata <- rbind(sample_metadata, 
+                  reference_metadata)
 
 # Save metadata in processed raw data directory in the filtering analysis
 save(metadata, file = "data/processed_raw_data/metadata.Rda")
 ```
+#### 1d. Enumerate full metadata with samples and reference; run the Rmd chunk below.
+
+##### Read in and clean reference metadata:
+```{r}
+# Load in metadata to enumerate
+load("data/processed_raw_data/metadata.Rda")
+
+# Get full sample number (N = 136)
+metadata %>% count()
+
+# Get sample size of sample (N = 116) and reference (N = 20) sets
+metadata %>%
+  group_by(population) %>%
+  count()
+  
+# Get sample size by stream of origin
+metadata %>%
+  group_by(population, 
+           river) %>%
+  count()
+```
+
+<b>Data summary:</b> <br>
+<i>N</i><sub>(total)</sub> = 136 <br>
+<i>N</i><sub>(sample_set)</sub> = 116 <br>
+<i>N</i><sub>(reference_set)</sub> = 20 <br>
+<i>N</i><sub>(sample_elk)</sub> = 70 <br>
+<i>N</i><sub>(sample_bigsugar)</sub> = 46 <br>
 
 ### STEP 2: Read in genotype data for all samples and references (one single genotype file)
-In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate and clean the dataset, and enumerate samples in STEP 4 below.
+In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in STEP 4 below.
 
 #### 2a. Read in, clean, and join genotype data with metadata; run the Rmd chunk below.
 
@@ -89,21 +118,161 @@ In this step, we read in genotype data for all fish included in the study, inclu
 # Read in genotype data
 genotype_data <- read_excel("../raw_data/genotype_data.xlsx") 
 
-# Merge metadata and genotype data
-genotype_data <- merge(metadata, genotype_data, by = "sample_id")
+# Convert characters to factors
+genotype_data <- genotype_data %>%
+  mutate(sample_id = factor(sample_id))
 
-# Save combined metadata and genotype data in processed raw data directory in the filtering analysis
-save(genotype_data, file = "data/processed_raw_data/metadata_genotype_data.Rda")
+# Save genotype in processed raw data directory in the filtering analysis
+save(genotype_data, file = "data/processed_raw_data/genotype_data.Rda")
 ```
 
-### STEP 3: Read in phenotype data data for samples
-In this step, we read in phenotype data for all fish included in the study. Data include: "sample_id" (same as in metadata and genotype data), "sex" (male or female, determined by internal gonad examination), "tl_alive" (total length of the fish immediately upon capture by rod-and-reel, as measured from the tip of the lower mandible to the posterior tip of the caudal fin squeezed together), "tl_dead" (total length of the fish upon sample processesing (after approximately one month frozen)), "mass_dead" (mass of the fish in grams at time of sample processing), "meas_ints" (initials of the person doing the phenotypic measuring, measuring, or assessment, for later analysis of observer/measurement bias), "eddie_age" (age estimate based on saggital otolith annuli, performed by Eddie Sterling), "joe_age" (age estimate performed by Joe Gunn), "michael_age" (age estimate performed by Michael Moore), "consensus_age" (ultimate age estimate based on consensus of three agers, Eddie, Joe, and Michael), "sl" (standard length of the fish, as measured from the tip of the mandible to the hyperal plate, just anterior to the caudal fin), "bd" (body depth, as measured at the thickest part of the fish), "hl" (head length, as measured from the tip of the lower mandible to the posterior end of the gill plate), "ol" (orbital length, the diameter of the eye ball), and "sd_ray" (the number of soft dorsal fin rays). We manipulate and clean the dataset, and enumerate samples in STEP 4 below.
-
-#### 2a. Read in, clean, and join genotype data with metadata; run the Rmd chunk below.
+#### 2b. Enumerate full genotype data; run the Rmd chunk below.
 
 ##### Read in and clean genotype data:
 ```{r}
-# Read in genotype data
+# Load in genotype to enumerate
+load("data/processed_raw_data/genotype_data.Rda")
+
+# Get full sample number (N = 135)
+genotype_data %>% count()
+```
+
+There was a discrepancy in the number of sample ids present in the metadata (<i>N</i> = 136) and the number present in the genotype data (<i>N</i> = 135). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding metadata and genotype data in both datasets.
+
+##### 2b.1. Compare metadata and genotype data to resolve sample number discrepancy; run the Rmd chunk below.
+
+##### Resolve sample number discrepancy:
+```{r}
+# Load in metadata
+load("data/processed_raw_data/metadata.Rda")
+
+# Load in genotype data
+load("data/processed_raw_data/genotype_data.Rda")
+
+# Resolve sample discrepancy
+
+# Samples in metadata but not in genotype data
+metadata %>% 
+  filter(!metadata$sample_id %in% genotype_data$sample_id)
+
+# Samples in genotype data but not in metadata
+genotype_data %>% 
+  filter(!genotype_data$sample_id %in% metadata$sample_id)
+```
+We found that the metadata file contained a sample (FER71) that was not represented in the genotype data. We are unsure whether we failed to genotype this fish or whether we lost the data in transition at some point. Sample FER71 was therefore not considered part of the final dataset and was removed from downstream analyses by merging the genotype, metadata, and phenotype files (see Step 4 below).
+
+### STEP 3: Read in phenotype data data for samples
+In this step, we read in phenotype data for all fish included in the study. Data include: 
+
+   1. "sample_id": same as in metadata and genotype data
+   2. "sex": male or female, determined by internal gonad examination, 
+   3. "tl_alive": total length of the fish immediately upon capture by rod-and-reel, as measured from the tip of the lower mandible to the posterior tip of the caudal fin squeezed together
+   4. "tl_dead": total length of the fish upon sample processesing (after approximately one month frozen)
+   5. "mass_dead": mass of the fish in grams at time of sample processing
+   6. "meas_ints": initials of the person doing the phenotypic measuring, measuring, or assessment, for later analysis of observer/measurement bias
+   7. "eddie_age": age estimate based on sagittal otolith annuli, performed by Eddie Sterling
+   8. "joe_age": age estimate performed by Joe Gunn
+   9. "michael_age": age estimate performed by Michael Moore 
+   10. "consensus_age": ultimate age estimate based on consensus of three agers, Eddie, Joe, and Michael
+   11. "sl": standard length of the fish, as measured from the tip of the mandible to the hyperal plate, just anterior to the caudal fin
+   12. "bd": body depth, as measured at the thickest part of the fish
+   13. "hl": head length, as measured from the tip of the lower mandible to the posterior end of the gill plate
+   14. "ol": orbital length, the diameter of the eye ball
+   15. "sd_ray": the number of soft dorsal fin rays. 
+
+Additionally, we did not collect phenotype data for the reference set (Smallmouth Bass), as these samples were used only as a reference for genetic ancestry inference in STRUCTURE in subsequent analyses. We manipulate, clean and enumerate the dataset, and fully summarize all samples in STEP 4 below.
+
+#### 3a. Read in, clean, and join phenotype data with metadata; run the Rmd chunk below.
+
+##### Read in and clean genotype data:
+```{r}
+# Read in phenotype data
 phenotype_data <- read_excel("../raw_data/phenotype_data.xlsx") 
 
+# Convert characters to factors
+phenotype_data <- phenotype_data %>%
+  mutate(sample_id = factor(sample_id)) %>%
+  mutate(sex = factor(sex)) %>%
+  mutate(tl_alive = as.numeric(tl_alive)) %>%
+  mutate(tl_dead = as.numeric(tl_dead)) %>%
+  mutate(mass_dead = as.numeric(mass_dead)) %>%
+  mutate(meas_ints = factor(meas_ints))
+
+# Save phenotype data in processed raw data directory in the filtering analysis
+save(phenotype_data, file = "data/processed_raw_data/phenotype_data.Rda")
 ```
+
+#### 3b. Enumerate full phenotype data; run the Rmd chunk below.
+
+##### Read in and clean phenotype data:
+```{r}
+# Load in metadata to enumerate
+load("data/processed_raw_data/phenotype_data.Rda")
+
+## Given that we did not have phenotype data for the Smallmouth Bass reference samples, we expected a sample size here reflecting only fish caught in the Neosho Bass native range from Big Sugar Creek or the Elk River. Here, we checked to determine whether the number of samples in each stream in the Neosho range matched between the metadata (see Step 1d above)
+
+# Get sample set number (N = 119)
+phenotype_data %>% count()
+```
+
+There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 116) and the number present in the phenotype data (<i>N</i> = 119). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
+
+##### 3b.1. Compare metadata and phenotype data to resolve sample number discrepancy; run the Rmd chunk below.
+
+##### Resolve sample number discrepancy:
+```{r}
+# Load in metadata
+load("data/processed_raw_data/metadata.Rda")
+
+# Load in phenotype data
+load("data/processed_raw_data/phenotype_data.Rda")
+
+# Resolve sample discrepancy
+
+# Samples in metadata but not in phenotype data
+metadata %>% 
+  filter(!metadata$sample_id %in% phenotype_data$sample_id)
+
+# Samples in genotype data but not in metadata
+phenotype_data %>% 
+  filter(!phenotype_data$sample_id %in% metadata$sample_id)
+```
+
+Aside from the expected discrepancy in samples with the reference set (no reference samples in the phenotype data), we found that the phenotype data file contained three samples (FBS47, FBS48, FBS49) that were not represented in the metadata data. These three samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses by merging the genotype, metadata, and phenotype files (see Step 4 below).
+
+### STEP 4: Merge all datasets (metadata, phenotype_data, genotype_data)
+In this step, we create two working datasets: 1) metadata and genotype data (`data/processed_raw_data/full_genotype_data.Rda`), and 2) metadata and phenotype_data (`data/processed_raw_data/full_phenotype_data.Rda`). These files will be used in subsequent analyses and subsetted where necessary.
+
+#### 4a. Merge data sets; run the Rmd chunk below.
+
+##### Merge and create full metadata and full phenotype data
+```{r}
+# Load in metadata
+load("data/processed_raw_data/metadata.Rda")
+
+# Load in genotype_data
+load("data/processed_raw_data/genotype_data.Rda")
+
+# Load in phenotype_data
+load("data/processed_raw_data/phenotype_data.Rda")
+
+## Full genotype data
+
+# Get full genotype dataset
+full_genotype_data <- merge(metadata, 
+                   genotype_data,
+                   by = "sample_id")
+
+## Full phenotype data
+
+# Get full phenotype dataset
+full_phenotype_data <- merge(metadata, 
+                   phenotype_data,
+                   by = "sample_id")
+
+# Omit sample FER71 from full phenotype data
+full_phenotype_data <- full_phenotype_data %>%
+  filter(sample_id != "FER71")
+```
+
+
