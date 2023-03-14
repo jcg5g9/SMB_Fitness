@@ -12,11 +12,11 @@ output: html_document
 For this aim, we clean, filter, and summarize the full genotype data (14 microsatellite loci) and phenotypic data (consensus age and total length) for our raw samples, which were fish collected from two streams (Big Sugar Creek and Elk River) within the recognized native range of the Neosho Bass (<i>M. velox</i>). We also clean and filter the full genotype data for a reference set of samples representing Smallmouth Bass (<i>M. dolomieu</i>) collected from streams in the White River drainage in the Smallmouth Bass native range. We did not collect phenotypic data on the Smallmouth Bass reference samples.
 
 ## Phases of Analysis
-### Phase 1: Data read-in and preparation
-### Phase 2: Data filtering and enumeration
+### Phase 1: Data read-in and filtering
+### Phase 2: Data summarization and enumeration
 
 ## Libraries needed for analysis
-```{r setup, include=FALSE, include = FALSE}
+```{r setup}
 library(readxl)
 library(tidyverse)
 library(cowplot)
@@ -28,17 +28,17 @@ library(genepopedit)
 ## PHASE 1: DATA READ-IN AND PREPARATION
 
 ### STEP 1: Read in metadata for samples (all fish collected from the Neosho Bass range) and references (all fish collected from the Smallmouth Bass range)
-In this step, we read in previously curated metadata files for the sample set of fish collected from two streams within the Neosho Bass native range (`../raw_data/sample_metadata.xlsx`) and for the reference set of fish collected from three streams within the Smallmouth Bass native range (`../raw_data/reference_metadata.xlsx`). We manipulate, clean and enumerate the dataset, and fully summarize all samples in STEP 4 below.
+In this step, we read in previously curated metadata for fish collected from two streams within the Neosho Bass native range and for a reference set of fish collected from three streams within the Smallmouth Bass native range (`../raw_data/metadata.xlsx`). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
 #### 1a. Read in and clean sample metadata; run the Rmd chunk below.
 
 ##### Read in and clean sample metadata:
 ```{r}
 # Read in sample metadata
-sample_metadata <- read_excel("../raw_data/sample_metadata.xlsx") 
+metadata <- read_excel("../raw_data/metadata.xlsx") 
 
 # Convert characters to factors
-sample_metadata <- sample_metadata %>%
+metadata <- metadata %>%
   mutate(sample_id = factor(sample_id)) %>%
   mutate(river_code = factor(river_code)) %>%
   mutate(sample_number = as.numeric(sample_number)) %>%
@@ -47,49 +47,23 @@ sample_metadata <- sample_metadata %>%
   mutate(range_id = factor(range_id)) %>%
   mutate(river = factor(river)) %>%
   mutate(population = factor(population))
-```
 
-#### 1b. Read in and clean reference metadata; run the Rmd chunk below.
-
-##### Read in and clean reference metadata:
-```{r}
-# Read in reference metadata
-reference_metadata <- read_excel("../raw_data/reference_metadata.xlsx") 
-
-# Convert characters to factors
-reference_metadata <- reference_metadata %>%
-  mutate(sample_id = factor(sample_id)) %>%
-  mutate(river_code = factor(river_code)) %>%
-  mutate(sample_number = as.numeric(sample_number)) %>%
-  mutate(easting = as.numeric(easting)) %>%
-  mutate(northing = as.numeric(northing)) %>%
-  mutate(range_id = factor(range_id)) %>%
-  mutate(river = factor(river)) %>%
-  mutate(population = factor(population))
-```
-
-#### 1c. Concatenate sample and reference metadata; run the Rmd chunk below.
-
-##### Read in and clean reference metadata:
-```{r}
-# Rbind sample and reference metadata
-metadata <- rbind(sample_metadata, 
-                  reference_metadata)
-
-# Save metadata in processed raw data directory in the filtering analysis
 save(metadata, file = "data/processed_raw_data/metadata.Rda")
 ```
-#### 1d. Enumerate full metadata with samples and reference; run the Rmd chunk below.
+
+#### 1b. Enumerate full metadata with samples and reference; run the Rmd chunk below.
+In this step, we conduct a preliminary data summary to see how many samples are in the raw metadata. We compare all metadata with raw data files (genotypes and phenotypes) in (STEP...) below.
 
 ##### Read in and clean reference metadata:
 ```{r}
 # Load in metadata to enumerate
 load("data/processed_raw_data/metadata.Rda")
 
-# Get full sample number (N = 136)
-metadata %>% count()
+# Get full sample number 
+metadata %>% 
+  count()
 
-# Get sample size of sample (N = 116) and reference (N = 20) sets
+# Get sample size of sample and reference sets
 metadata %>%
   group_by(population) %>%
   count()
@@ -102,14 +76,21 @@ metadata %>%
 ```
 
 <b>Data summary:</b> <br>
-<i>N</i><sub>(total)</sub> = 136 <br>
-<i>N</i><sub>(sample_set)</sub> = 116 <br>
-<i>N</i><sub>(reference_set)</sub> = 20 <br>
-<i>N</i><sub>(sample_elk)</sub> = 70 <br>
-<i>N</i><sub>(sample_bigsugar)</sub> = 46 <br>
+
+<b><i>N</i><sub>total</sub> = 136 </b><br>
+
+<b><i>N</i><sub>sample_set</sub> = 116 </b><br>
+<i>N</i><sub>sample_elk</sub> = 70 <br>
+<i>N</i><sub>sample_bigsugar</sub> = 46 <br>
+
+<b><i>N</i><sub>reference_set</sub> = 20 </b><br>
+<i>N</i><sub>reference_white</sub> = 2 <br>
+<i>N</i><sub>reference_tablerock</sub> = 8 <br>
+<i>N</i><sub>reference_crooked</sub> = 10 <br>
+
 
 ### STEP 2: Read in genotype data for all samples and references (one single genotype file)
-In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in STEP 4 below.
+In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
 #### 2a. Read in, clean, and join genotype data with metadata; run the Rmd chunk below.
 
@@ -134,7 +115,8 @@ save(genotype_data, file = "data/processed_raw_data/genotype_data.Rda")
 load("data/processed_raw_data/genotype_data.Rda")
 
 # Get full sample number (N = 135)
-genotype_data %>% count()
+genotype_data %>% 
+  count()
 ```
 
 There was a discrepancy in the number of sample ids present in the metadata (<i>N</i> = 136) and the number present in the genotype data (<i>N</i> = 135). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding metadata and genotype data in both datasets.
@@ -180,7 +162,7 @@ In this step, we read in phenotype data for all fish included in the study. Data
    14. "ol": orbital length, the diameter of the eye ball
    15. "sd_ray": the number of soft dorsal fin rays. 
 
-Additionally, we did not collect phenotype data for the reference set (Smallmouth Bass), as these samples were used only as a reference for genetic ancestry inference in STRUCTURE in subsequent analyses. We manipulate, clean and enumerate the dataset, and fully summarize all samples in STEP 4 below.
+Additionally, we did not collect phenotype data for the reference set (Smallmouth Bass), as these samples were used only as a reference for genetic ancestry inference in STRUCTURE in subsequent analyses. We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
 #### 3a. Read in, clean, and join phenotype data with metadata; run the Rmd chunk below.
 
@@ -209,13 +191,12 @@ save(phenotype_data, file = "data/processed_raw_data/phenotype_data.Rda")
 # Load in metadata to enumerate
 load("data/processed_raw_data/phenotype_data.Rda")
 
-## Given that we did not have phenotype data for the Smallmouth Bass reference samples, we expected a sample size here reflecting only fish caught in the Neosho Bass native range from Big Sugar Creek or the Elk River. Here, we checked to determine whether the number of samples in each stream in the Neosho range matched between the metadata (see Step 1d above)
-
-# Get sample set number (N = 119)
-phenotype_data %>% count()
+# Get sample set number
+phenotype_data %>% 
+  count()
 ```
 
-There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 116) and the number present in the phenotype data (<i>N</i> = 119). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
+There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 139) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
 
 ##### 3b.1. Compare metadata and phenotype data to resolve sample number discrepancy; run the Rmd chunk below.
 
@@ -281,17 +262,47 @@ full_phenotype_data <- full_phenotype_data %>%
 save(full_phenotype_data, file = "data/processed_raw_data/full_phenotype_data.Rda")
 ```
 
-#### 4b. Summarize the full datasets.
-In this step, we are fully enumerating the genotype and phenotype datasets so that we know how many samples belong to each group of interest for the final manuscript.
+## PHASE 2: DATA SUMMARIZATION AND ENUMERATION
+In this phase of the analysis, we are fully enumerating the genotype and phenotype datasets so that we know how many samples belong to each group of interest for the final manuscript. 
 
-##### 4b.1. Summarize the full genotype data set; run the Rmd chunk below:
+### STEP 1: Summarize the full genotype and phenotype datasets
+In this step, we are summarizing the full genotype and phenotype datasets together (merged), with appended metadata, to enumerate samples by groups of interest. We also ensure that both datasets contain the same samples.
+
+#### 1a. Read in and summarize the full genotype data; run the Rmd chunk below:
 
 ##### Summarize full genotype data
 ```{r}
 # Load in full genotype data
 load("data/processed_raw_data/full_genotype_data.Rda")
 
+# Load in full phenotype data
+load("data/processed_raw_data/full_phenotype_data.Rda")
 
+## Verify that the two datasets contain the same sample ids
+
+# Samples in genotype data but not in phenotype data
+full_genotype_data %>% 
+  filter(!full_genotype_data$sample_id %in% full_phenotype_data$sample_id)
+
+# Samples in phenotype data but not in genotype data
+full_phenotype_data %>% 
+  filter(!full_phenotype_data$sample_id %in% full_genotype_data$sample_id)
+
+
+
+
+# Merge genotype and phenotype data by sample id
+full_data <- merge(full_genotype_data, full_phenotype_data, by = "sample_id")
+
+# Summarize genotype data by population (sample vs. reference)
+full_genotype_data %>% 
+  group_by(population) %>%
+  count()
+
+# Summarize genotype data by river within population
+full_genotype_data %>% 
+  group_by(population, river) %>%
+  count()
 ```
 
 ##### 4b.2. Summarize the full phenotype data set; run the Rmd chunk below:
