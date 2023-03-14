@@ -9,7 +9,7 @@ output: html_document
 <font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard parameterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
 
 ## Specific Aim: Data preparation, enumeration, and filtering
-For this aim, we clean, filter, and summarize the full genotype data (14 microsatellite loci) and phenotypic data (consensus age and total length) for our raw samples, which were fish collected from two streams (Big Sugar Creek and Elk River) within the recognized native range of the Neosho Bass (<i>M. velox</i>). We also clean and filter the full genotype data for a reference set of samples representing Smallmouth Bass (<i>M. dolomieu</i>) collected from streams in the White River drainage in the Smallmouth Bass native range. We did not collect phenotypic data on the Smallmouth Bass reference samples.
+For this aim, we clean, filter, and summarize the full genotype data (14 microsatellite loci) and phenotypic data (consensus age and total length) for 135 raw samples, which comprised fish collected from two streams (Big Sugar Creek and Elk River) within the recognized native range of the Neosho Bass (<i>M. velox</i>; NB) and a reference set of samples representing Smallmouth Bass (<i>M. dolomieu</i>; SMB) collected from streams in the White River drainage in the Smallmouth Bass native range. We did not collect phenotypic data on the Smallmouth Bass reference samples.
 
 ## Phases of Analysis
 ### Phase 1: Data read-in and filtering
@@ -47,18 +47,13 @@ metadata <- metadata %>%
   mutate(range_id = factor(range_id)) %>%
   mutate(river = factor(river)) %>%
   mutate(population = factor(population))
-
-save(metadata, file = "data/processed_raw_data/metadata.Rda")
 ```
 
 #### 1b. Enumerate full metadata with samples and reference; run the Rmd chunk below.
 In this step, we conduct a preliminary data summary to see how many samples are in the raw metadata. We compare all metadata with raw data files (genotypes and phenotypes) in (STEP...) below.
 
-##### Read in and clean reference metadata:
+##### Summarize metadata:
 ```{r}
-# Load in metadata to enumerate
-load("data/processed_raw_data/metadata.Rda")
-
 # Get full sample number 
 metadata %>% 
   count()
@@ -88,7 +83,6 @@ metadata %>%
 <i>N</i><sub>reference_tablerock</sub> = 8 <br>
 <i>N</i><sub>reference_crooked</sub> = 10 <br>
 
-
 ### STEP 2: Read in genotype data for all samples and references (one single genotype file)
 In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
@@ -102,18 +96,12 @@ genotype_data <- read_excel("../raw_data/genotype_data.xlsx")
 # Convert characters to factors
 genotype_data <- genotype_data %>%
   mutate(sample_id = factor(sample_id))
-
-# Save genotype in processed raw data directory in the filtering analysis
-save(genotype_data, file = "data/processed_raw_data/genotype_data.Rda")
 ```
 
 #### 2b. Enumerate full genotype data; run the Rmd chunk below.
 
-##### Read in and clean genotype data:
+##### Summarize genotype data:
 ```{r}
-# Load in genotype to enumerate
-load("data/processed_raw_data/genotype_data.Rda")
-
 # Get full sample number (N = 135)
 genotype_data %>% 
   count()
@@ -125,14 +113,6 @@ There was a discrepancy in the number of sample ids present in the metadata (<i>
 
 ##### Resolve sample number discrepancy:
 ```{r}
-# Load in metadata
-load("data/processed_raw_data/metadata.Rda")
-
-# Load in genotype data
-load("data/processed_raw_data/genotype_data.Rda")
-
-# Resolve sample discrepancy
-
 # Samples in metadata but not in genotype data
 metadata %>% 
   filter(!metadata$sample_id %in% genotype_data$sample_id)
@@ -141,7 +121,16 @@ metadata %>%
 genotype_data %>% 
   filter(!genotype_data$sample_id %in% metadata$sample_id)
 ```
-We found that the metadata file contained a sample (FER71) that was not represented in the genotype data. We are unsure whether we failed to genotype this fish or whether we lost the data in transition at some point. Sample FER71 was therefore not considered part of the final dataset and was removed from downstream analyses by merging the genotype, metadata, and phenotype files (see Step 4 below).
+We found that the metadata file contained a sample (FER71) that was not represented in the genotype data. We are unsure whether we failed to genotype this fish or whether we lost the data in transition at some point. Sample FER71 was therefore not considered part of the final dataset and was removed from downstream analyses (see Step 2b.2 below).
+
+##### 2b.2. Remove unmatched sample id; run the Rmd chunk below.
+
+##### Resolve sample number discrepancy:
+```{r}
+# Remove sample FER71 from the metadata set
+metadata <- metadata %>%
+  filter(sample_id != "FER71")
+```
 
 ### STEP 3: Read in phenotype data data for samples
 In this step, we read in phenotype data for all fish included in the study. Data include: 
@@ -166,7 +155,7 @@ Additionally, we did not collect phenotype data for the reference set (Smallmout
 
 #### 3a. Read in, clean, and join phenotype data with metadata; run the Rmd chunk below.
 
-##### Read in and clean genotype data:
+##### Read in and clean phenotype data:
 ```{r}
 # Read in phenotype data
 phenotype_data <- read_excel("../raw_data/phenotype_data.xlsx") 
@@ -178,38 +167,34 @@ phenotype_data <- phenotype_data %>%
   mutate(tl_alive = as.numeric(tl_alive)) %>%
   mutate(tl_dead = as.numeric(tl_dead)) %>%
   mutate(mass_dead = as.numeric(mass_dead)) %>%
-  mutate(meas_ints = factor(meas_ints))
+  mutate(meas_ints = factor(meas_ints)) %>%
+  mutate(eddie_age = as.numeric(eddie_age)) %>%
+  mutate(joe_age = as.numeric(joe_age)) %>%
+  mutate(michael_age = as.numeric(michael_age)) %>%
+  mutate(consensus_age = as.numeric(consensus_age)) %>%
+  mutate(sl = as.numeric(sl)) %>%
+  mutate(bd = as.numeric(bd)) %>%
+  mutate(hl = as.numeric(hl)) %>%
+  mutate(ol = as.numeric(ol)) %>%
+  mutate(sd_ray = as.numeric(sd_ray))
 
-# Save phenotype data in processed raw data directory in the filtering analysis
-save(phenotype_data, file = "data/processed_raw_data/phenotype_data.Rda")
 ```
 
 #### 3b. Enumerate full phenotype data; run the Rmd chunk below.
 
-##### Read in and clean phenotype data:
+##### Summarize phenotype data:
 ```{r}
-# Load in metadata to enumerate
-load("data/processed_raw_data/phenotype_data.Rda")
-
 # Get sample set number
 phenotype_data %>% 
   count()
 ```
 
-There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 139) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
+There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 135) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
 
 ##### 3b.1. Compare metadata and phenotype data to resolve sample number discrepancy; run the Rmd chunk below.
 
 ##### Resolve sample number discrepancy:
 ```{r}
-# Load in metadata
-load("data/processed_raw_data/metadata.Rda")
-
-# Load in phenotype data
-load("data/processed_raw_data/phenotype_data.Rda")
-
-# Resolve sample discrepancy
-
 # Samples in metadata but not in phenotype data
 metadata %>% 
   filter(!metadata$sample_id %in% phenotype_data$sample_id)
@@ -218,13 +203,39 @@ metadata %>%
 phenotype_data %>% 
   filter(!phenotype_data$sample_id %in% metadata$sample_id)
 ```
+We found that the phenotype data file contained four samples (FER71, FBS47, FBS48, FBS49) that were not represented in the metadata after previous filtering (see STEP 2 above). Sample FER71 was already removed from the metadata (not present in the genotype data originally). The three remaining unmatched samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses (see Step 3b.2 below).
 
-Aside from the expected discrepancy in samples with the reference set (no reference samples in the phenotype data), we found that the phenotype data file contained three samples (FBS47, FBS48, FBS49) that were not represented in the metadata data. These three samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses by merging the genotype, metadata, and phenotype files (see Step 4 below).
+##### 3b.2. Remove unmatched sample id; run the Rmd chunk below.
 
-### STEP 4: Merge all datasets (metadata, phenotype_data, genotype_data) and summarize the full datasets
-In this step, we create two working datasets: 1) metadata and genotype data (`data/processed_raw_data/full_genotype_data.Rda`), and 2) metadata and phenotype_data (`data/processed_raw_data/full_phenotype_data.Rda`). These files will be used in subsequent analyses and subsetted where necessary.
+##### Resolve sample number discrepancy:
+```{r}
+# Remove sample FER71 from the metadata set
+phenotype_data <- phenotype_data %>%
+  filter(sample_id != "FER71") %>%
+  filter(sample_id != "FBS47") %>%
+  filter(sample_id != "FBS48") %>%
+  filter(sample_id != "FBS49")
+```
 
-#### 4a. Merge data sets; run the Rmd chunk below.
+### STEP 4: Save all datasets for downstream analyses
+In this step, we save all filtered datasets for final merging (see STEP 5 below) and summary (see PHASE 2 below).
+
+#### 4a. Save all datasets
+```{r}
+# Save metadata
+save(metadata, file = "data/processed_raw_data/metadata.Rda")
+
+# Save genotype data
+save(genotype_data, file = "data/processed_raw_data/genotype_data.Rda")
+
+# Save phenotype data
+save(phenotype_data, file = "data/processed_raw_data/phenotype_data.Rda")
+```
+
+### STEP 5: Merge all datasets (metadata, phenotype_data, genotype_data)
+In this step, we create three working datasets: 1) metadata and genotype data (`data/processed_raw_data/full_genotype_data.Rda`); 2) metadata and phenotype_data (`data/processed_raw_data/full_phenotype_data.Rda`); and 3) full data, including metadata, genotype data, and full data (`data/processed_raw_data/full_data.Rda`). These files will be used in subsequent analyses and subsetted where necessary.
+
+#### 5a. Merge data sets; run the Rmd chunk below.
 
 ##### Merge and create full metadata and full phenotype data
 ```{r}
@@ -254,63 +265,104 @@ full_phenotype_data <- merge(metadata,
                    phenotype_data,
                    by = "sample_id")
 
-# Omit sample FER71 from full phenotype data
-full_phenotype_data <- full_phenotype_data %>%
-  filter(sample_id != "FER71")
-
 # Save the full phenotype data
 save(full_phenotype_data, file = "data/processed_raw_data/full_phenotype_data.Rda")
+
+# Merge all data
+full_data <- merge(full_genotype_data, 
+                   full_phenotype_data,
+                   by = c("sample_id","river_code","sample_number","easting","northing","range_id","river","population"))
+```
+
+#### 5b. Create new column in full data to categorize samples by their size bin (25 mm size intervals); run the Rmd chunk below.
+As part of the experimental design of this study, we aimed to collect approximately 10 fish per 25 mm size cohort, starting with 200 mm total length when alive (tl_alive = 200-224.9mm, 225-249.9mm, etc.) in order to run models for individual growth rate and maximum total length (see Analysis 3).
+
+To summarize the number of fish captured within each size cohort, we created a new variable (column) in the dataset (size_bin), assigning each individual to 25 mm size categories.
+
+##### Add size bin column to dataframe
+```{r}
+# Categorize sample ids into 25 mm size bins based on total length while alive (tl_alive)
+full_data$size_bin <- with(full_data, ifelse(tl_alive>=200 & tl_alive<225, "200-225",
+                                             ifelse(tl_alive >=225 & tl_alive<250, "225-250",
+                                                    ifelse(tl_alive >=250 & tl_alive<275, "250-275",
+                                                           ifelse(tl_alive >=275 & tl_alive<300, "275-300",
+                                                                  ifelse(tl_alive >=300 & tl_alive<325, "300-325",
+                                                                         ifelse(tl_alive >=325 & tl_alive<350, "325-350",
+                                                                                ifelse(tl_alive >=350 & tl_alive<375, "350-375",
+                                                                                       ifelse(tl_alive >=375 & tl_alive<400, "375-400",
+                                                                                              ifelse(tl_alive >=400, "400+","done"))))))))))
+
+# Convert size bin column to factor
+full_data <- full_data %>%
+  mutate(size_bin = factor(size_bin))
+
+# Save the fully merged and cleaned data
+save(full_data, file = "data/processed_raw_data/full_data.Rda")
 ```
 
 ## PHASE 2: DATA SUMMARIZATION AND ENUMERATION
-In this phase of the analysis, we are fully enumerating the genotype and phenotype datasets so that we know how many samples belong to each group of interest for the final manuscript. 
+In this phase of the analysis, we fully summarize the data so that we know how many samples belong to each group of interest for the final manuscript. 
 
 ### STEP 1: Summarize the full genotype and phenotype datasets
-In this step, we are summarizing the full genotype and phenotype datasets together (merged), with appended metadata, to enumerate samples by groups of interest. We also ensure that both datasets contain the same samples.
+In this step, we are summarizing the full data to enumerate samples by groups of interest. We also ensure that both datasets contain the same samples.
 
-#### 1a. Read in and summarize the full genotype data; run the Rmd chunk below:
+#### 1b. Read in and summarize the full data; run the Rmd chunk below:
 
 ##### Summarize full genotype data
 ```{r}
 # Load in full genotype data
-load("data/processed_raw_data/full_genotype_data.Rda")
+load("data/processed_raw_data/full_data.Rda")
 
-# Load in full phenotype data
-load("data/processed_raw_data/full_phenotype_data.Rda")
-
-## Verify that the two datasets contain the same sample ids
-
-# Samples in genotype data but not in phenotype data
-full_genotype_data %>% 
-  filter(!full_genotype_data$sample_id %in% full_phenotype_data$sample_id)
-
-# Samples in phenotype data but not in genotype data
-full_phenotype_data %>% 
-  filter(!full_phenotype_data$sample_id %in% full_genotype_data$sample_id)
-
-
-
-
-# Merge genotype and phenotype data by sample id
-full_data <- merge(full_genotype_data, full_phenotype_data, by = "sample_id")
-
-# Summarize genotype data by population (sample vs. reference)
-full_genotype_data %>% 
-  group_by(population) %>%
+# Count total number of fish analyzed
+full_data %>%
   count()
 
-# Summarize genotype data by river within population
-full_genotype_data %>% 
-  group_by(population, river) %>%
+# Summarize full data by range_id (population; Neosho Bass (samples) and Smallmouth Bass (reference))
+full_data %>% 
+  group_by(range_id) %>%
+  count()
+
+# Summarize full data by river within range (Neosho Bass, NB; Smallmouth Bass (SMB) )
+full_data %>% 
+  group_by(range_id, river) %>%
+  count()
+
+# Summarize full data by sex
+full_data %>% 
+  group_by(sex) %>%
+  count()
+
+# Summarize full data by sex within species
+full_data %>% 
+  group_by(sex, river) %>%
   count()
 ```
 
-##### 4b.2. Summarize the full phenotype data set; run the Rmd chunk below:
+### Data summary:
 
-##### Summarize full phenotype data
-```{r}
-# Load in full phenotype data
-load("data/processed_raw_data/full_phenotype_data.Rda")
+## Total
+<b><i>N</i><sub>total</sub> = 135 </b><br>
 
+## By species (native range)
+<b><i>N</i><sub>Neosho_Bass</sub> = 115 </b><br>
+<i>N</i><sub>Smallmouth Bass</sub> = 20 <br>
 
-```
+## By river (wihtin species)
+<i>N</i><sub>nb_elk</sub> = 69 <br>
+<i>N</i><sub>nb_bigsugar</sub> = 46 <br>
+
+<i>N</i><sub>smb_white</sub> = 2 <br>
+<i>N</i><sub>smb_tablerock</sub> = 8 <br>
+<i>N</i><sub>smb_crooked</sub> = 10 <br>
+
+## By sex (within Neosho Bass range)
+<i>N</i><sub>male</sub> = 56 <br>
+<i>N</i><sub>female</sub> = 59 <br>
+
+## By sex within river
+<i>N</i><sub>elk_male</sub> = 37 <br>
+<i>N</i><sub>elk_female</sub> = 32 <br>
+
+<i>N</i><sub>bigsugar_male</sub> = 19 <br>
+<i>N</i><sub>bigsugar_female</sub> = 27 <br>
+
