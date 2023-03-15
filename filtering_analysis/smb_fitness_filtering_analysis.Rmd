@@ -336,6 +336,16 @@ full_data %>%
 full_data %>% 
   group_by(sex, river) %>%
   count()
+
+# Summarize full data by size bin within river
+full_data %>% 
+  group_by(size_bin, river) %>%
+  count()
+
+# Summarize full data by size bin for sex within river
+full_data %>% 
+  group_by(size_bin, river, sex) %>%
+  count()
 ```
 
 ### Data summary:
@@ -366,3 +376,58 @@ full_data %>%
 <i>N</i><sub>bigsugar_male</sub> = 19 <br>
 <i>N</i><sub>bigsugar_female</sub> = 27 <br>
 
+## By size bin within river
+<i>N</i><sub>bigsugar_200-225</sub> = 10 <br>
+<i>N</i><sub>bigsugar_225-250</sub> = 5 <br>
+<i>N</i><sub>bigsugar_250-275</sub> = 3 <br>
+<i>N</i><sub>bigsugar_275-300</sub> = 8 <br>
+<i>N</i><sub>bigsugar_300-325</sub> = 11 <br>
+<i>N</i><sub>bigsugar_325-350</sub> = 4 <br>
+<i>N</i><sub>bigsugar_350-375</sub> = 1 <br>
+<i>N</i><sub>bigsugar_375-400+</sub> = 4 <br>
+
+<i>N</i><sub>elk_200-225</sub> = 10 <br>
+<i>N</i><sub>elk_225-250</sub> = 13 <br>
+<i>N</i><sub>elk_250-275</sub> = 17 <br>
+<i>N</i><sub>elk_275-300</sub> = 12 <br>
+<i>N</i><sub>elk_300-325</sub> = 7 <br>
+<i>N</i><sub>elk_325-350</sub> = 3 <br>
+<i>N</i><sub>elk_350-375</sub> = 1 <br>
+<i>N</i><sub>elk_375-400+</sub> = 6 <br>
+
+## By size bin within sex within river
+<i>N</i><sub>bigsugar_200-225_female</sub> = 6 <br>
+<i>N</i><sub>bigsugar_200-225_male</sub> = 4 <br>
+<i>N</i><sub>bigsugar_225-250_female</sub> = 1 <br>
+<i>N</i><sub>bigsugar_225-250_male</sub> = 4 <br>
+<i>N</i><sub>bigsugar_250-275_female</sub> = 3 <br>
+<i>N</i><sub>bigsugar_250-275_male</sub> = 0 <br>
+<i>N</i><sub>bigsugar_275-300_female</sub> = 5 <br>
+<i>N</i><sub>bigsugar_275-300_male</sub> = 3 <br>
+<i>N</i><sub>bigsugar_300-325_female</sub> = 5 <br>
+<i>N</i><sub>bigsugar_300-325_male</sub> = 6 <br>
+<i>N</i><sub>bigsugar_325-350_female</sub> = 4 <br>
+<i>N</i><sub>bigsugar_325-350_male</sub> = 0 <br>
+<i>N</i><sub>bigsugar_350-375_female</sub> = 0 <br>
+<i>N</i><sub>bigsugar_350-375_male</sub> = 1 <br>
+<i>N</i><sub>bigsugar_375-400+_female</sub> = 3 <br>
+<i>N</i><sub>bigsugar_375-400+_male</sub> = 1 <br>
+
+<i>N</i><sub>elk_200-225_female</sub> = 4 <br>
+<i>N</i><sub>elk_200-225_male</sub> = 6 <br>
+<i>N</i><sub>elk_225-250_female</sub> = 8 <br>
+<i>N</i><sub>elk_225-250_male</sub> = 5 <br>
+<i>N</i><sub>elk_250-275_female</sub> = 8 <br>
+<i>N</i><sub>elk_250-275_male</sub> = 9 <br>
+<i>N</i><sub>elk_275-300_female</sub> = 5 <br>
+<i>N</i><sub>elk_275-300_male</sub> = 7 <br>
+<i>N</i><sub>elk_300-325_female</sub> = 2 <br>
+<i>N</i><sub>elk_300-325_male</sub> = 5 <br>
+<i>N</i><sub>elk_325-350_female</sub> = 2 <br>
+<i>N</i><sub>elk_325-350_male</sub> = 1 <br>
+<i>N</i><sub>elk_350-375_female</sub> = 1 <br>
+<i>N</i><sub>elk_350-375_male</sub> = 0 <br>
+<i>N</i><sub>elk_375-400+_female</sub> = 2 <br>
+<i>N</i><sub>elk_375-400+_male</sub> = 4 <br>
+
+These sample sizes were used as the basis for Table 1 and the sample size (N) column of Table S1 in the final manuscript.
