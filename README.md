@@ -8,7 +8,10 @@ We assessed the effect of admixture on fitness in two stream populations within 
 This is a publicly visible GitHub repository storing code (and a small amount of data, although we have done our best to avoid uploading large amounts of data due to the limited storage ing GitHub) for Gunn et al. (DATE). In the home directory of the repository (SMB_Fitness), you will find a README.md file (the source script for this information), the R Project file (SMB_Fitness.Rproj), a project info folder (project_info, which includes all important information on data procurement for this project), a .gitignore file, and "analysis" directories, each of which corresponds with a specific analysis conducted in our study:
 
 1) map_analysis
-2) growth_analysis
+2) filtering_analysis
+3) ancestry_analysis
+4) growth_analysis
+5) hfc_analysis
 
 Within each analysis directory, you will find an R markdown script (.Rmd) with the name of the analysis, which contains all of the code needed to run the full analysis. Additionally, you will find:
 
@@ -43,7 +46,30 @@ If you have any questions or issues with data and/or code, please don't hesitate
 
 ## Analyses
 
-### Analysis 1: Generating Species Native Range Maps
+### Analysis 1: Generating species native range maps
 In this analysis, we generated easily readable maps displaying the native distributions of the two species of interest (Smallmouth Bass and Neosho Bass) and the two streams sampled for age and growth analysis (Big Sugar Creek and the Elk River). We generated two types of maps: 1) a map of the Central Interior Highlands (CIH), showing the distributions of Smallmouth Bass and Neosho Bass within the ecoregion and labeling Smallmouth Bass reference populations, and 2) a close-up map of the convergence of Big Sugar Creek and the Elk River, showing approximate sample collection sites. In R, we generated only georeferenced outlines of these maps. Shapes representing stream sites and/or populations were superimposed <i>a posteriori</i> on the maps in PowerPoint.
 
 #### Run the code: `map_analysis/smb_fitness_map_analysis.Rmd`
+
+### Analysis 2: Data filtering and summarization
+For this aim, we cleaned, filtered, and summarized the full genotype data (14 microsatellite loci) and phenotypic data (consensus age and total length) for 135 raw samples, which comprised fish collected from two streams (Big Sugar Creek and Elk River) within the recognized native range of the Neosho Bass (<i>M. velox</i>; NB) and a reference set of samples representing Smallmouth Bass (<i>M. dolomieu</i>; SMB) collected from streams in the White River drainage in the Smallmouth Bass native range. We did not collect phenotypic data on the Smallmouth Bass reference samples.
+
+#### Run the code: `filtering_analysis/smb_fitness_filtering_analysis.Rmd`
+
+### Analysis 3: Ancestry inference with Bayesian clustering in STRUCTURE
+
+
+#### Run the code: `ancestry_analysis/smb_fitness_ancestry_analysis.Rmd`
+
+### Analysis 4: von Bertalanffy individual growth modeling
+
+
+#### Run the code: `growth_analysis/smb_fitness_growth_analysis.Rmd`
+
+### Analysis 5: Heterozygosity fitness correlation analysis
+
+
+#### Run the code: `hfc_analysis/smb_fitness_hfc_analysis.Rmd`
+
+
+

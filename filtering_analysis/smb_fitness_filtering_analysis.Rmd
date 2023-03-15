@@ -1,5 +1,5 @@
 ---
-title: "Analysis 1: Filtering Analysis"
+title: "Analysis 2: Filtering Analysis"
 author: "Joe Gunn"
 date: "2022-07-28"
 output: html_document
@@ -275,7 +275,7 @@ full_data <- merge(full_genotype_data,
 ```
 
 #### 5b. Create new column in full data to categorize samples by their size bin (25 mm size intervals); run the Rmd chunk below.
-As part of the experimental design of this study, we aimed to collect approximately 10 fish per 25 mm size cohort, starting with 200 mm total length when alive (tl_alive = 200-224.9mm, 225-249.9mm, etc.) in order to run models for individual growth rate and maximum total length (see Analysis 3).
+As part of the experimental design of this study, we aimed to collect approximately 10 fish per 25 mm size cohort, starting with 200 mm total length when alive (tl_alive = 200-224.9mm, 225-249.9mm, etc.) in order to run models for individual growth rate and maximum total length (see Analysis 4).
 
 To summarize the number of fish captured within each size cohort, we created a new variable (column) in the dataset (size_bin), assigning each individual to 25 mm size categories.
 
