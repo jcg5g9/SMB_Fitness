@@ -1,0 +1,659 @@
+---
+title: "Analysis 3: Ancestry Inference and Genetic Group Assignment Analysis"
+author: "Joe Gunn"
+date: "2022-07-28"
+output: html_document
+---
+
+# Project: Effects of admixture on fitness in Neosho Bass populations 
+<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard parameterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
+
+## Specific Aim: Data preparation, enumeration, and filtering
+For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see citation below in under "Programs Needed") to assess individual proportions of ancestry derived from Smallmouth Bass and Neosho Bass. We analyze all sample fish (obtained from Big Sugar Creek and Elk River within the Neosho Bass native range) together with reference fish (obtained from Crooked Creek, White River, and Tablerock Lake within the Smallmouth Bass native range). Knowing that Smallmouth Bass in the White River drainage are of pure genomic origin (Gunn et al. 2022), we use the minimum ancestry proportion of Smallmouth Bass derived from our microsatellites as a lower bound to identify "pure" vs. "admixed" fish in the Neosho Bass range. Ancestry groups are then used to assess growth and body condition in subsequent analyses.
+
+## Phases of Analysis
+### Phase 1: Structure of all individuals at all snps
+### Phase 2: Structure and hybrid assignment of Spotted Bass (SPB) and the Smallmouth Bass species complex (SMBC)
+### Phase 3: Structure and hybrid assignment of Smallmouth Bass (SMB) and species in the Central Interior Highlands (CIH)
+### Phase 4: Structure and hybrid assignment of species in the Central Interior Highlands
+
+Programs needed:
+
+STRUCTURE v.2.3.4. (Pritchard et al. 2000)
+
+Citation:
+
+Pritchard JK, Stephens M, Donnelly P. 2000. Inference of population structure using multilocus genotype data. Genetics 155: 945-959.
+
+CLUMPP v.1.1.2 (Jakobsson and Rosenberg 2007)
+
+Citation:
+
+Jakobsson M, Rosenberg NA. 2007. CLUMPP: A cluster matching and permutation program for dealing with label switching and multimodality in analysis of population structure. Bioinformatics 23: 1801-1806.
+
+### Libraries needed for analysis
+```{r}
+library(tidyverse)
+library(cowplot)
+library(readxl)
+library(writexl)
+library(genepopedit)
+library(pophelper)
+library(parallelnewhybrid)
+library(graph4lg)
+library(RColorBrewer)
+library(forcats)
+```
+
+### STEP 1: Data preparation
+
+#### 1a: Load the fully filtered dataset ('full_data'); run the Rmd chunk below.
+
+##### Load in full, filtered data:
+```{r}
+load("../../filtering_analysis/data/processed_raw_data/full_data.rda")
+```
+
+#### 1b: Subset the data to include only individuals for the full population structure analysis and SPB diagnostic SNPs
+In this step, we are sub-setting the fully filtered data to only include samples of interest for analysis of population structure and hybridization between SPB and the SMBC. For this analysis, these data will include all individuals across the whole dataset, but only SNP loci that were found to be diagnostic between SPB and the SMBC (SPB-SNPS)
+
+##### 1b.1. Subset full data to include only SPB-SNPS; run the Rmd chunk below:
+
+##### Filter out genotype data into diagnostic SNP groups for SPB and the SMBC
+```{r}
+## get metadata for c-binding later
+spb_smbc_metadata <- full_data[1:13]
+
+## Convert factors to characters
+spb_smbc_metadata <- spb_smbc_metadata %>%
+  mutate(Structure_Num = as.character(Structure_Num),
+         River = as.character(River))
+
+# Get only SPB-SNPS loci (SM_SP)
+spb_smbc_snps <- full_data %>%
+  dplyr::select(matches("SM_SP"))
+```
+
+<b>Details on SPB and SMBC dataset:</b> <br>
+<i>N</i><sub>samples</sub> = 472 <br>
+<i>N</i><sub>loci</sub> = 15 <br>
+
+#### 1c: Combine metadata and snp datasets for combination of interest (see above); Run the Rmd chunk below to combine datasets.
+
+##### Combine metadata and snp datasets and generate Excel file, which are stored in the directory `data/processed_genotype_data/`
+```{r}
+# cbind metadata and genotype data
+spb_smbc <- cbind(spb_smbc_metadata, spb_smbc_snps)
+
+## Generate excel files to hold genotype data
+write_xlsx(spb_smbc, path = "../data/processed_genotype_data/spb_smbc.xlsx")
+```
+
+#### 1d: Generate genepop file format in Excel.
+In this step, we manually converted the Excel file generated in step 1b to basic Genepop format, carefully following the steps below:
+
+##### 1d.1. Remove all metadata columns from the dataset except for "River", which designates the a priori stream population for a given sample, and "Structure_Num", which gives a structure-formatted individual label for each sample
+
+##### 1d.2. Add a "," after each Structure_Num
+
+##### 1d.3. Insert a row above each new population in the data, and insert "pop" in the Structure_Num column in each empty row (the word "pop" should appear for each population)
+
+##### 1d.4. Delete the "River" column
+
+##### 1d.5. Copy the header row of SNP IDs and transpose paste in a new Excel sheet; each SNP ID should be listed in its own row (number of rows should be equal to numbrer of SNP IDs)
+
+##### 1d.6. Copy all genotype and label data from the original Excel file and paste in the row immediately below the list of SNP IDs
+
+##### 1d.7. Save the Excel sheet as a .xlsx and a .txt file
+
+#### 1e: Generate STRUCTURE formatted files from genepop format
+In this step, we are reading in, checking, and converting genepop files for combined datasets into STRUCTURE formatted files. There are quite a few tricky and very specific formatting needs for the genepop text file before genepopedit will convert successfully. Follow Step 3a below closely to create a proper genepop format. Use Ctrl + F to find and replace the necessary things.
+
+##### IMPORTANT NOTE ON DATA: genepopedit requires that sample names be in the format 'popname_01', 'popname_02', etc. where the 'popname' is a signifier for the population of origin for the sample, and the '01', etc. are numerical designations for the samples. 'popname' and the numeric must be separated by a "_", and there can only be a single "_". Otherwise, genepopedit will not read the sample's population of origin correctly. In the case of this project, we are clumping samples together by stream for STRUCTURE analysis to see if there is substructure mapped by stream. Many sample IDs in our dataset were not in the required format, so we added an additional column to the metadata set and associated processed data sets called "structure_ID", which gives a unique sample name in the proper structure format. This column can then be linked back to any other column in downstream analyses if we need to know which specific samples the results came from. 
+
+##### 1e.1 Follow the guide for the library 'genepopedit' (Stanley et al. [year]) to prepare genepop files before converting them to STRUCTURE format.
+
+##### 1e.1.1 All "," in the genepop text files were manually replaced with " ,  "
+
+##### 1e.1.2 All "tabs" between six-digit alleles were were manually replaced with " " (a single space).
+
+##### 1e.1.3 The top row designating the dataset combination was manually omitted.
+
+##### 1e.1.4. Any additional space at the bottom of the text file was removed.
+
+##### 1e.2. Generate STRUCTURE files from genepop files
+Here it is important to not include the 'popgroup = ' unless it is explicitly necessary. Assigning popgroup to a dataframe with population names will cause the STRUCTURE input file to have word strings in the popdata column. Our experience is that STRUCTURE expects an integer here rather than a string, so best not to use popgroup.
+
+##### Convert genepop to STRUCTURE format: files are stored in the directory `data/structure_data/`
+```{r}
+# Generate structure file for SPB and all other Central Interior Highlands Bass
+genepop_structure("../data/genepop_data/spb_smbc_genepop.txt", 
+                  locusnames = TRUE, 
+                  #popgroup = "data/genepop_data/spb_smbc_pops.csv",
+                  path = "../data/structure_data/input_data/spb_smbc_structure.txt")
+```
+
+<b>Details on SMB and SMBC populations:</b> <br>
+<i>N</i><sub>populations</sub> = 25
+
+#### 1f: Generate batch list files and shell scripts for running STRUCTURE in parallel
+In this step, we are creating batch lists of command line code to run STRUCTURE analyses in parallel. Each batch list will contain a separate line of code to run a single replicate at an a priori determined number of populations (<i>K</i>, listed in the chunk above for each dataset). We will run each analysis in 10 replicates at each <i>K</i>, e.g.:
+
+structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_1
+structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_2
+structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_3
+structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_4
+structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_5
+.
+.
+.
+structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_10
+structure -K 2 -m mainparams -e extraparams -i structure_input.txt -o structure_output_2_1
+structure -K 2 -m mainparams -e extraparams -i structure_input.txt -o structure_output_2_2
+.
+.
+.
+where, in the output name, the first number represents the <i>K</i> value for the run, and the last number represents the replicate.
+
+##### 1f.1. Generate batch list file; run the Rmd chunk below:
+The Rmd chunk below generates a list of commands that contains the full cluster paths (/home/data/...) for necessary files.
+
+##### Generate batch commands: `batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt`
+```{r}
+nk <- data.frame(c(1:25))
+nreps <- data.frame(c(1:10))
+
+cat("", file="batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt")
+
+# Run loop to create file for storing commands
+for(ii in 1:nrow(nk)) {
+
+  for(aa in 1:nrow(nreps)) {
+    
+    structure_call <- paste("structure ")
+
+    param_files <- paste(" -m /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/param_files/mainparams_spb_smbc -e /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/param_files/extraparams")
+
+    input <- paste(" -i /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/input_data/spb_smbc_structure.txt")
+  
+    output <- paste(" -o /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/output_data/spb_smbc_structure_output/")
+  
+    cat(paste(structure_call, "-K ", nk[ii,], param_files, input, output,
+            strsplit("spb_smbc_structure.txt", "_structure.txt", fixed=TRUE)[[1]][1], "_", nk[ii,], "_", nreps[aa,], sep=""),
+      "\n", 
+      file=paste("batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt"),
+      append=TRUE)
+  }
+}
+```
+
+##### 1f.2. Generate shell script; run the Rmd chunk below
+
+##### IMPORTANT NOTE: This shell script was generated on the server directly, and thus the Rmd chunk below does not need to be run to generate the file. This is purely to keep a record of each script file. 
+
+##### Generate batch commands: `shell_scripts/spb_smbc_structure.sh`
+```{r}
+#!/bin/bash
+#-------------------------------------------------------------------------------
+#  SBATCH CONFIG
+#-------------------------------------------------------------------------------
+## resources
+#SBATCH --partition Lewis
+#SBATCH --nodes=1
+#SBATCH --ntasks=1  # used for MP#SBATCH -e error_%A_%a.err # Standard errorI codes, otherwise leav$
+##SBATCH --cpus-per-task=12  # cores per task
+#SBATCH --mem-per-cpu=16G  # memory per core (default is 1GB/core)
+#SBATCH --time 2-00:00  # days-hours:minutes
+#SBATCH --qos=normal
+#SBATCH --array=23-220
+
+## labels and outputs
+#SBATCH --job-name=snolh_structure_jgunn
+#
+#SBATCH -o test_%A_%a.out # Standard output
+#SBATCH -e error_%A_%a.err # Standard error
+
+## notifications
+#SBATCH --mail-user=jcg5g9@mail.missouri.edu  # email address for notifications
+#SBATCH --mail-type=END,FAIL  # which type of notifications to send
+#-------------------------------------------------------------------------------
+
+#echo "### Starting at: $(date) ###"
+
+
+# load packages
+#module load rss/rss-2020
+#module load structure/structure-2.3.4
+
+#COMMANDA=`head -n ${SLURM_ARRAY_TASK_ID} ../batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt | tail -n 1`
+#eval $COMMANDA
+
+
+#echo "### Ending at: $(date) ###"
+```
+
+#### 1g: Prepare mainparam and extraparam files for STRUCTURE.
+In this step, we are preparing the mainparam and extraparam input files for STRUCTURE so that they are unique to each analysis we are running.
+
+##### 1g.1. Edit base mainparam STRUCTURE file (downloaded with STRUCTURE program) and generate a separate, unique mainparam file.
+
+<b>mainparam file:</b> <br>
+`../data/structure_data/param_files/mainparams_spb_smbc` <br> 
+
+###### 1g.1.1. Edit "maxpops" value to reflect the number of populations designated in Step 3b above. These values should be the following:
+
+<b>SPB and SMBC populations:</b> 25 <br>
+
+###### 1g.1.2. Set the number of burn-in and MCMC iterations to run; these are the same for each analysis:
+
+<b>Burn-in runs:</b> 500,000 <br>
+<b>MCMC runs:</b> 1,000,000 <br>
+
+###### 1g.1.3. Set the number of individuals. These values should be the following:
+
+<b>Individuals:</b> 472 <br>
+
+###### 1g.1.4 Set the number of loci. These values should be the following:
+
+<b>Loci:</b> 15 <br>
+
+###### 1g.1.5. Set 'ONEROWPERIND' to '0'
+
+###### 1g.1.6. Set 'LABEL' to '1'
+
+###### 1g.1.7. Set 'POPDATA' to '1'
+
+###### 1g.1.8. Set 'POPFLAG' to '0'
+
+##### 1g.2. Edit base extraparam STRUCTURE file (downloaded with STRUCTURE program).
+We did not change any of the default settings in the extraparams file (most importantly, we used the default admixture model), so we only used a single extraparams file.
+
+<b>extraparam file:</b> <br>
+`../data/structure_data/param_files/extraparams` <br> 
+
+### STEP 2: Population Structure Analysis with STRUCTURE
+
+See `snolh_structure_analysis.Rmd` (Line 166) for programs needed for analysis.
+
+#### 2a: Run STRUCTURE analysis using the input data generated in STEP 1. Navigate to `shell_scripts/` Be sure that all relative and full paths to all input files and output destination directories are set up properly (ideally, this is already done within this GitHub repo). This command line code assumes capability to run the code using SLURM or a SLURM-like cluster scheduling software.
+
+Run `sbatch spb_smbc_structure.sh`
+
+#### 2b: Structure output files are generated and stored here: `../data/structure_data/output_data/spb_other_structure_output/`.
+
+#### 2c: Compress output directory into a zip file compatible with Structure Selector (Li and Liu 2017) or Structure Harvester (Earl and vonHoldt 2011) online.
+
+#### 2d: Submit zip directory to Structure Selector or Structure Harvester to extract summary results.
+
+#### 2e: Copy detlaK table (Evanno et al. YEAR) and save as excel file here: `../data/structure_data/summary_data`
+We further analyzed deltak results graphically in Step 2g.4
+
+#### 2f: Copy puechmaille table (Puechmaille et al. 2016.) and save as excel file here:
+`../data/structure_data/summary_data`
+We found that Puechmaille metrics universally supported K=2, and we graph the results for deltak and Puechmaille in Step 2g.5.
+
+#### 2g: Visualize STRUCTURE runs for all data combinations
+
+##### 2g.1. Convert STRUCTURE files into aligned Q files compatible with analysis in the program CLUMPP (Jakobbson and Rosenberg 2007); run the rmd chunk below.
+
+##### Convert STRUCTURE files to aligned Q files for CLUMPP: 
+```{r}
+# Get a list of structure files for each data combination
+spb_smbc_sfiles <- list.files("../data/structure_data/output_data/spb_smbc_structure_output/", 
+                               full.names = T)
+
+# Extract q value information (ancestry proportions) from each run for each K value for each individual from the STRUCTURE output files in the directories listed above
+spb_smbc_Q <- readQ(spb_smbc_sfiles)
+
+# Tabulate information from the q lists
+spb_smbc_tab <- tabulateQ(spb_smbc_Q)
+
+# Summarize information from tabultions above
+spb_smbc_summary <- summariseQ(spb_smbc_tab)
+
+# Extract deltaK and associated summary information using Evanno method
+spb_smbc_evanno <- evannoMethodStructure(spb_smbc_summary, returnplot = F)
+
+# Set infinity and NA to zero arbitrarily
+spb_smbc_evanno$deltaK[spb_smbc_evanno$deltaK == "Inf"] <- 0
+spb_smbc_evanno$deltaK[is.na(spb_smbc_evanno$deltaK)] <- 0
+
+# Write Evanno table to Excel table for manuscript preparation.
+
+## Convert to data frame
+spb_smbc_evanno <- as.data.frame(spb_smbc_evanno)
+
+## Write Excel file
+write_xlsx(spb_smbc_evanno, "../data/structure_data/deltak_data/spb_smbc_deltak.xlsx")
+
+# Align replicate runs for each K to correct label switching
+spb_smbc_align <- alignK(spb_smbc_Q)
+```
+
+##### 2g.2. Export CLUMPP compatible files for CLUMPP analysis; run the rmd chunk below to export CLUMPP associated files for each K.
+
+<b>We used the following parameters: </b> <br>
+
+Large-K-Greedy algorithm (paramrep = 3) <br>
+10,000 replicates <br>
+
+### IMPORTANT NOTE: This step only needs to be run ONCE to generate files for CLUMPP. Once you have run this chunk, move on to Step 2g.3. Uncomment each line to run this code.
+
+##### Export CLUMPP files:
+```{r}
+clumppExport(spb_smbc_align, 
+            parammode = 3, 
+            paramrep = 10000,
+            exportpath = "../data/structure_data/clumpp_data/spb_smbc_clumpp")
+```
+
+The code above generates a .txt file (pop_K#-combined.txt) with combined cluster ancestry proportions for each individual at each K and stores it in a separate directory labeled "pop_K#", where '#' is the corresponding K value. Additionally, the code generates an accompanying "paramfile" that is input for CLUMPP, which contains information on parameters to generate merged datasets across our 10 replicates at each K.
+
+##### 2g.3. Generate merged Q files using CLUMPP.
+In this step, we used the software program CLUMPP (Jakobbson and Rosenberg 2007) to merge cluster ancestry proportion inferences for all replicate runs of each K across individuals. We downloaded the Linux 64-bit build of CLUMPP v.1.1.2 and installed it on our computing cluster. We then executed the program for each analysis by sequentially copying the associated paramfiles generated in the clumppExport function (see section above) to the CLUMPP home directory. All output files were then moved to the corresponding structure directory.
+
+###### 2g.3.1. Downolad CLUMPP and install on cluster; navigate to the desired directory: `code`. Run the command: `wget https://rosenberglab.stanford.edu/software/CLUMPP_Linux64.1.1.2.tar.gz`
+
+###### 2g.3.2. Run the command: `gunzip CLUMPP_Linux64.1.1.2.tar.gz`
+
+###### 2g.3.3. Run the command: `tar -xvf CLUMPP_Linux64.1.1.2.tar`
+
+###### 2g.3.4. For each analysis separately, copy the 'pop_K#-combined.txt' file and 'paramfile' over to the CLUMPP directory (`CLUMPP_Linux64.1.1.2`)
+
+###### 2g.3.5. For each analysis separately, execute CLUMPP on the paramfile; run the code `./CLUMPP paramfile`
+We are running this code with GREEDY OPTION 2, which uses random sampling of replicate runs. 
+
+This code generates three additional files, which we moved back to the corresponding pop_K folder in the clumpp_data directory:
+
+<b>Files generated: </b> <br>
+
+pop_K#-combined-miscfile.txt <br>
+pop_K#-combined-merged.txt <br>
+pop_K#-combined-aligned.txt <br>
+
+##### 2g.4. Plot deltaK results; run the rmd chunk below.
+
+##### deltak results for SPB and SMBC populations: `02_spb_smbc_deltaK.pdf` 
+```{r}
+# DeltaK results
+pdf("../figures/structure_figures/deltak_plots/02_spb_smbc_deltaK.pdf", width=8, height=5)
+
+ggplot(spb_smbc_evanno, aes(x=k, y=deltaK)) +
+  geom_point() + 
+  geom_line() +
+  theme_cowplot(theme_set(12)) +
+  geom_vline(xintercept = 2, color = "blue") +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.title.x = element_text(face = "italic")) +
+  labs(x = "K", y = "deltaK") + 
+  scale_x_continuous("K", labels = as.character(spb_smbc_evanno$k), breaks = spb_smbc_evanno$k)
+
+dev.off()
+```
+
+We found strongest support for K=2 using the deltaK metric. We also found strongest support for K=2 using the Puechmaille metric. We therefore present result for K=2 in Step 2g.5 below. Results for deltaK and Puechmaille metrics are given in Tables S1 and S2, respectively.
+
+##### 2g.5. Plot STRUCTURE runs at best K value (K=2); run the rmd chunk below.
+
+##### STRUCTURE results of SPB and SMBC populations: `02_spb_smbc_k2.pdf`
+```{r}
+brewer.pal(n = 12, name = 'BrBG')
+# Read in combined-merged Q table from CLUMPP
+spb_smbc_k2 <- readQ("../data/structure_data/clumpp_data/spb_smbc_clumpp/pop_K2/pop_K2-combined-merged.txt")
+
+# Visualize Structure
+plotQ(spb_smbc_k2,
+      grplab = spb_smbc[,c(13,7)],
+      ordergrp = F,
+      selgrp = "River",
+      subsetgrp = c("Illinois_River", "Glover_River_SPB", "Lake_Superior_Chequamegon_Bay", "Lake_Erie_Central_Basin_Ohio", "Oneida_Lake_NY", "Smith_Fork_Creek", "Skiatook_Lake", "Honey_Creek", "Spavinaw_Creek", "Baron_Fork", "Caney_Creek", "Lee_Creek", "Blackfork_Creek", "Honobia_Creek", "Little_River", "Glover_River", "Big_Eagle_Creek", "Upper_Mountain_Fork", "Mountain_Fork", "Pero_Creek_Rolling_Fork_trib", "Cossatot_River_AR", "Western_Saline_River_AR", "Little_Missouri_River_AR", "Caddo_River_AR", "Ouachita_River_AR", "Eastern_Saline_River_AR"),
+      showgrplab = T,
+      showlegend = F, 
+      showsp = F, 
+      showdiv = T, 
+      divsize = 2, 
+      divtype = 1,
+      divcol = "black",  
+      grplabsize = 4, 
+      grplabangle = 45,
+      grplabjust = 0.5,
+      legendkeysize = 15, 
+      linealpha = 0,
+      legendtextsize = 10, 
+      linesize = 0.05, 
+      pointsize = 4, 
+      barbordercolour = "black",
+      barbordersize = 0.1, 
+      clustercol = c("#4393C3", "#D95F02"),
+      exportplot = T,
+      imgtype = "pdf",
+      height = 10, 
+      width = 100,
+      outputfilename = "02_spb_smbc_k2",
+      exportpath = "../figures/structure_figures/q_plots")
+```
+
+This figure is the basis for Figure 3a and Figure S2a in the manuscript.
+
+#### 2h: Analyze ancestry proportions from SPB for all river populations in the SMBC run the Rmd cbhunk below:
+In this step, we summarize ancestry proportions for each river calculated in STRUCTURE. Specifically, we calculate the average SPB ancestry across rivers at K=2.
+
+##### Summarize ancestry proportions for rivers:
+```{r}
+# column bind metadata with q values determined in STRUCTURE
+spb_smbc_k2 <- cbind(spb_smbc_metadata, spb_smbc_k2)
+
+# select only the river column, along with the columns containing q values from structure
+spb_smbc_k2 <- spb_smbc_k2[,c(7,14:15)]
+
+# rename columns to be more descriptive ("SMBC ancestry" indicates smallmouth bass species complex (Central Interior Highlands) ancestry)
+colnames(spb_smbc_k2) <- c("River", "SMBC_ancestry", "SPB_ancestry")
+
+# Omit SPB individuals (first five rows of dataset)
+spb_smbc_k2 <- spb_smbc_k2[-c(1:5),]
+
+# Summarize average ancestry of SPB per river
+spb_ancestry_summary <- spb_smbc_k2 %>%
+  group_by(River) %>%
+  summarize(mean_spb = mean(SPB_ancestry))
+
+# arrange in descending order
+spb_ancestry_summary %>% 
+  arrange(desc(mean_spb))
+```
+
+### STEP 3: Hybridization analysis with NEWHYBRIDS
+In this step, we are running complementary analyses on the dataset with SPB and the SMBC in the software program NewHybrids, which uses Bayesian inference of genotype data to assign individuals to one of six <i>a priori</i> modeled hybrid classes (parent 1, parent 2, F1 hybrid, F2 hybrid, backcross to parent 1, or backcross to parent 2).
+
+See `snolh_structure_analysis.Rmd` (Line 189 - 201) for programs needed for analysis.
+
+#### 3a: Convert genepop file to NEWHYBRIDS format and generate 'individual file' for analysis; run the Rmd chunk below:
+
+Running the Rmd chunk below generates two files: 
+    1) input for NewHybrids (`spb_smbc_nh.txt`),
+    2) accompanying individual file (`spb_smbc_individuals.txt`)
+    
+These files are stored here: `../data/newhybrids_data/input_data/`
+
+##### Generate NEWHYBRIDS input file and accompanying individual file:
+```{r}
+# Generate newhybrids file for SPB and all other Central Interior Highlands Bass
+genepop_newhybrids("../data/genepop_data/spb_smbc_genepop.txt", 
+                   path = "../data/newhybrids_data/input_data/spb_smbc_nh.txt")
+
+# Generate individual file (list of sample names ('Structure_Num') to accompany NewHybrids)
+spb_smbc_individuals <- data.frame(indiv = as.character(spb_smbc_metadata$Structure_Num))
+
+# Write individual file to .txt format
+write_tsv(spb_smbc_individuals, "../data/newhybrids_data/input_data/spb_smbc_individuals.txt")
+```
+
+#### 3b: Install newhybrids on local machine (or plan to use a remote server, setting up paths as needed)
+NewHybrids was installed on a local machine here: `/Users/joegunn/Downloads/newhybrids/`
+
+##### 3b.1. Set the number of burn-in and MCMC iterations to run:
+
+<b>Burn-in runs:</b> 100,000 <br>
+<b>MCMC runs:</b> 500,000 <br>
+
+#### 3c: Run parallelnewhybrids for MAC; run the Rmd chunk below to run the parallel newhybrids program on the input data.
+
+##### Run NewHybrids program with 100,000 burn-in and 500,000 MCMC sweeps
+```{r}
+parallelnh_OSX("../data/newhybrids_data/input_data/", 
+               where.NH = "/Users/joegunn/Downloads/newhybrids/", 
+               burnin = 100000, 
+               sweeps = 500000)
+```
+
+The parallelnewhybrids program will generate results and store them in a new directory (`NH.Results`) within the same directory as the input data. Since we are running multiple sequential analyses, we chose to rename the resulting output directory and store the input data within that directory along with the associated results so as not to confuse which input files go with which analyses. See specific steps below.
+
+##### 3c.1. Manually rename output directory: `spb_smbc_output/`.
+
+##### 3c.2. Manually move all output and input files into the newly named directory.
+
+##### 3c.3. Move the output folder into the `output_data/` directory within `newhybrids_data/`.
+
+#### 3d: Visualize NEWHYBRIDS results; run the Rmd chunk below to read in, clean, and plot NewHybrids output.
+
+##### Visualize NEWHYBRIDS output and generate plot for SPB and all other Central Interior Highlands species: `spb_smbc.pdf`
+```{r}
+# Read in NewHybrids "PofZ" output txt file
+spb_smbc_pofz <- read_tsv("../data/newhybrids_data/output_data/spb_smbc_output/spb_smbc_nh.txt_PofZ.txt")
+
+# Omit first two columns (the first column is individual number and the second is empty)
+spb_smbc_pofz <- data.frame(spb_smbc_pofz[,-c(1:2)])
+
+# Change column names to indicate hybrid class clearly
+colnames(spb_smbc_pofz) <- c("pure_spb","pure_smbc","f1","f2","bc_spb","bc_smbc")
+
+# Bind metadata to NewHybrids output to match posterior probabilities with individual samples
+spb_smbc_pofz <- cbind(spb_smbc_metadata, spb_smbc_pofz)
+
+# Gather dataset for plotting and convert variables to factors/characters. 'Structure_Num' was converted to a character in this step, and then factor levels were set in the next step to ensure that individuals were graphed in the same order as in STRUCTURE (for later direct one-to-one comparison)
+spb_smbc_pofz <- spb_smbc_pofz %>%
+  gather(c(14:19), key = "hybrid_category", value = "probability") %>%
+  mutate(hybrid_category = factor(hybrid_category)) %>%
+  mutate(Structure_Num = as.character(Structure_Num))
+
+# Change levels to get the correct order (see explanation for step above)
+spb_smbc_pofz$River <- factor(spb_smbc_pofz$River, levels = c("Illinois_River", "Glover_River_SPB", "Lake_Superior_Chequamegon_Bay", "Lake_Erie_Central_Basin_Ohio", "Oneida_Lake_NY", "Smith_Fork_Creek", "Skiatook_Lake", "Honey_Creek", "Spavinaw_Creek", "Baron_Fork", "Caney_Creek", "Lee_Creek", "Blackfork_Creek", "Honobia_Creek", "Little_River", "Glover_River", "Big_Eagle_Creek", "Upper_Mountain_Fork", "Mountain_Fork", "Pero_Creek_Rolling_Fork_trib", "Cossatot_River_AR", "Western_Saline_River_AR", "Little_Missouri_River_AR", "Caddo_River_AR", "Ouachita_River_AR", "Eastern_Saline_River_AR"))
+
+# Convert analysis order column to factor
+spb_smbc_pofz <- spb_smbc_pofz %>%
+  mutate(Analysis_order_W2E_U2D_corrected = factor(Analysis_order_W2E_U2D_corrected))
+
+# Reorder analysis order to be in the same order as Rivers (same as presented in Structure q plot)
+spb_smbc_pofz <- spb_smbc_pofz %>% 
+  mutate(Analysis_order_W2E_U2D_corrected = fct_reorder(Analysis_order_W2E_U2D_corrected, as.integer(River)))
+ 
+# Save dataframe for future use in introgress analysis (Analysis 3)
+save(spb_smbc_pofz, file = "../data/newhybrids_data/output_data/spb_smbc_output/spb_smbc_pofz.rda")
+
+# Plot posterior probability of assignment to each hybrid category as a cumulative bar plot for each individual (colors represent assignment probabilities for each of six possible hybrid categories)
+pdf("../figures/newhybrids_figures/02_spb_smbc.pdf", width=120, height=12)
+
+ggplot(spb_smbc_pofz, aes(x = Analysis_order_W2E_U2D_corrected, y = probability, fill = hybrid_category)) + 
+   geom_bar(stat = "identity", show.legend = T, color = "black") +
+   geom_hline(yintercept = 0.5, color = "red", linetype = "longdash", size = 3) +
+   theme_set(theme_cowplot(12)) +
+   labs(x = "Individual", y = "Cumulative probability of hybrid ID") +
+   scale_fill_manual(values = c("blue","red","blue","yellow","white","white")) +
+   theme(axis.title.x = element_blank())  +
+   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+   theme(axis.text = element_text(angle = 90)) +
+   scale_y_continuous(expand=c(0,0))
+
+dev.off()
+```
+
+This figure is the basis for Figure S2a in the manuscript.
+
+#### 3e: Identify individuals of hybrid status (non-pure, F1, F2, or backcross generation hybrids) across the whole dataset (these individuals are removed in subsequent hierarchical analyses)
+Before moving on to assess population structure and hybridization in SMB and species in the CIH (NB, OB, and LRB), we are removing any hybrids resulting from crossing with SPB.
+
+We are designating individuals as hybrid status if the posterior probability of assignment to any of the four hybrid categories (F1, F2, Backross to Parent 1, Backross to Parent 2) is greater than 0.50. We are basing this threshold on Long et al. (2021), who performed an in-depth power analysis following the hybriddetective workflow (Wringe et al. 2017) for each hybrid category at various numbers of SNP loci for varying posterior probability cutoffs. They found that the highest power to accurately detect hybrid individuals (and avoid type 2 error, failure to reject the null hypothesis when it is false) occurs at a probability cutoff of 0.5.
+
+##### 3e.1. Generate a list of hybrid individual sample names to be removed from subsequent datasets and save as an .Rda.
+
+##### Generate and save list of hybrid individuals
+```{r}
+# Summarize all hybrids together by population
+spb_smbc_hybrid_summary <- spb_smbc_pofz %>%
+  filter(probability > 0.5) %>%
+  group_by(River, hybrid_category) %>%
+  count()
+
+# Get pure SMBC individuals 
+spb_smbc_pure_ih <- spb_smbc_pofz %>%
+  filter(hybrid_category == "pure_smbc") %>%
+  filter(probability > 0.5) %>%
+  select(Structure_Num)
+
+### 441 pure IH individuals
+
+# Get pure SPB individuals
+spb_smbc_pure_spb <- spb_smbc_pofz %>%
+  filter(hybrid_category == "pure_spb") %>%
+  filter(probability > 0.5) %>%
+  select(Structure_Num)
+
+### 5 pure SPB
+
+# Get F1 individuals
+spb_smbc_f1 <- spb_smbc_pofz %>%
+  filter(hybrid_category == "f1") %>%
+  filter(probability > 0.5) %>%
+  select(Structure_Num)
+
+### 2 F1 hybrids
+
+# Get F2 individuals
+spb_smbc_f2 <- spb_smbc_pofz %>%
+  filter(hybrid_category == "f2") %>%
+  filter(probability > 0.5) %>%
+  select(Structure_Num)
+
+### 0 F2 hybrids
+
+# Get SMBC backcross individuals
+spb_smbc_bc_ih <- spb_smbc_pofz %>%
+  filter(hybrid_category == "bc_smbc") %>%
+  filter(probability > 0.5) %>%
+  select(Structure_Num)
+
+### 24 IH backcrosses
+
+# Get SPB backcross individuals
+spb_smbc_bc_spb <- spb_smbc_pofz %>%
+  filter(hybrid_category == "bc_spb") %>%
+  filter(probability > 0.5) %>%
+  select(Structure_Num)
+
+### 0 SPB backcrosses
+
+# Generate list of "pure" samples (IH and SMB)
+spb_smbc_pure <- rbind(spb_smbc_pure_ih, spb_smbc_pure_spb)
+
+# Generate list of "hybrid" samples (f1, f2, and backcrosses)
+spb_smbc_hybrids <- rbind(spb_smbc_f1, spb_smbc_f2, spb_smbc_bc_ih, spb_smbc_bc_spb)
+
+# Select the first column and convert to data frame
+spb_smbc_hybrids <- data.frame(spb_smbc_hybrids)
+
+# Save the list of bad samples as a .txt file without column names
+write_tsv(spb_smbc_hybrids, 
+          file = "../data/filtering_data/spb_smbc_hybrids.txt", 
+          col_names = FALSE)
+
+# Convert hybrids dataframe to vector for saving and loading later
+spb_smbc_hybrids <- as.vector(spb_smbc_hybrids[,1])
+
+# Save list to be loaded in 1d_ih.Rmd
+save(spb_smbc_hybrids, file = "../data/filtering_data/spb_smbc_hybrids.rda")
+```
+
+## ------------------------ END OF PHASE 2 OF STRUCTURE AND HYBRID ASSIGNMENT ANALYSIS ----------------------- ##
+
+
