@@ -63,7 +63,7 @@ In this step, we are sub-setting the fully filtered data to only include samples
 ##### Filter out genotype data:
 ```{r}
 ## retain only sample_id column and genotype data
-full_data <- full_data[,c(1,9:36)]
+full_data <- full_data[,c(2,10:37)]
 ```
 
 <b>Details on full genotype dataset:</b> <br>

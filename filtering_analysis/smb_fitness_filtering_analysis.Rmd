@@ -40,6 +40,7 @@ metadata <- read_excel("../raw_data/metadata.xlsx")
 # Convert characters to factors
 metadata <- metadata %>%
   mutate(sample_id = factor(sample_id)) %>%
+  mutate(structure_number = factor(structure_number)) %>%
   mutate(river_code = factor(river_code)) %>%
   mutate(sample_number = as.numeric(sample_number)) %>%
   mutate(easting = as.numeric(easting)) %>%
@@ -95,7 +96,8 @@ genotype_data <- read_excel("../raw_data/genotype_data.xlsx")
 
 # Convert characters to factors
 genotype_data <- genotype_data %>%
-  mutate(sample_id = factor(sample_id))
+  mutate(sample_id = factor(sample_id)) %>%
+  mutate(structure_number = factor(structure_number))
 ```
 
 #### 2b. Enumerate full genotype data; run the Rmd chunk below.
@@ -135,7 +137,7 @@ metadata <- metadata %>%
 ### STEP 3: Read in phenotype data data for samples
 In this step, we read in phenotype data for all fish included in the study. Data include: 
 
-   1. "sample_id": same as in metadata and genotype data
+   1. "sample_id": same as in metadata and genotype data (followed by "structure_number"; see Analysis 3, Phase 1, step 1e)
    2. "sex": male or female, determined by internal gonad examination, 
    3. "tl_alive": total length of the fish immediately upon capture by rod-and-reel, as measured from the tip of the lower mandible to the posterior tip of the caudal fin squeezed together
    4. "tl_dead": total length of the fish upon sample processesing (after approximately one month frozen)
@@ -163,6 +165,7 @@ phenotype_data <- read_excel("../raw_data/phenotype_data.xlsx")
 # Convert characters to factors
 phenotype_data <- phenotype_data %>%
   mutate(sample_id = factor(sample_id)) %>%
+  mutate(structure_number = factor(structure_number)) %>%
   mutate(sex = factor(sex)) %>%
   mutate(tl_alive = as.numeric(tl_alive)) %>%
   mutate(tl_dead = as.numeric(tl_dead)) %>%
@@ -202,6 +205,7 @@ metadata %>%
 phenotype_data %>% 
   filter(!phenotype_data$sample_id %in% metadata$sample_id)
 ```
+
 We found that the phenotype data file contained four samples (FER71, FBS47, FBS48, FBS49) that were not represented in the metadata after previous filtering (see STEP 2 above). Sample FER71 was already removed from the metadata (not present in the genotype data originally). The three remaining unmatched samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses (see Step 3b.2 below).
 
 ##### 3b.2. Remove unmatched sample id; run the Rmd chunk below.
@@ -252,7 +256,8 @@ load("data/processed_raw_data/phenotype_data.Rda")
 # Get full genotype dataset
 full_genotype_data <- merge(metadata, 
                    genotype_data,
-                   by = "sample_id")
+                   by = c("sample_id",
+                          "structure_number"))
 
 # Save the full genotype data
 save(full_genotype_data, file = "data/processed_raw_data/full_genotype_data.Rda")
@@ -262,7 +267,8 @@ save(full_genotype_data, file = "data/processed_raw_data/full_genotype_data.Rda"
 # Get full phenotype dataset
 full_phenotype_data <- merge(metadata, 
                    phenotype_data,
-                   by = "sample_id")
+                   by = c("sample_id",
+                          "structure_number"))
 
 # Save the full phenotype data
 save(full_phenotype_data, file = "data/processed_raw_data/full_phenotype_data.Rda")
@@ -270,7 +276,15 @@ save(full_phenotype_data, file = "data/processed_raw_data/full_phenotype_data.Rd
 # Merge all data
 full_data <- merge(full_genotype_data, 
                    full_phenotype_data,
-                   by = c("sample_id","river_code","sample_number","easting","northing","range_id","river","population"))
+                   by = c("sample_id",
+                          "structure_number",
+                          "river_code",
+                          "sample_number",
+                          "easting",
+                          "northing",
+                          "range_id",
+                          "river",
+                          "population"))
 ```
 
 #### 5b. Create new column in full data to categorize samples by their size bin (25 mm size intervals); run the Rmd chunk below.
