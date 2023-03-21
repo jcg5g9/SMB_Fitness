@@ -177,7 +177,6 @@ phenotype_data <- phenotype_data %>%
   mutate(hl = as.numeric(hl)) %>%
   mutate(ol = as.numeric(ol)) %>%
   mutate(sd_ray = as.numeric(sd_ray))
-
 ```
 
 #### 3b. Enumerate full phenotype data; run the Rmd chunk below.
