@@ -117,15 +117,11 @@ Here it is important to not include the 'popgroup = ' unless it is explicitly ne
 
 ##### Convert genepop to STRUCTURE format: files are stored in the directory `data/structure_data/`
 ```{r}
-# Generate structure file for SPB and all other Central Interior Highlands Bass
-genepop_structure("../data/genepop_data/spb_smbc_genepop.txt", 
+# Generate structure file
+genepop_structure("data/genepop_data/genepop.txt", 
                   locusnames = TRUE, 
-                  #popgroup = "data/genepop_data/spb_smbc_pops.csv",
-                  path = "../data/structure_data/input_data/spb_smbc_structure.txt")
+                  path = "data/structure_data/input_data/structure.txt")
 ```
-
-<b>Details on SMB and SMBC populations:</b> <br>
-<i>N</i><sub>populations</sub> = 25
 
 #### 1f: Generate batch list files and shell scripts for running STRUCTURE in parallel
 In this step, we are creating batch lists of command line code to run STRUCTURE analyses in parallel. Each batch list will contain a separate line of code to run a single replicate at an a priori determined number of populations (<i>K</i>, listed in the chunk above for each dataset). We will run each analysis in 10 replicates at each <i>K</i>, e.g.:
@@ -146,15 +142,18 @@ structure -K 2 -m mainparams -e extraparams -i structure_input.txt -o structure_
 .
 where, in the output name, the first number represents the <i>K</i> value for the run, and the last number represents the replicate.
 
-##### 1f.1. Generate batch list file; run the Rmd chunk below:
+##### 1f.1. Generate batch list file; run the Rmd chunk below.
 The Rmd chunk below generates a list of commands that contains the full cluster paths (/home/data/...) for necessary files.
 
-##### Generate batch commands: `batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt`
+##### Generate batch commands: `code/batch_cmd_lists/structure_batch_cmd_list.txt`
 ```{r}
-nk <- data.frame(c(1:25))
+# Define number of "potential" populations in dataset
+nk <- data.frame(c(1:5)) # There are 5 "pops" in the Genepop file
+
+# Define the number of reps to run per K value
 nreps <- data.frame(c(1:10))
 
-cat("", file="batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt")
+cat("", file="code/batch_cmd_lists/structure_batch_cmd_list.txt")
 
 # Run loop to create file for storing commands
 for(ii in 1:nrow(nk)) {
@@ -163,26 +162,25 @@ for(ii in 1:nrow(nk)) {
     
     structure_call <- paste("structure ")
 
-    param_files <- paste(" -m /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/param_files/mainparams_spb_smbc -e /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/param_files/extraparams")
+    param_files <- paste(" -m /home/jcg5g9/data/SMB_Fitness/ancestry_analysis/data/structure_data/param_files/mainparams -e /home/jcg5g9/data/SMB_Fitness/ancestry_analysis/data/structure_data/param_files/extraparams")
 
-    input <- paste(" -i /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/input_data/spb_smbc_structure.txt")
+    input <- paste(" -i /home/jcg5g9/data/SMB_Fitness/ancestry_analysis/data/structure_data/input_data/structure.txt")
   
-    output <- paste(" -o /home/jcg5g9/data/SNOLH_Genomics/structure_analysis/data/structure_data/output_data/spb_smbc_structure_output/")
+    output <- paste(" -o /home/jcg5g9/data/SMB_Fitness/ancestry_analysis/data/structure_data/output_data/structure_output/")
   
-    cat(paste(structure_call, "-K ", nk[ii,], param_files, input, output,
-            strsplit("spb_smbc_structure.txt", "_structure.txt", fixed=TRUE)[[1]][1], "_", nk[ii,], "_", nreps[aa,], sep=""),
+    cat(paste(structure_call, "-K ", nk[ii,], param_files, input, output, "structure_", nk[ii,], "_", nreps[aa,], sep=""),
       "\n", 
-      file=paste("batch_cmd_lists/spb_smbc_structure_batch_cmd_list.txt"),
+      file=paste("code/batch_cmd_lists/structure_batch_cmd_list.txt"),
       append=TRUE)
   }
 }
 ```
 
-##### 1f.2. Generate shell script; run the Rmd chunk below
+##### 1f.2. Generate shell script; run the Rmd chunk below.
 
 ##### IMPORTANT NOTE: This shell script was generated on the server directly, and thus the Rmd chunk below does not need to be run to generate the file. This is purely to keep a record of each script file. 
 
-##### Generate batch commands: `shell_scripts/spb_smbc_structure.sh`
+##### Generate batch commands: `shell_scripts/structure.sh`
 ```{r}
 #!/bin/bash
 #-------------------------------------------------------------------------------
@@ -229,11 +227,11 @@ In this step, we are preparing the mainparam and extraparam input files for STRU
 ##### 1g.1. Edit base mainparam STRUCTURE file (downloaded with STRUCTURE program) and generate a separate, unique mainparam file.
 
 <b>mainparam file:</b> <br>
-`../data/structure_data/param_files/mainparams_spb_smbc` <br> 
+`../data/structure_data/param_files/mainparams` <br> 
 
 ###### 1g.1.1. Edit "maxpops" value to reflect the number of populations designated in Step 3b above. These values should be the following:
 
-<b>SPB and SMBC populations:</b> 25 <br>
+<b>Sample and reference populations:</b> 5 <br>
 
 ###### 1g.1.2. Set the number of burn-in and MCMC iterations to run; these are the same for each analysis:
 
@@ -242,7 +240,7 @@ In this step, we are preparing the mainparam and extraparam input files for STRU
 
 ###### 1g.1.3. Set the number of individuals. These values should be the following:
 
-<b>Individuals:</b> 472 <br>
+<b>Individuals:</b> 135 <br>
 
 ###### 1g.1.4 Set the number of loci. These values should be the following:
 
@@ -260,27 +258,27 @@ In this step, we are preparing the mainparam and extraparam input files for STRU
 We did not change any of the default settings in the extraparams file (most importantly, we used the default admixture model), so we only used a single extraparams file.
 
 <b>extraparam file:</b> <br>
-`../data/structure_data/param_files/extraparams` <br> 
+`data/structure_data/param_files/extraparams` <br> 
 
 ### STEP 2: Population Structure Analysis with STRUCTURE
 
-See `snolh_structure_analysis.Rmd` (Line 166) for programs needed for analysis.
+See Line 22 for programs needed for analysis.
 
 #### 2a: Run STRUCTURE analysis using the input data generated in STEP 1. Navigate to `shell_scripts/` Be sure that all relative and full paths to all input files and output destination directories are set up properly (ideally, this is already done within this GitHub repo). This command line code assumes capability to run the code using SLURM or a SLURM-like cluster scheduling software.
 
-Run `sbatch spb_smbc_structure.sh`
+Run `sbatch structure.sh`
 
-#### 2b: Structure output files are generated and stored here: `../data/structure_data/output_data/spb_other_structure_output/`.
+#### 2b: Structure output files are generated and stored here: `data/structure_data/output_data/structure_output/`.
 
 #### 2c: Compress output directory into a zip file compatible with Structure Selector (Li and Liu 2017) or Structure Harvester (Earl and vonHoldt 2011) online.
 
 #### 2d: Submit zip directory to Structure Selector or Structure Harvester to extract summary results.
 
-#### 2e: Copy detlaK table (Evanno et al. YEAR) and save as excel file here: `../data/structure_data/summary_data`
+#### 2e: Copy detlaK table (Evanno et al. 2005) and save as excel file here: `data/structure_data/summary_data/`
 We further analyzed deltak results graphically in Step 2g.4
 
-#### 2f: Copy puechmaille table (Puechmaille et al. 2016.) and save as excel file here:
-`../data/structure_data/summary_data`
+#### 2f: Copy puechmaille table (Puechmaille et al. 2016) and save as excel file here:
+`data/structure_data/summary_data/`
 We found that Puechmaille metrics universally supported K=2, and we graph the results for deltak and Puechmaille in Step 2g.5.
 
 #### 2g: Visualize STRUCTURE runs for all data combinations
@@ -290,35 +288,35 @@ We found that Puechmaille metrics universally supported K=2, and we graph the re
 ##### Convert STRUCTURE files to aligned Q files for CLUMPP: 
 ```{r}
 # Get a list of structure files for each data combination
-spb_smbc_sfiles <- list.files("../data/structure_data/output_data/spb_smbc_structure_output/", 
+sfiles <- list.files("data/structure_data/output_data/structure_output/", 
                                full.names = T)
 
 # Extract q value information (ancestry proportions) from each run for each K value for each individual from the STRUCTURE output files in the directories listed above
-spb_smbc_Q <- readQ(spb_smbc_sfiles)
+Q <- readQ(sfiles)
 
 # Tabulate information from the q lists
-spb_smbc_tab <- tabulateQ(spb_smbc_Q)
+tab <- tabulateQ(Q)
 
 # Summarize information from tabultions above
-spb_smbc_summary <- summariseQ(spb_smbc_tab)
+summary <- summariseQ(tab)
 
 # Extract deltaK and associated summary information using Evanno method
-spb_smbc_evanno <- evannoMethodStructure(spb_smbc_summary, returnplot = F)
+evanno <- evannoMethodStructure(summary, returnplot = F)
 
 # Set infinity and NA to zero arbitrarily
-spb_smbc_evanno$deltaK[spb_smbc_evanno$deltaK == "Inf"] <- 0
-spb_smbc_evanno$deltaK[is.na(spb_smbc_evanno$deltaK)] <- 0
+evanno$deltaK[evanno$deltaK == "Inf"] <- 0
+evanno$deltaK[is.na(evanno$deltaK)] <- 0
 
 # Write Evanno table to Excel table for manuscript preparation.
 
 ## Convert to data frame
-spb_smbc_evanno <- as.data.frame(spb_smbc_evanno)
+evanno <- as.data.frame(evanno)
 
 ## Write Excel file
-write_xlsx(spb_smbc_evanno, "../data/structure_data/deltak_data/spb_smbc_deltak.xlsx")
+write_xlsx(evanno, "data/structure_data/deltak_data/deltak.xlsx")
 
 # Align replicate runs for each K to correct label switching
-spb_smbc_align <- alignK(spb_smbc_Q)
+align <- alignK(Q)
 ```
 
 ##### 2g.2. Export CLUMPP compatible files for CLUMPP analysis; run the rmd chunk below to export CLUMPP associated files for each K.
