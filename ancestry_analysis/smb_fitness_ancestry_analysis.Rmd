@@ -67,7 +67,7 @@ full_data <- full_data[,c(2,10:37)]
 ```
 
 <b>Details on full genotype dataset:</b> <br>
-<i>N</i><sub>samples</sub> = 135 <br>
+<i>N</i><sub>samples</sub> = 136 <br>
 <i>N</i><sub>loci</sub> = 14 <br>
 
 #### 1c: Generate a new excel file with filtered genotype data; run the Rmd chunk below.
@@ -240,7 +240,7 @@ In this step, we are preparing the mainparam and extraparam input files for STRU
 
 ###### 1g.1.3. Set the number of individuals. These values should be the following:
 
-<b>Individuals:</b> 135 <br>
+<b>Individuals:</b> 136 <br>
 
 ###### 1g.1.4 Set the number of loci. These values should be the following:
 
@@ -275,24 +275,24 @@ Run `sbatch structure.sh`
 #### 2d: Submit zip directory to Structure Selector or Structure Harvester to extract summary results.
 
 #### 2e: Copy detlaK table (Evanno et al. 2005) and save as excel file here: `data/structure_data/summary_data/`
-We further analyzed deltak results graphically in Step 2g.4
+We further analyzed deltak results graphically in Step 2g.4.
 
 #### 2f: Copy puechmaille table (Puechmaille et al. 2016) and save as excel file here:
 `data/structure_data/summary_data/`
 We found that Puechmaille metrics universally supported K=2, and we graph the results for deltak and Puechmaille in Step 2g.5.
 
-#### 2g: Visualize STRUCTURE runs for all data combinations
+#### 2g: Visualize STRUCTURE runs for all data combinations.
 
 ##### 2g.1. Convert STRUCTURE files into aligned Q files compatible with analysis in the program CLUMPP (Jakobbson and Rosenberg 2007); run the rmd chunk below.
 
 ##### Convert STRUCTURE files to aligned Q files for CLUMPP: 
 ```{r}
 # Get a list of structure files for each data combination
-sfiles <- list.files("data/structure_data/output_data/structure_output/", 
-                               full.names = T)
+s <- list.files("data/structure_data/output_data/structure_output/",
+                full.names = T)
 
 # Extract q value information (ancestry proportions) from each run for each K value for each individual from the STRUCTURE output files in the directories listed above
-Q <- readQ(sfiles)
+Q <- readQ(s)
 
 # Tabulate information from the q lists
 tab <- tabulateQ(Q)
@@ -330,10 +330,10 @@ Large-K-Greedy algorithm (paramrep = 3) <br>
 
 ##### Export CLUMPP files:
 ```{r}
-clumppExport(spb_smbc_align, 
+clumppExport(align, 
             parammode = 3, 
             paramrep = 10000,
-            exportpath = "../data/structure_data/clumpp_data/spb_smbc_clumpp")
+            exportpath = "../data/structure_data/clumpp_data/clumpp")
 ```
 
 The code above generates a .txt file (pop_K#-combined.txt) with combined cluster ancestry proportions for each individual at each K and stores it in a separate directory labeled "pop_K#", where '#' is the corresponding K value. Additionally, the code generates an accompanying "paramfile" that is input for CLUMPP, which contains information on parameters to generate merged datasets across our 10 replicates at each K.
@@ -362,12 +362,12 @@ pop_K#-combined-aligned.txt <br>
 
 ##### 2g.4. Plot deltaK results; run the rmd chunk below.
 
-##### deltak results for SPB and SMBC populations: `02_spb_smbc_deltaK.pdf` 
+##### deltak results for SPB and SMBC populations: `deltaK.pdf` 
 ```{r}
 # DeltaK results
-pdf("../figures/structure_figures/deltak_plots/02_spb_smbc_deltaK.pdf", width=8, height=5)
+pdf("../figures/deltaK.pdf", width=8, height=5)
 
-ggplot(spb_smbc_evanno, aes(x=k, y=deltaK)) +
+ggplot(evanno, aes(x=k, y=deltaK)) +
   geom_point() + 
   geom_line() +
   theme_cowplot(theme_set(12)) +
@@ -376,7 +376,7 @@ ggplot(spb_smbc_evanno, aes(x=k, y=deltaK)) +
   theme(axis.title = element_text(size = 15)) +
   theme(axis.title.x = element_text(face = "italic")) +
   labs(x = "K", y = "deltaK") + 
-  scale_x_continuous("K", labels = as.character(spb_smbc_evanno$k), breaks = spb_smbc_evanno$k)
+  scale_x_continuous("K", labels = as.character(evanno$k), breaks = evanno$k)
 
 dev.off()
 ```
@@ -385,14 +385,13 @@ We found strongest support for K=2 using the deltaK metric. We also found strong
 
 ##### 2g.5. Plot STRUCTURE runs at best K value (K=2); run the rmd chunk below.
 
-##### STRUCTURE results of SPB and SMBC populations: `02_spb_smbc_k2.pdf`
+##### STRUCTURE results: `k2.pdf`
 ```{r}
-brewer.pal(n = 12, name = 'BrBG')
 # Read in combined-merged Q table from CLUMPP
-spb_smbc_k2 <- readQ("../data/structure_data/clumpp_data/spb_smbc_clumpp/pop_K2/pop_K2-combined-merged.txt")
+k2 <- readQ("../data/structure_data/clumpp_data/clumpp/pop_K2/pop_K2-combined-merged.txt")
 
 # Visualize Structure
-plotQ(spb_smbc_k2,
+plotQ(k2,
       grplab = spb_smbc[,c(13,7)],
       ordergrp = F,
       selgrp = "River",
@@ -419,11 +418,11 @@ plotQ(spb_smbc_k2,
       imgtype = "pdf",
       height = 10, 
       width = 100,
-      outputfilename = "02_spb_smbc_k2",
-      exportpath = "../figures/structure_figures/q_plots")
+      outputfilename = "k2",
+      exportpath = "figures")
 ```
 
-This figure is the basis for Figure 3a and Figure S2a in the manuscript.
+This figure is the basis for....
 
 #### 2h: Analyze ancestry proportions from SPB for all river populations in the SMBC run the Rmd cbhunk below:
 In this step, we summarize ancestry proportions for each river calculated in STRUCTURE. Specifically, we calculate the average SPB ancestry across rivers at K=2.
@@ -431,7 +430,7 @@ In this step, we summarize ancestry proportions for each river calculated in STR
 ##### Summarize ancestry proportions for rivers:
 ```{r}
 # column bind metadata with q values determined in STRUCTURE
-spb_smbc_k2 <- cbind(spb_smbc_metadata, spb_smbc_k2)
+k2 <- cbind(spb_smbc_metadata, spb_smbc_k2)
 
 # select only the river column, along with the columns containing q values from structure
 spb_smbc_k2 <- spb_smbc_k2[,c(7,14:15)]
