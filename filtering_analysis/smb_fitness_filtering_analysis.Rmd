@@ -23,7 +23,11 @@ library(cowplot)
 library(devtools)
 library(pophelper)
 library(genepopedit)
+library(nlme)
+library(lme4)
+library(MuMIn)
 ```
+
 
 ## PHASE 1: DATA READ-IN AND PREPARATION
 
@@ -104,14 +108,12 @@ genotype_data <- genotype_data %>%
 
 ##### Summarize genotype data:
 ```{r}
-# Get full sample number (N = 135)
+# Get full sample number (N = 136)
 genotype_data %>% 
   count()
 ```
 
-There was a discrepancy in the number of sample ids present in the metadata (<i>N</i> = 136) and the number present in the genotype data (<i>N</i> = 135). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding metadata and genotype data in both datasets.
-
-##### 2b.1. Compare metadata and genotype data to resolve sample number discrepancy; run the Rmd chunk below.
+##### 2b.1. Compare metadata and genotype data to check for sample number discrepancies; run the Rmd chunk below.
 
 ##### Resolve sample number discrepancy:
 ```{r}
@@ -123,16 +125,7 @@ metadata %>%
 genotype_data %>% 
   filter(!genotype_data$sample_id %in% metadata$sample_id)
 ```
-We found that the metadata file contained a sample (FER71) that was not represented in the genotype data. We are unsure whether we failed to genotype this fish or whether we lost the data in transition at some point. Sample FER71 was therefore not considered part of the final dataset and was removed from downstream analyses (see Step 2b.2 below).
-
-##### 2b.2. Remove unmatched sample id; run the Rmd chunk below.
-
-##### Resolve sample number discrepancy:
-```{r}
-# Remove sample FER71 from the metadata set
-metadata <- metadata %>%
-  filter(sample_id != "FER71")
-```
+We found no discrepancies in the data.
 
 ### STEP 3: Read in phenotype data data for samples
 In this step, we read in phenotype data for all fish included in the study. Data include: 
@@ -191,7 +184,7 @@ phenotype_data %>%
   count()
 ```
 
-There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 135) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
+There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 136) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
 
 ##### 3b.1. Compare metadata and phenotype data to resolve sample number discrepancy; run the Rmd chunk below.
 
@@ -206,7 +199,7 @@ phenotype_data %>%
   filter(!phenotype_data$sample_id %in% metadata$sample_id)
 ```
 
-We found that the phenotype data file contained four samples (FER71, FBS47, FBS48, FBS49) that were not represented in the metadata after previous filtering (see STEP 2 above). Sample FER71 was already removed from the metadata (not present in the genotype data originally). The three remaining unmatched samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses (see Step 3b.2 below).
+We found that the phenotype data file contained three samples (FBS47, FBS48, FBS49) that were not represented in the metadata after previous filtering (see STEP 2 above). The three unmatched samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses (see Step 3b.2 below).
 
 ##### 3b.2. Remove unmatched sample id; run the Rmd chunk below.
 
@@ -214,7 +207,6 @@ We found that the phenotype data file contained four samples (FER71, FBS47, FBS4
 ```{r}
 # Remove sample FER71 from the metadata set
 phenotype_data <- phenotype_data %>%
-  filter(sample_id != "FER71") %>%
   filter(sample_id != "FBS47") %>%
   filter(sample_id != "FBS48") %>%
   filter(sample_id != "FBS49")
@@ -287,6 +279,69 @@ full_data <- merge(full_genotype_data,
                           "population"))
 ```
 
+Here, we found that one individual in the Elk River, Neosho Bass range (FER71) was missing data for tl_alive (total length while alive). We were therefore not able to assign this fish to a size category. However, we did have consensus age (age = 2) and tl_dead (total length while dead, 224.0mm). To maximize sample size, we retained this sample by imputing tl_alive as the expected value at 224.0mm for age-2 fish based on a mixed-effect linear model (with stream as a random effect to account for any variation between stream ecologies), where x = tl_dead and y = tl_alive. 
+
+#### 5b. Impute total length while alive (tl_alive) for sample FER71; run the Rmd chunk below:
+In this step, we filter the dataset to only age-2 fish, and we examine the linear relationship between total length while dead (tl_dead) and total length while alive (tl_alive) by testing for a significant correlation between these variables. We use the resulting linear model to impute the total length of an average fish at tl_dead = 224mm (the tl_dead for FER71).
+
+##### Impute tl_alive from tl_dead for sample FER71 and plot linear model: `figures/impute_tl_fer71.pdf`
+```{r}
+# Filter only age-2 fish and retain only tl_alive, tl_dead, and river columns. Drop NA values.
+full_data_age2 <- full_data %>%
+  filter(consensus_age == "2") %>%
+  select(tl_alive, tl_dead, river) %>% 
+  drop_na()
+
+# Run a linear mixed effect model, with stream as a random effect
+model <- lme(tl_alive ~ tl_dead, 
+             random = ~1|river, 
+             full_data_age2)
+
+# Summarize model output and coefficients
+summary(model)
+
+# Get r-squared value
+r.squaredGLMM(model)
+
+# Calculate tl_alive at 224mm tl_dead using model output coefficients:
+1.013964*224 + 3.900107
+
+# Plot linear model
+pdf("figures/impute_tl_fer71.pdf", width = 6, height = 5)
+
+ggplot(full_data_age2, aes(x = tl_dead, y = tl_alive)) + 
+  geom_point(fill = "grey", color = "black", pch = 21, size = 2) +
+  theme_set(theme_cowplot(12)) +
+  geom_smooth(method = "lm", color = "black") +
+  geom_vline(xintercept = 224, linetype = "longdash", size = 1) + 
+  geom_hline(yintercept = 231, linetype = "longdash", size = 1) +
+  labs(x = "Total length dead (mm)", y = "Total length alive (mm)") +
+  theme(axis.text = element_text(size = 15)) + 
+  theme(axis.title = element_text(size = 15)) +
+  scale_x_continuous(expand = c(0,0)) + 
+  scale_y_continuous(expand = c(0,0))
+
+dev.off()
+```
+
+This figure is the basis for Supplementary Figure (XXX) in the final manuscript.
+
+We found a strong correlation between total length dead and total length alive (<i>p</i> = < 0.0001; r<sup>2</sup> = 0.955), with the equation:
+
+tl_alive(tl_dead) = 1.013964(tl_dead) + 3.900107
+
+Thus, tl_alive(224) = 231.028, which we rounded to 231 mm. We input this value for tl_alive for this sample for all subsequent analyses.
+
+##### 5b.1. Input the tl_alive value for sample FER71 (231) in the full dataframe; run the Rmd chunk below.
+```{r}
+# Input the calculated value for tl_alive for sample FER71
+full_data$tl_alive[116] <- "231"
+
+# Convert tl_alive column back to numeric
+full_data <- full_data %>%
+  mutate(tl_alive = as.numeric(tl_alive))
+```
+
 #### 5b. Create new column in full data to categorize samples by their size bin (25 mm size intervals); run the Rmd chunk below.
 As part of the experimental design of this study, we aimed to collect approximately 10 fish per 25 mm size cohort, starting with 200 mm total length when alive (tl_alive = 200-224.9mm, 225-249.9mm, etc.) in order to run models for individual growth rate and maximum total length (see Analysis 4).
 
@@ -335,7 +390,7 @@ full_data %>%
   group_by(range_id) %>%
   count()
 
-# Summarize full data by river within range (Neosho Bass, NB; Smallmouth Bass (SMB) )
+# Summarize full data by river within range (Neosho Bass, NB; Smallmouth Bass (SMB))
 full_data %>% 
   group_by(range_id, river) %>%
   count()
@@ -364,14 +419,14 @@ full_data %>%
 ### Data summary:
 
 ## Total
-<b><i>N</i><sub>total</sub> = 135 </b><br>
+<b><i>N</i><sub>total</sub> = 136 </b><br>
 
 ## By species (native range)
-<b><i>N</i><sub>Neosho_Bass</sub> = 115 </b><br>
+<b><i>N</i><sub>Neosho_Bass</sub> = 116 </b><br>
 <i>N</i><sub>Smallmouth Bass</sub> = 20 <br>
 
 ## By river (wihtin species)
-<i>N</i><sub>nb_elk</sub> = 69 <br>
+<i>N</i><sub>nb_elk</sub> = 70 <br>
 <i>N</i><sub>nb_bigsugar</sub> = 46 <br>
 
 <i>N</i><sub>smb_white</sub> = 2 <br>
@@ -379,11 +434,11 @@ full_data %>%
 <i>N</i><sub>smb_crooked</sub> = 10 <br>
 
 ## By sex (within Neosho Bass range)
-<i>N</i><sub>male</sub> = 56 <br>
+<i>N</i><sub>male</sub> = 57 <br>
 <i>N</i><sub>female</sub> = 59 <br>
 
 ## By sex within river
-<i>N</i><sub>elk_male</sub> = 37 <br>
+<i>N</i><sub>elk_male</sub> = 38 <br>
 <i>N</i><sub>elk_female</sub> = 32 <br>
 
 <i>N</i><sub>bigsugar_male</sub> = 19 <br>
@@ -400,7 +455,7 @@ full_data %>%
 <i>N</i><sub>bigsugar_375-400+</sub> = 4 <br>
 
 <i>N</i><sub>elk_200-225</sub> = 10 <br>
-<i>N</i><sub>elk_225-250</sub> = 13 <br>
+<i>N</i><sub>elk_225-250</sub> = 14 <br>
 <i>N</i><sub>elk_250-275</sub> = 17 <br>
 <i>N</i><sub>elk_275-300</sub> = 12 <br>
 <i>N</i><sub>elk_300-325</sub> = 7 <br>
@@ -429,7 +484,7 @@ full_data %>%
 <i>N</i><sub>elk_200-225_female</sub> = 4 <br>
 <i>N</i><sub>elk_200-225_male</sub> = 6 <br>
 <i>N</i><sub>elk_225-250_female</sub> = 8 <br>
-<i>N</i><sub>elk_225-250_male</sub> = 5 <br>
+<i>N</i><sub>elk_225-250_male</sub> = 6 <br>
 <i>N</i><sub>elk_250-275_female</sub> = 8 <br>
 <i>N</i><sub>elk_250-275_male</sub> = 9 <br>
 <i>N</i><sub>elk_275-300_female</sub> = 5 <br>
