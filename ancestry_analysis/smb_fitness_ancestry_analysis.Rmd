@@ -12,10 +12,8 @@ output: html_document
 For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see citation below in under "Programs Needed") to assess individual proportions of ancestry derived from Smallmouth Bass and Neosho Bass. We analyze all sample fish (obtained from Big Sugar Creek and Elk River within the Neosho Bass native range) together with reference fish (obtained from Crooked Creek, White River, and Tablerock Lake within the Smallmouth Bass native range). Knowing that Smallmouth Bass in the White River drainage are of pure genomic origin (Gunn et al. 2022), we use the minimum ancestry proportion of Smallmouth Bass derived from our microsatellites as a lower bound to identify "pure" vs. "admixed" fish in the Neosho Bass range. Ancestry groups are then used to assess growth and body condition in subsequent analyses.
 
 ## Phases of Analysis
-### Phase 1: Structure of all individuals at all snps
-### Phase 2: Structure and hybrid assignment of Spotted Bass (SPB) and the Smallmouth Bass species complex (SMBC)
-### Phase 3: Structure and hybrid assignment of Smallmouth Bass (SMB) and species in the Central Interior Highlands (CIH)
-### Phase 4: Structure and hybrid assignment of species in the Central Interior Highlands
+### Phase 1: Ancestry inference
+### Phase 2: Ancestry group assignment and visualization
 
 Programs needed:
 
@@ -44,6 +42,9 @@ library(graph4lg)
 library(RColorBrewer)
 library(forcats)
 ```
+
+## PHASE 1: ANCESTRY INFERENCE
+In this phase of analysis, we use the software program STRUCTURE (see line 20 above) to assess individual ancestry in a Bayesian framework based on genotypes at 14 microsatellite loci. 
 
 ### STEP 1: Data preparation
 In this step, we prepare all genotype data from the full, filtered dataset (`../filtering_analysis/data/processed_raw_data/full_data.rda`) for ancestry inference in the program STRUCTURE. We subset out all metadata and phenotype data and retain only unique sample IDs and microsatellite genotype information.
