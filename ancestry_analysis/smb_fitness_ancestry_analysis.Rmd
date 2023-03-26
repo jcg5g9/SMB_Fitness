@@ -244,15 +244,15 @@ In this step, we are preparing the mainparam and extraparam input files for STRU
 
 ###### 1g.1.4 Set the number of loci. These values should be the following:
 
-<b>Loci:</b> 15 <br>
+<b>Loci:</b> 14 <br>
 
-###### 1g.1.5. Set 'ONEROWPERIND' to '0'
+###### 1g.1.5. Set 'ONEROWPERIND' to '0'.
 
-###### 1g.1.6. Set 'LABEL' to '1'
+###### 1g.1.6. Set 'LABEL' to '1'.
 
-###### 1g.1.7. Set 'POPDATA' to '1'
+###### 1g.1.7. Set 'POPDATA' to '1'.
 
-###### 1g.1.8. Set 'POPFLAG' to '0'
+###### 1g.1.8. Set 'POPFLAG' to '0'.
 
 ##### 1g.2. Edit base extraparam STRUCTURE file (downloaded with STRUCTURE program).
 We did not change any of the default settings in the extraparams file (most importantly, we used the default admixture model), so we only used a single extraparams file.
@@ -260,7 +260,7 @@ We did not change any of the default settings in the extraparams file (most impo
 <b>extraparam file:</b> <br>
 `data/structure_data/param_files/extraparams` <br> 
 
-### STEP 2: Population Structure Analysis with STRUCTURE
+### STEP 2: Population Structure Analysis with STRUCTURE.
 
 See Line 22 for programs needed for analysis.
 
