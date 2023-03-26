@@ -55,7 +55,7 @@ metadata <- metadata %>%
 ```
 
 #### 1b. Enumerate full metadata with samples and reference; run the Rmd chunk below.
-In this step, we conduct a preliminary data summary to see how many samples are in the raw metadata. We compare all metadata with raw data files (genotypes and phenotypes) in (STEP...) below.
+In this step, we conduct a preliminary data summary to see how many samples are in the raw metadata. We compare all metadata with raw data files (genotypes and phenotypes) in STEP 2b.1 and STEP 3b.1 below.
 
 ##### Summarize metadata:
 ```{r}
