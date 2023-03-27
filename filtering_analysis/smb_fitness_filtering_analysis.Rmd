@@ -28,7 +28,6 @@ library(lme4)
 library(MuMIn)
 ```
 
-
 ## PHASE 1: DATA READ-IN AND PREPARATION
 
 ### STEP 1: Read in metadata for samples (all fish collected from the Neosho Bass range) and references (all fish collected from the Smallmouth Bass range)
@@ -368,6 +367,8 @@ full_data <- full_data %>%
 save(full_data, file = "data/processed_raw_data/full_data.Rda")
 ```
 
+### ----------------------- END OF PHASE 1: DATA READ-IN AND PREPARATION ----------------------- ###
+
 ## PHASE 2: DATA SUMMARIZATION AND ENUMERATION
 In this phase of the analysis, we fully summarize the data so that we know how many samples belong to each group of interest for the final manuscript. 
 
@@ -499,3 +500,9 @@ full_data %>%
 <i>N</i><sub>elk_375-400+_male</sub> = 4 <br>
 
 These sample sizes were used as the basis for Table 1 and the sample size (N) column of Table S1 in the final manuscript.
+
+### ----------------------- END OF PHASE 2: DATA SUMMARIZATION AND ENUMERATION ----------------------- ###
+
+### ----------------------- END OF ANALYSIS 2: FILTERING ANALYSIS ----------------------- ###
+
+

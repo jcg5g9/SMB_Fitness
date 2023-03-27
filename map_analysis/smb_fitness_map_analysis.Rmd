@@ -141,4 +141,4 @@ After generating outline maps, colored-in shapes and other map details were supe
 
 ## ------------------------ END OF PHASE 1: GENERATE MAPS ----------------------- ##
 
-## ------------------------ END OF MAP ANALYSIS  ----------------------- ##
+## ------------------------ END OF ANALYSIS 1: MAP ANALYSIS  ----------------------- ##

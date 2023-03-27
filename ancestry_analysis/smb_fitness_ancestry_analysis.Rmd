@@ -363,7 +363,7 @@ pop_K#-combined-aligned.txt <br>
 
 ##### 2g.4. Plot deltaK results; run the rmd chunk below.
 
-##### deltak results for SPB and SMBC populations: `deltaK.pdf` 
+##### Plot deltak results: `deltaK.pdf` 
 ```{r}
 # DeltaK results
 pdf("figures/deltaK.pdf", width=8, height=5)
@@ -382,21 +382,108 @@ ggplot(evanno, aes(x=k, y=deltaK)) +
 dev.off()
 ```
 
-We found strongest support for K=2 using the deltaK metric. We also found strongest support for K=2 using the Puechmaille metric. We therefore present result for K=2 in Step 2g.5 below. Results for deltaK and Puechmaille metrics are given in Tables S1 and S2, respectively.
+We found strongest support for K=2 using the deltaK metric. We also found strongest support for K=2 using the Puechmaille metric. We therefore present result for K=2 in Phase 2 below. Results for deltaK and Puechmaille metrics are given in Tables S2 and S3, respectively.
 
-##### 2g.5. Plot STRUCTURE runs at best K value (K=2); run the rmd chunk below.
+#### 2e. Gather ancestry coefficient data from STRUCTURE results and merge with metadata for downstream analyses.
+In this step, we collect Smallmouth Bass and Neosho Bass ancestry coefficients for each individual sample, and we combine with metadata for future analyses.
+
+##### 2e.1. Isolate ancestry coefficients from STRUCTURE data; run the Rmd chunk below.
+
+##### Isolate ancestry coefficient data:
+```{r}
+# Read in merged runs from STRUCTURE (file generated in CLUMPP)
+ancestry <- read.table("data/structure_data/clumpp_data/pop_K2/pop_K2-combined-merged.txt", header = F)
+
+# Remove first and last columns (they are not needed)
+ancestry <- ancestry[,-c(1,4)]
+
+## Bind Structure Number metadata to ancestry data
+# Load in saved metadata
+load("../filtering_analysis/data/processed_raw_data/metadata.Rda")
+
+# Bind metadata to ancestry data
+ancestry <- cbind(metadata$structure_number, 
+                  ancestry)
+
+# Name columns based on majority ancestry
+colnames(ancestry) <- c("structure_number", "nb", "smb")
+
+# Save processed ancestry data
+save(ancestry, file = "data/structure_data/ancestry_data/ancestry.Rda")
+```
+
+### ----------------------- END OF PHASE 1: ANCESTRY INFERENCE ----------------------- ###
+
+## PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION
+In this phase of analysis, we use the individual ancestry coefficients for Smallmouth Bass and Neosho Bass calculated in STRUCTURE (see Phase 1 above) to assign each fish in the Neosho range (Big Sugar Creek and Elk River) to one of three ancestry groups: 1) pure Smallmouth Bass, 2) pure Neosho Bass, or 3) Admixed. We visualize ancestry coefficients and ancestry group assignment proportions in each river, and we use group assignments for growth and heterozygosity-fitness correlation analysis in Analyses 4 and 5, respectively.
+
+### STEP 1: Order ancestry data for effective plotting; run the Rmd chunk below.
+In this step, we arrange samples with the Smallmouth Bass range (reference samples) and samples within the Neosho Bass range (Big Sugar Creek and Elk River samples) in order of Smallmouth Bass ancestry coefficient for effective plotting.
+
+##### Arrange Smallmouth Bass reference samples and Neosho Bass samples separately in order of Smallmouth Bass ancestry coefficient:
+```{r}
+# Load in processed ancestry data
+load("data/structure_data/ancestry_data/ancestry.Rda")
+
+# Separate out and create data frame for Neosho Bass samples only
+ancestry_nb <- ancestry[c(1:116),]
+
+# Name columns based on majority ancestry
+colnames(ancestry_nb) <- c("structure_number", "nb", "smb")
+
+# Arrange samples in order of Smallmouth Bass ancestry
+ancestry_nb <- ancestry_nb %>%
+  arrange(desc(smb))
+
+# Separate out and create data frame for Smallmouth Bass samples only
+ancestry_smb <- ancestry[c(117:136),]
+
+# Name columns based on majority ancestry
+colnames(ancestry_smb) <- c("structure_number", "nb", "smb")
+
+# Arrange samples in order of Smallmouth Bass ancestry
+ancestry_smb <- ancestry_smb %>%
+  arrange(desc(smb))
+
+# Combine (rbind) nb and smb samples in their arranged order
+ancestry_ordered <- rbind(ancestry_smb, 
+                  ancestry_nb)
+
+# Create rank order column for later plotting (column to give the order of plotting, from 1 to 136)
+ancestry_ordered$rank_order <- factor(c(1:136))
+
+# Load in processed metadata from filtering analysis
+load("../filtering_analysis/data/processed_raw_data/metadata.Rda")
+
+# Merge rank-ordered data with metadata so that the rank_order column appears in metadata
+ancestry_metadata <- merge(metadata, 
+                           ancestry_ordered,
+                           by = "structure_number")
+
+# Save ancestry metadata for downstream analyses
+save(ancestry_metadata, file = "data/structure_data/ancestry_data/ancestry_metadata.Rda")
+```
+
+### STEP 2: Plot STRUCTURE runs at best K value (K=2); run the rmd chunk below.
 
 ##### STRUCTURE results: `k2.pdf`
 ```{r}
+# Load in ancestry metadata for proper sample ordering in STRUCTURE plot
+load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
+
+ancestry_metadata <- ancestry_metadata %>%
+  mutate(structure_number = as.character(structure_number)) %>%
+  mutate(rank_order = as.character(rank_order))
+
 # Read in combined-merged Q table from CLUMPP
-k2 <- readQ("../data/structure_data/clumpp_data/clumpp/pop_K2/pop_K2-combined-merged.txt")
+k2 <- readQ("data/structure_data/clumpp_data/pop_K2/pop_K2-combined-merged.txt")
 
 # Visualize Structure
 plotQ(k2,
-      grplab = spb_smbc[,c(13,7)],
+      grplab = ancestry_metadata[,c(1,12)],
       ordergrp = F,
-      selgrp = "River",
-      subsetgrp = c("Illinois_River", "Glover_River_SPB", "Lake_Superior_Chequamegon_Bay", "Lake_Erie_Central_Basin_Ohio", "Oneida_Lake_NY", "Smith_Fork_Creek", "Skiatook_Lake", "Honey_Creek", "Spavinaw_Creek", "Baron_Fork", "Caney_Creek", "Lee_Creek", "Blackfork_Creek", "Honobia_Creek", "Little_River", "Glover_River", "Big_Eagle_Creek", "Upper_Mountain_Fork", "Mountain_Fork", "Pero_Creek_Rolling_Fork_trib", "Cossatot_River_AR", "Western_Saline_River_AR", "Little_Missouri_River_AR", "Caddo_River_AR", "Ouachita_River_AR", "Eastern_Saline_River_AR"),
+      selgrp = "rank_order",
+      subsetgrp = c("1",	"2",	"3",	"4",	"5",	"6",	"7",	"8",	"9",	"10",	"11",	"12",	"13",	"14",	"15",	"16",	"17",	"18",	"19",	"20",	"21",	"22",	"23",	"24",	"25",	"26",	"27",	"28",	"29",	"30",	"31",	"32",	"33",	"34",	"35",	"36",	"37",	"38",	"39",	"40",	"41",	"42",	"43",	"44",	"45",	"46",	"47",	"48",	"49",	"50",	"51",	"52",	"53",	"54",	"55",	"56",	"57",	"58",	"59",	"60",	"61",	"62",	"63",	"64",	"65",	"66",	"67",	"68",	"69",	"70",	"71",	"72",	"73",	"74",	"75",	"76",	"77",	"78",	"79",	"80",	"81",	"82",	"83",	"84",	"85",	"86",	"87",	"88",	"89",	"90",	"91",	"92",	"93",	"94",	"95",	"96",	"97",	"98",	"99",	"100",	"101",	"102",	"103",	"104",	"105",	"106",	"107",	"108",	"109",	"110",	"111",	"112",	"113",	"114",	"115",	"116",	"117",	"118",	"119",	"120",	"121",	"122",	"123",	"124",	"125",	"126",	"127",	"128",	"129",	"130",	"131",	"132",	"133",	"134",	"135",	"136"),
       showgrplab = T,
       showlegend = F, 
       showsp = F, 
@@ -414,7 +501,7 @@ plotQ(k2,
       pointsize = 4, 
       barbordercolour = "black",
       barbordersize = 0.1, 
-      clustercol = c("#4393C3", "#D95F02"),
+      clustercol = c("deepskyblue", "deeppink2"),
       exportplot = T,
       imgtype = "pdf",
       height = 10, 
