@@ -280,7 +280,7 @@ We further analyzed deltak results graphically in Step 2g.4.
 
 #### 2f: Copy puechmaille table (Puechmaille et al. 2016) and save as excel file here:
 `data/structure_data/summary_data/`
-We found that Puechmaille metrics universally supported K=2, and we graph the results for deltak and Puechmaille in Step 2g.5.
+We found that Puechmaille metrics universally supported K=2, and we graph the results for deltaK and Puechmaille in Step 2g.5.
 
 #### 2g: Visualize STRUCTURE runs for all data combinations.
 
@@ -314,7 +314,7 @@ evanno$deltaK[is.na(evanno$deltaK)] <- 0
 evanno <- as.data.frame(evanno)
 
 ## Write Excel file
-write_xlsx(evanno, "data/structure_data/deltak_data/deltak.xlsx")
+write_xlsx(evanno, "data/structure_data/summary_data/deltak.xlsx")
 
 # Align replicate runs for each K to correct label switching
 align <- alignK(Q)
@@ -334,13 +334,13 @@ Large-K-Greedy algorithm (paramrep = 3) <br>
 clumppExport(align, 
             parammode = 3, 
             paramrep = 10000,
-            exportpath = "../data/structure_data/clumpp_data/clumpp")
+            exportpath = "data/structure_data/clumpp_data")
 ```
 
 The code above generates a .txt file (pop_K#-combined.txt) with combined cluster ancestry proportions for each individual at each K and stores it in a separate directory labeled "pop_K#", where '#' is the corresponding K value. Additionally, the code generates an accompanying "paramfile" that is input for CLUMPP, which contains information on parameters to generate merged datasets across our 10 replicates at each K.
 
 ##### 2g.3. Generate merged Q files using CLUMPP.
-In this step, we used the software program CLUMPP (Jakobbson and Rosenberg 2007) to merge cluster ancestry proportion inferences for all replicate runs of each K across individuals. We downloaded the Linux 64-bit build of CLUMPP v.1.1.2 and installed it on our computing cluster. We then executed the program for each analysis by sequentially copying the associated paramfiles generated in the clumppExport function (see section above) to the CLUMPP home directory. All output files were then moved to the corresponding structure directory.
+In this step, we used the software program CLUMPP (Jakobbson and Rosenberg 2007) to merge cluster ancestry proportion inferences for all replicate runs of each K across individuals. We downloaded the Linux 64-bit build of CLUMPP v.1.1.2 and installed it on our computing cluster (University of Missouri). We then executed the program for each analysis by sequentially copying the associated paramfiles generated in the clumppExport function (see section above) to the CLUMPP home directory. All output files were then moved to the corresponding structure directory.
 
 ###### 2g.3.1. Downolad CLUMPP and install on cluster; navigate to the desired directory: `code`. Run the command: `wget https://rosenberglab.stanford.edu/software/CLUMPP_Linux64.1.1.2.tar.gz`
 
@@ -366,7 +366,7 @@ pop_K#-combined-aligned.txt <br>
 ##### deltak results for SPB and SMBC populations: `deltaK.pdf` 
 ```{r}
 # DeltaK results
-pdf("../figures/deltaK.pdf", width=8, height=5)
+pdf("figures/deltaK.pdf", width=8, height=5)
 
 ggplot(evanno, aes(x=k, y=deltaK)) +
   geom_point() + 
