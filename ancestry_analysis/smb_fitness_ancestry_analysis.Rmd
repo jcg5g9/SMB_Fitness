@@ -36,8 +36,9 @@ library(cowplot)
 library(readxl)
 library(writexl)
 library(genepopedit)
-library(pophelper)
-library(parallelnewhybrid)
+library(adegenet)
+
+
 library(graph4lg)
 library(RColorBrewer)
 library(forcats)
@@ -450,7 +451,7 @@ ancestry_ordered <- rbind(ancestry_smb,
                   ancestry_nb)
 
 # Create rank order column for later plotting (column to give the order of plotting, from 1 to 136)
-ancestry_ordered$rank_order <- factor(c(1:136))
+ancestry_ordered$rank_order <- as.numeric(c(1:136))
 
 # Load in processed metadata from filtering analysis
 load("../filtering_analysis/data/processed_raw_data/metadata.Rda")
@@ -464,80 +465,231 @@ ancestry_metadata <- merge(metadata,
 save(ancestry_metadata, file = "data/structure_data/ancestry_data/ancestry_metadata.Rda")
 ```
 
-### STEP 2: Plot STRUCTURE runs at best K value (K=2); run the rmd chunk below.
+### STEP 2: Plot ancestry coefficients for all individuals. 
+
+#### 2a. Plot ancestry coefficients for all individuals at best K value (K=2) inferred in STRUCTURE; run the rmd chunk below.
 
 ##### STRUCTURE results: `k2.pdf`
 ```{r}
 # Load in ancestry metadata for proper sample ordering in STRUCTURE plot
 load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
 
+# Omit unneeded columns
+ancestry_metadata <- ancestry_metadata[,c(1,10:12)]
+
+# Gather dataset for plotting and convert variables to factors/characters. 'structure_number' was converted to a character in this step, and then factor levels were set in the next step to ensure that individuals were graphed in the same order as in STRUCTURE (for later direct one-to-one comparison)
 ancestry_metadata <- ancestry_metadata %>%
-  mutate(structure_number = as.character(structure_number)) %>%
+  gather(c(2:3), key = "ancestry", value = "q") %>%
+  mutate(ancestry = factor(ancestry)) %>%
   mutate(rank_order = as.character(rank_order))
 
-# Read in combined-merged Q table from CLUMPP
-k2 <- readQ("data/structure_data/clumpp_data/pop_K2/pop_K2-combined-merged.txt")
+# Change levels to get the correct order (see explanation for step above)
+ancestry_metadata$rank_order <- factor(ancestry_metadata$rank_order, levels = c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136"))
 
-# Visualize Structure
-plotQ(k2,
-      grplab = ancestry_metadata[,c(1,12)],
-      ordergrp = F,
-      selgrp = "rank_order",
-      subsetgrp = c("1",	"2",	"3",	"4",	"5",	"6",	"7",	"8",	"9",	"10",	"11",	"12",	"13",	"14",	"15",	"16",	"17",	"18",	"19",	"20",	"21",	"22",	"23",	"24",	"25",	"26",	"27",	"28",	"29",	"30",	"31",	"32",	"33",	"34",	"35",	"36",	"37",	"38",	"39",	"40",	"41",	"42",	"43",	"44",	"45",	"46",	"47",	"48",	"49",	"50",	"51",	"52",	"53",	"54",	"55",	"56",	"57",	"58",	"59",	"60",	"61",	"62",	"63",	"64",	"65",	"66",	"67",	"68",	"69",	"70",	"71",	"72",	"73",	"74",	"75",	"76",	"77",	"78",	"79",	"80",	"81",	"82",	"83",	"84",	"85",	"86",	"87",	"88",	"89",	"90",	"91",	"92",	"93",	"94",	"95",	"96",	"97",	"98",	"99",	"100",	"101",	"102",	"103",	"104",	"105",	"106",	"107",	"108",	"109",	"110",	"111",	"112",	"113",	"114",	"115",	"116",	"117",	"118",	"119",	"120",	"121",	"122",	"123",	"124",	"125",	"126",	"127",	"128",	"129",	"130",	"131",	"132",	"133",	"134",	"135",	"136"),
-      showgrplab = T,
-      showlegend = F, 
-      showsp = F, 
-      showdiv = T, 
-      divsize = 2, 
-      divtype = 1,
-      divcol = "black",  
-      grplabsize = 4, 
-      grplabangle = 45,
-      grplabjust = 0.5,
-      legendkeysize = 15, 
-      linealpha = 0,
-      legendtextsize = 10, 
-      linesize = 0.05, 
-      pointsize = 4, 
-      barbordercolour = "black",
-      barbordersize = 0.1, 
-      clustercol = c("deepskyblue", "deeppink2"),
-      exportplot = T,
-      imgtype = "pdf",
-      height = 10, 
-      width = 100,
-      outputfilename = "k2",
-      exportpath = "figures")
+# Convert analysis order column to factor
+ancestry_metadata <- ancestry_metadata %>%
+  mutate(structure_number = factor(structure_number))
+
+# Reorder analysis order to be in the same order as Rivers (same as presented in Structure q plot)
+ancestry_metadata <- ancestry_metadata %>% 
+  mutate(structure_number = fct_reorder(structure_number, as.integer(rank_order)))
+
+# Plot posterior probability of assignment to each hybrid category as a cumulative bar plot for each individual (colors represent assignment probabilities for each of six possible hybrid categories)
+
+## we include black dashed lines at q=0.25 and q=0.75 to show thresholds for group membership.
+pdf("figures/k2.pdf", width=140, height=12)
+
+ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) + 
+  geom_bar(stat = "identity", show.legend = T, color = "black") +
+  geom_hline(yintercept = 0.25, color = "black", linetype = "longdash", size = 4) +
+  geom_hline(yintercept = 0.75, color = "black", linetype = "longdash", size = 4) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Individual", y = "q") +
+  scale_fill_manual(values = c("deepskyblue", "deeppink2")) +
+  theme(axis.title.x = element_blank())  +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.text = element_text(angle = 90)) +
+  scale_y_continuous(expand=c(0,0))
+
+dev.off()
 ```
 
-This figure is the basis for....
+This plot is the basis for Figure S2 in the final manuscript.
 
-#### 2h: Analyze ancestry proportions from SPB for all river populations in the SMBC run the Rmd cbhunk below:
-In this step, we summarize ancestry proportions for each river calculated in STRUCTURE. Specifically, we calculate the average SPB ancestry across rivers at K=2.
+### STEP 3: Assign individuals to genetic groups based on ancestry proportions and summarize sample sizes for each group.
+In this step, we assign individual fish to one of three "ancestry" groups based on the membership coefficients calculated in STRUCTURE: 1) Pure Smallmouth Bass (<i>q</i><sub>SMB</sub> = 0.75 or greater), 2) Pure Neosho Bass (<i>q</i><sub>NB</sub> = 0.75 or greater), or 3) Admixed (<i>q</i><sub>SMB</sub> = 0.25-0.75). 
 
-##### Summarize ancestry proportions for rivers:
+We chose to set 0.75 as a threshold for ancestry group, given that first generation back-crossed individuals would be expected to possess 75% of their ancestry from one species and 25% to the other. Greater than 75% ancestry could therefore indicate there's a greater probability of pure ancestry in that individual.
+
+#### 3a. Generate a new column in the ancestry metadata set assigning individuals to their respective ancestry group based on membership coefficient; run the Rmd chunk below.
+
+##### Assign individuals to ancestry group and add data to metadata file.
 ```{r}
-# column bind metadata with q values determined in STRUCTURE
-k2 <- cbind(spb_smbc_metadata, spb_smbc_k2)
+## Load in ancestry metadata (un-manipulated as in Step 2 above)
+load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
 
-# select only the river column, along with the columns containing q values from structure
-spb_smbc_k2 <- spb_smbc_k2[,c(7,14:15)]
-
-# rename columns to be more descriptive ("SMBC ancestry" indicates smallmouth bass species complex (Central Interior Highlands) ancestry)
-colnames(spb_smbc_k2) <- c("River", "SMBC_ancestry", "SPB_ancestry")
-
-# Omit SPB individuals (first five rows of dataset)
-spb_smbc_k2 <- spb_smbc_k2[-c(1:5),]
-
-# Summarize average ancestry of SPB per river
-spb_ancestry_summary <- spb_smbc_k2 %>%
-  group_by(River) %>%
-  summarize(mean_spb = mean(SPB_ancestry))
-
-# arrange in descending order
-spb_ancestry_summary %>% 
-  arrange(desc(mean_spb))
+# Categorize sample ids into ancestry groups based on membership coefficient
+ancestry_metadata$ancestry_group <- with(ancestry_metadata, ifelse(smb > 0.75, "Smallmouth_Bass",
+                                             ifelse(nb > 0.75, "Neosho_Bass",
+                                                    ifelse(smb <= 0.75 & nb <= 275, "Admixed", "done"))))
 ```
+
+#### 3b. Merge ancestry metadata with full dataset (see Analysis 2) and save for downstream analyses; run the Rmd chunk below.
+
+##### Summarize ancestry group data:
+```{r}
+# Load in full dataset
+load("../filtering_analysis/data/processed_raw_data/full_data.Rda")
+
+# Merge full data with ancestry metadata
+full_data <- merge(full_data, 
+                   ancestry_metadata, 
+                   by = c("sample_id", 
+                          "structure_number", 
+                          "river_code",
+                          "sample_number", 
+                          "easting", 
+                          "northing", 
+                          "range_id", 
+                          "river",
+                          "population"))
+
+# Save full ancestry data for all downstream analyses
+save(full_data, file = "data/processed_ancestry_data/full_ancestry_data.Rda")
+```
+
+#### 3c. Summarize ancestry data by quantifying sample sizes per group; run the Rmd chunk below.
+In this step, we count sample sizes for each ancestry group and present them in Table 1, along with sample sizes per length category and stream (Big Sugar Creek or Elk River).
+
+##### Summarize ancestry group data:
+```{r}
+## Load in full ancestry data
+load("data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# Convert ancestry group variable to factor
+full_data <- full_data %>%
+  mutate(ancestry_group = factor(ancestry_group))
+
+# Count total number of fish per ancestry group
+full_data %>% 
+  group_by(ancestry_group) %>%
+  count()
+
+# Summarize full data by river within ancestry group
+full_data %>% 
+  group_by(ancestry_group, river) %>%
+  count()
+
+# Summarize full data by size bin for sex within river
+full_data %>% 
+  group_by(size_bin, river, ancestry_group) %>%
+  count()
+```
+
+### Data summary:
+
+## Totals by ancestry group 
+<b><i>N</i><sub>Neosho_Bass</sub> = 46 </b><br>
+<i>N</i><sub>Smallmouth Bass</sub> = 34 <br>
+<i>N</i><sub>Admixed</sub> = 56 <br>
+
+## By river (wihtin ancestry group)
+<i>N</i><sub>adm_elk</sub> = 34 <br>
+<i>N</i><sub>adm_bigsugar</sub> = 20 <br>
+
+<i>N</i><sub>nb_elk</sub> = 26 <br>
+<i>N</i><sub>nb_bigsugar</sub> = 20 <br>
+
+<i>N</i><sub>smb_elk</sub> = 10 <br>
+<i>N</i><sub>smb_bigsugar</sub> = 6 <br>
+
+## By size bin within sex within river
+<i>N</i><sub>bigsugar_200-225_nb</sub> = 4 <br>
+<i>N</i><sub>bigsugar_200-225_smb</sub> = 2 <br>
+<i>N</i><sub>bigsugar_200-225_adm</sub> = 4 <br>
+
+<i>N</i><sub>bigsugar_225-250_nb</sub> = 3 <br>
+<i>N</i><sub>bigsugar_225-250_smb</sub> = 0 <br>
+<i>N</i><sub>bigsugar_225-250_adm</sub> = 2 <br>
+
+<i>N</i><sub>bigsugar_250-275_nb</sub> = 1 <br>
+<i>N</i><sub>bigsugar_250-275_smb</sub> = 1 <br>
+<i>N</i><sub>bigsugar_250-275_adm</sub> = 1 <br>
+
+<i>N</i><sub>bigsugar_275-300_nb</sub> = 3 <br>
+<i>N</i><sub>bigsugar_275-300_smb</sub> = 2 <br>
+<i>N</i><sub>bigsugar_275-300_adm</sub> = 3 <br>
+
+<i>N</i><sub>bigsugar_300-325_nb</sub> = 5 <br>
+<i>N</i><sub>bigsugar_300-325_smb</sub> = 1 <br>
+<i>N</i><sub>bigsugar_300-325_adm</sub> = 5 <br>
+
+<i>N</i><sub>bigsugar_325-350_nb</sub> = 1 <br>
+<i>N</i><sub>bigsugar_325-350_smb</sub> = 0 <br>
+<i>N</i><sub>bigsugar_325-350_adm</sub> = 3 <br>
+
+<i>N</i><sub>bigsugar_350-375_nb</sub> =  1c<br>
+<i>N</i><sub>bigsugar_350-375_smb</sub> = 0 <br>
+<i>N</i><sub>bigsugar_350-375_adm</sub> = 0 <br>
+
+<i>N</i><sub>bigsugar_375-400+_nb</sub> = 2 <br>
+<i>N</i><sub>bigsugar_375-400+_smb</sub> = 0 <br>
+<i>N</i><sub>bigsugar_375-400+_adm</sub> = 2 <br>
+
+<i>N</i><sub>elk_200-225_nb</sub> = 3 <br>
+<i>N</i><sub>elk_200-225_smb</sub> = 2 <br>
+<i>N</i><sub>elk_200-225_adm</sub> = 5 <br>
+
+<i>N</i><sub>elk_225-250_nb</sub> = 6 <br>
+<i>N</i><sub>elk_225-250_smb</sub> = 2 <br>
+<i>N</i><sub>elk_225-250_adm</sub> = 6 <br>
+
+<i>N</i><sub>elk_250-275_nb</sub> = 6 <br>
+<i>N</i><sub>elk_250-275_smb</sub> = 3 <br>
+<i>N</i><sub>elk_250-275_adm</sub> = 8 <br>
+
+<i>N</i><sub>elk_275-300_nb</sub> = 6 <br>
+<i>N</i><sub>elk_275-300_smb</sub> = 1 <br>
+<i>N</i><sub>elk_275-300_adm</sub> = 5 <br>
+
+<i>N</i><sub>elk_300-325_nb</sub> = 2 <br>
+<i>N</i><sub>elk_300-325_smb</sub> = 0 <br>
+<i>N</i><sub>elk_300-325_adm</sub> = 5 <br>
+
+<i>N</i><sub>elk_325-350_nb</sub> = 0 <br>
+<i>N</i><sub>elk_325-350_smb</sub> = 1 <br>
+<i>N</i><sub>elk_325-350_adm</sub> = 2 <br>
+
+<i>N</i><sub>elk_350-375_nb</sub> = 0 <br>
+<i>N</i><sub>elk_350-375_smb</sub> = 0 <br>
+<i>N</i><sub>elk_350-375_adm</sub> = 1 <br>
+
+<i>N</i><sub>elk_375-400+_nb</sub> = 3 <br>
+<i>N</i><sub>elk_375-400+_smb</sub> = 1 <br>
+<i>N</i><sub>elk_375-400+_adm</sub> = 2 <br>
+
+These sample sizes were used as the basis for Table 1b.
+
+### STEP 4. Validate ancestry group assignment using Discriminant Analysis of Principal Components (DAPC).
+In this step, we validate the group assignments used in STEP 3 above using DAPC
+
+#### 4a. Read in genotype data
+```{r}
+genotypes <- read_excel("data/processed_genotype_data/genotype_data.xlsx")
+
+genind <- df2genind(genotypes, ncode = 3)
+```
+
+
+
+
+### ----------------------- END OF PHASE 2: DATA SUMMARIZATION AND ENUMERATION ----------------------- ###
+
+### ----------------------- END OF ANALYSIS 2: FILTERING ANALYSIS ----------------------- ###
+
+
+
+
 
 ### STEP 3: Hybridization analysis with NEWHYBRIDS
 In this step, we are running complementary analyses on the dataset with SPB and the SMBC in the software program NewHybrids, which uses Bayesian inference of genotype data to assign individuals to one of six <i>a priori</i> modeled hybrid classes (parent 1, parent 2, F1 hybrid, F2 hybrid, backcross to parent 1, or backcross to parent 2).

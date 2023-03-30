@@ -379,7 +379,7 @@ In this step, we are summarizing the full data to enumerate samples by groups of
 
 ##### Summarize full genotype data
 ```{r}
-# Load in full genotype data
+# Load in full dataset
 load("data/processed_raw_data/full_data.Rda")
 
 # Count total number of fish analyzed
@@ -499,7 +499,7 @@ full_data %>%
 <i>N</i><sub>elk_375-400+_female</sub> = 2 <br>
 <i>N</i><sub>elk_375-400+_male</sub> = 4 <br>
 
-These sample sizes were used as the basis for Table 1 and the sample size (N) column of Table S1 in the final manuscript.
+These sample sizes were used as the basis for Table 1a and the sample size (N) column of Table S1 in the final manuscript.
 
 ### ----------------------- END OF PHASE 2: DATA SUMMARIZATION AND ENUMERATION ----------------------- ###
 
