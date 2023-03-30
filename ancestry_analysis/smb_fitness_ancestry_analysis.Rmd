@@ -542,7 +542,7 @@ ancestry_metadata$ancestry_group <- with(ancestry_metadata, ifelse(smb > 0.75, "
 load("../filtering_analysis/data/processed_raw_data/full_data.Rda")
 
 # Merge full data with ancestry metadata
-full_data <- merge(full_data, 
+full_ancestry_data <- merge(full_data, 
                    ancestry_metadata, 
                    by = c("sample_id", 
                           "structure_number", 
@@ -555,7 +555,7 @@ full_data <- merge(full_data,
                           "population"))
 
 # Save full ancestry data for all downstream analyses
-save(full_data, file = "data/processed_ancestry_data/full_ancestry_data.Rda")
+save(full_ancestry_data, file = "data/processed_ancestry_data/full_ancestry_data.Rda")
 ```
 
 #### 3c. Summarize ancestry data by quantifying sample sizes per group; run the Rmd chunk below.
@@ -673,12 +673,151 @@ These sample sizes were used as the basis for Table 1b.
 ### STEP 4. Validate ancestry group assignment using Discriminant Analysis of Principal Components (DAPC).
 In this step, we validate the group assignments used in STEP 3 above using DAPC
 
-#### 4a. Read in genotype data
+#### 4a. Read in genotype data and convert to genind object for DFA:
 ```{r}
+# Read in the fully processed genotype data
 genotypes <- read_excel("data/processed_genotype_data/genotype_data.xlsx")
 
-genind <- df2genind(genotypes, ncode = 3)
+# Concatenate alleles for each locus (each locus has 2 columns in the original dataset, each with one allele at that locus)
+genotypes <- genotypes %>%
+  unite("mdo9", c(2:3), sep = "") %>%
+  unite("mdo5", c(3:4), sep = "") %>%
+  unite("mdo7", c(4:5), sep = "") %>%
+  unite("mdo10", c(5:6), sep = "") %>%
+  unite("mdo6", c(6:7), sep = "") %>%
+  unite("mdo3", c(7:8), sep = "") %>%
+  unite("mdo2", c(8:9), sep = "") %>%
+  unite("lma21", c(9:10), sep = "") %>%
+  unite("msaf29", c(10:11), sep = "") %>%
+  unite("msaf05", c(11:12), sep = "") %>%
+  unite("msaf14", c(12:13), sep = "") %>%
+  unite("msaf17", c(13:14), sep = "") %>%
+  unite("msaf09", c(14:15), sep = "") %>%
+  unite("msaf06", c(15:16), sep = "")
+
+# Remove the first column
+genotypes <- genotypes[,-c(1)]
+
+# Create vector of ancestry groups to be used as "populations" in DAPC
+
+## Load in full ancestry data
+load("data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# Create factor for ancestry group
+ancestry_group <- factor(full_ancestry_data$ancestry_group)
+
+# Convert genotypes to genind object
+genind <- df2genind(genotypes,
+                    ncode = 3, 
+                    pop = ancestry_group, 
+                    ploidy = 2)
+
+# Scale genind object, filling NA's with imputed means
+genind <- scaleGen(genind, 
+                   center = TRUE, 
+                   scale = TRUE,
+                   NA.method = c("mean"), 
+                   truenames = TRUE)
 ```
+
+#### 4b. Run 10-fold cross-validation on genotype data; run the Rmd chunk below.
+In this step, we are running a cross-validation analysis, using 90% of samples in the data as a training set and 10% of data as a test set, maximum number of pcs at 100, and 30 replicates per PC value tested, to choose the number of PCs to use in each analysis. We are choosing the number of PCs that maximizes successful assignment to our <i>a priori</i> defined populations, which will then give us the optimal clustering patterns of the data.
+
+##### Run 10-fold cross-validation and generate plot: `dapc_xval.pdf`
+```{r}
+# Run 10-fold cross-validation
+xval <- xvalDapc(genind, 
+                 ancestry_group, 
+                 n.pca.max = 100, 
+                 training.set = 0.9,
+                 result = "groupMean", 
+                 center = TRUE, 
+                 scale = FALSE,
+                 n.pca = NULL,
+                 n.rep = 30, 
+                 xval.plot = TRUE)
+
+# Get xval data 
+xval_data <- as.data.frame(xval$`Cross-Validation Results`) 
+
+# Get mean of assignment success for plotting
+xval_aves <- xval_data %>%
+  group_by(n.pca) %>%
+  summarize(mean_success = mean(success))
+
+# Get standard deviation of assignment success for plotting
+xval_sd <- xval_data %>%
+  group_by(n.pca) %>%
+  summarize(sd_success = sd(success))
+
+# Merge averages and standard deviations for plotting
+xval_data <- merge(xval_aves,
+                   xval_sd, 
+                   by = "n.pca")
+
+# Plot cross validation results for SPB vs. SMBC
+pdf("figures/dapc_xval.pdf", width=8, height=6)
+
+ggplot(xval_data, aes(x = n.pca, y = mean_success)) +
+  geom_errorbar(aes(ymin = mean_success - sd_success, ymax = mean_success + sd_success), width=1) +
+  geom_point(fill = "grey", color = "black", pch = 21, size = 5, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "PCs retained", y = "Average CV success (%)") +
+  theme(axis.text = element_text(size = 20)) +
+  theme(axis.title = element_text(size = 20)) +
+  scale_x_continuous("PCs retained", labels = as.character(xval_data$n.pca), breaks = xval_data$n.pca) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+
+dev.off()
+```
+
+```{r}
+# Run DAPC at inferred optimal number of PCs
+dapc <- dapc(genind, ancestry_group)
+
+# We selected 2 Discriminant Functions to retain (see figure inset)
+
+# Choose color palette for plotting.
+color_palette <- c("mediumpurple","deepskyblue","deeppink2")
+
+## Generate two plots: 1) genotype data in DAPC WITHOUT LEGENDS (We created a second figure with labels so they could be cut and pasted into the first figure, giving more control over placement and aesthetics); and 2) genotype data WITH LEGENDS
+
+# Plot genetic data WITHOUT LEGENDS
+pdf("figures/dapc.pdf", width = 8, height = 6)
+
+scatter(dapc, 
+        legend = F,
+        col = color_palette, 
+        clab = 0, 
+        cstar = 1,
+        cex = 2,
+        scree.pca = F,
+        posi.pca = "topleft",
+        scree.da = F,
+        posi.da = "topright",
+        cell = 1)
+
+dev.off()
+
+# Plot genetic data WITH LEGENDS
+pdf("figures/dapc_legends.pdf", width = 10, height = 10)
+
+scatter(dapc, 
+        legend = F,
+        col = color_palette, 
+        clab = 0, 
+        cstar = 1,
+        cex = 2,
+        scree.pca = T,
+        posi.pca = "topleft",
+        scree.da = T,
+        posi.da = "topright",
+        cell = 1)
+
+dev.off()
+```
+
+
 
 
 
