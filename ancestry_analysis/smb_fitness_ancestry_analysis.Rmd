@@ -37,11 +37,6 @@ library(readxl)
 library(writexl)
 library(genepopedit)
 library(adegenet)
-
-
-library(graph4lg)
-library(RColorBrewer)
-library(forcats)
 ```
 
 ## PHASE 1: ANCESTRY INFERENCE
@@ -263,7 +258,6 @@ We did not change any of the default settings in the extraparams file (most impo
 `data/structure_data/param_files/extraparams` <br> 
 
 ### STEP 2: Population Structure Analysis with STRUCTURE.
-
 See Line 22 for programs needed for analysis.
 
 #### 2a: Run STRUCTURE analysis using the input data generated in STEP 1. Navigate to `shell_scripts/` Be sure that all relative and full paths to all input files and output destination directories are set up properly (ideally, this is already done within this GitHub repo). This command line code assumes capability to run the code using SLURM or a SLURM-like cluster scheduling software.
@@ -514,7 +508,7 @@ ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) +
 dev.off()
 ```
 
-This plot is the basis for Figure S2 in the final manuscript.
+This plot is the basis for Figure S2a in the final manuscript.
 
 ### STEP 3: Assign individuals to genetic groups based on ancestry proportions and summarize sample sizes for each group.
 In this step, we assign individual fish to one of three "ancestry" groups based on the membership coefficients calculated in STRUCTURE: 1) Pure Smallmouth Bass (<i>q</i><sub>SMB</sub> = 0.75 or greater), 2) Pure Neosho Bass (<i>q</i><sub>NB</sub> = 0.75 or greater), or 3) Admixed (<i>q</i><sub>SMB</sub> = 0.25-0.75). 
@@ -563,9 +557,6 @@ In this step, we count sample sizes for each ancestry group and present them in 
 
 ##### Summarize ancestry group data:
 ```{r}
-## Load in full ancestry data
-load("data/processed_ancestry_data/full_ancestry_data.Rda")
-
 # Convert ancestry group variable to factor
 full_data <- full_data %>%
   mutate(ancestry_group = factor(ancestry_group))
@@ -671,10 +662,16 @@ full_data %>%
 These sample sizes were used as the basis for Table 1b.
 
 ### STEP 4. Validate ancestry group assignment using Discriminant Analysis of Principal Components (DAPC).
-In this step, we validate the group assignments used in STEP 3 above using DAPC
+In this step, we validate the group assignments used in STEP 3 above using DAPC.
 
-#### 4a. Read in genotype data and convert to genind object for DFA:
+#### 4a. Read in genotype data and format for DAPC (convert to genind object for DFA); run the Rmd chunk below.
+In this step, we format the genotype data (two columns per locus, each column containing a three digit code for each allele at a locus) for analysis in DAPC. The dapc() function in the adegenet package requires genotypes to be in genind format, so we prepare the genotype file for conversion using the df2genind() function.
+
+##### Convert genotypes to genind format:
 ```{r}
+## Load in full ancestry data
+load("data/processed_ancestry_data/full_ancestry_data.Rda")
+
 # Read in the fully processed genotype data
 genotypes <- read_excel("data/processed_genotype_data/genotype_data.xlsx")
 
@@ -698,11 +695,6 @@ genotypes <- genotypes %>%
 # Remove the first column
 genotypes <- genotypes[,-c(1)]
 
-# Create vector of ancestry groups to be used as "populations" in DAPC
-
-## Load in full ancestry data
-load("data/processed_ancestry_data/full_ancestry_data.Rda")
-
 # Create factor for ancestry group
 ancestry_group <- factor(full_ancestry_data$ancestry_group)
 
@@ -718,13 +710,19 @@ genind <- scaleGen(genind,
                    scale = TRUE,
                    NA.method = c("mean"), 
                    truenames = TRUE)
+
+# Save genind for downstream processing and plotting
+save(genind, file = "data/processed_ancestry_data/genind.Rda")
 ```
 
 #### 4b. Run 10-fold cross-validation on genotype data; run the Rmd chunk below.
-In this step, we are running a cross-validation analysis, using 90% of samples in the data as a training set and 10% of data as a test set, maximum number of pcs at 100, and 30 replicates per PC value tested, to choose the number of PCs to use in each analysis. We are choosing the number of PCs that maximizes successful assignment to our <i>a priori</i> defined populations, which will then give us the optimal clustering patterns of the data.
+In this step, we run a cross-validation analysis, using 90% of samples in the data as a training set and 10% of data as a test set, maximum number of pcs at 100, and 30 replicates per PC value tested, to choose the number of PCs to use in each analysis. We choose the number of PCs that maximizes successful assignment to our <i>a priori</i> defined populations, which will then give us the optimal clustering patterns of the data.
 
 ##### Run 10-fold cross-validation and generate plot: `dapc_xval.pdf`
 ```{r}
+# Load in genind object for analysis
+load("data/processed_ancestry_data/genind.Rda")
+
 # Run 10-fold cross-validation
 xval <- xvalDapc(genind, 
                  ancestry_group, 
@@ -755,6 +753,12 @@ xval_data <- merge(xval_aves,
                    xval_sd, 
                    by = "n.pca")
 
+# Save xval data for plotting
+save(xval_data, file = "data/processed_ancestry_data/xval_data.Rda")
+
+# Load in xval data for plotting
+load("data/processed_ancestry_data/xval_data.Rda")
+
 # Plot cross validation results for SPB vs. SMBC
 pdf("figures/dapc_xval.pdf", width=8, height=6)
 
@@ -770,6 +774,7 @@ ggplot(xval_data, aes(x = n.pca, y = mean_success)) +
 
 dev.off()
 ```
+This plot is the basis for Figure S2b in the final manuscript.
 
 We found that the optimal number of PCs for DAPC (based on 10-fold cross-validation analysis) is 30. We therefore input 30 as the number of PCs to retain for analysis.
 
@@ -778,10 +783,22 @@ In this step, we run DAPC analysis and plot using built-in functions in the R pa
 
 ##### Run DAPC and plot: 1) `figures/dapc.pdf` and 2) `figures/dapc_legends.pdf`
 ```{r}
+# Load in genind object for analysis
+load("data/processed_ancestry_data/genind.Rda")
+
+## Load in full ancestry data
+load("data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# Create factor for ancestry group
+ancestry_group <- factor(full_ancestry_data$ancestry_group)
+
 # Run DAPC at inferred optimal number of PCs
 dapc <- dapc(genind, ancestry_group)
 
-# We selected 2 Discriminant Functions to retain (see figure inset)
+# We selected 30 PCs and 2 Discriminant Functions to retain (see figure inset)
+
+#Save dapc for future plotting
+save(dapc, file = "data/processed_ancestry_data/dapc.Rda")
 
 # Choose color palette for plotting.
 color_palette <- c("mediumpurple","deepskyblue","deeppink2")
@@ -789,7 +806,7 @@ color_palette <- c("mediumpurple","deepskyblue","deeppink2")
 ## Generate two plots: 1) genotype data in DAPC WITHOUT LEGENDS (We created a second figure with labels so they could be cut and pasted into the first figure, giving more control over placement and aesthetics); and 2) genotype data WITH LEGENDS
 
 # Plot genetic data WITHOUT LEGENDS
-pdf("figures/dapc.pdf", width = 8, height = 6)
+pdf("figures/dapc.pdf", width = 5, height = 3)
 
 scatter(dapc, 
         legend = F,
@@ -822,6 +839,10 @@ scatter(dapc,
 
 dev.off()
 ```
+
+These plots are the basis for Figure S2c in the final manuscript.
+
+This 
 
 
 
