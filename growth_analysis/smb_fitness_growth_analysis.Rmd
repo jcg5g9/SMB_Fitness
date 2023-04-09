@@ -1,0 +1,176 @@
+---
+title: "Analysis 4: von Bertalanffy Individual Growth Analysis"
+author: "Joe Gunn"
+date: "2022-07-28"
+output: html_document
+---
+
+# Project: Effects of admixture on fitness in Neosho Bass populations 
+<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
+
+## Specific Aim: von Bertalanffy individual growth analysis
+For this aim, we paramaterized the von Bertlanffy individual growth model (von Bertlanffy 1983) for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
+
+## Phases of Analysis
+### Phase 1: Data preparation and linear back-calculation
+### Phase 2: von Bertlanffy growth analysis
+
+### Libraries needed for analysis
+```{r}
+library(tidyverse)
+library(cowplot)
+library(readxl)
+library(RFishBC) #v.0.2.4
+library(FSA) #v.0.8.32
+library(boot)
+library(car)
+```
+
+### maybe
+library(nlme)
+library(lme4)
+library(factoextra)
+library(MASS)
+library(logihist)
+library(ggpubr)
+library(DescTools)
+
+## PHASE 1: DATA PREPARATION AND LINEAR BACK CALCULATION
+In this phase of analysis, we load and prepare real total length (tl_alive) and consensus age data from the full ancestry dataset (Analysis 3).
+
+### STEP 1: Load full ancestry data and prepare for growth analysis; run the Rmd chunk below.
+
+##### Load and prepare full ancestry data:
+```{r}
+## Load in full ancestry data curated in Analysis 3 
+load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# Filter dataset to keep only fish with total length and concensus age data ("sample"; NOT "reference")
+full_ancestry_data <- full_ancestry_data %>%
+  filter(population == "sample")
+
+RFBCoptions(deviceType = "X11")
+digitizeRadii("FBS01.PNG", edgeIsAnnulus = F)
+
+readRDS("FBS01.rds")
+```
+
+
+
+size1 <- full_ancestry_data %>%
+  filter(size_bin == "200-225") %>%
+  select(sample_id, consensus_age)
+
+size2 <- full_ancestry_data %>%
+  filter(size_bin == "225-250") %>%
+  select(sample_id, consensus_age)
+
+size3 <- full_ancestry_data %>%
+  filter(size_bin == "250-275") %>%
+  select(sample_id, consensus_age)
+
+size4 <- full_ancestry_data %>%
+  filter(size_bin == "275-300") %>%
+  select(sample_id, consensus_age)
+
+size5 <- full_ancestry_data %>%
+  filter(size_bin == "300-325") %>%
+  select(sample_id, consensus_age)
+
+size6 <- full_ancestry_data %>%
+  filter(size_bin == "325-350") %>%
+  select(sample_id, consensus_age)
+
+size7 <- full_ancestry_data %>%
+  filter(size_bin == "375-400") %>%
+  select(sample_id, consensus_age)
+
+size8 <- full_ancestry_data %>%
+  filter(size_bin == "400+") %>%
+  select(sample_id, consensus_age)
+
+size1 %>%
+  arrange(desc(consensus_age))
+
+bc_missing <- read_excel("../raw_data/bc_missing.xlsx")
+
+bc_missing <- merge(bc_missing, full_ancestry_data, by = "sample_id") %>%
+  select(sample_id, consensus_age)
+```
+
+```{r}
+vb <- vbFuns(param = "Typical")
+
+f_starts_global <- vbStarts(tl_alive ~ consensus_age, data = full_ancestry_data)
+
+fit_global <- nls(tl_alive ~ vb(consensus_age,
+                                Linf,
+                                K,
+                                t0), 
+                  data = full_ancestry_data, 
+                  start = f_starts_global)
+
+global_coefficients <- coef(fit_global)
+
+hist(resid(fit_global))
+
+global_residuals <- c(resid(fit_global))
+
+global_residuals <- data.frame(global_residuals, full_ancestry_data)
+
+global_residuals_bsug <- global_residuals %>%
+  filter(river == "Big_Sugar")
+
+global_residuals_elk <- global_residuals %>%
+  filter(river == "Elk_River")
+
+ggplot(global_residuals_elk, aes(x=ancestry_group, y=global_residuals, color=ancestry_group)) +
+  geom_boxplot()
+
+global_bootstrap <- Boot(fit_global) #997 out of 999 attempted
+
+global_confint <- confint(global_bootstrap)
+
+global_predict <- predict(fit_global,data.frame(consensus_age=2:8))
+
+
+predict_function <- function(x) predict(x,data.frame(consensus_age=ages))
+ages=2:8
+predict_function(fit_global)
+
+
+ages <- seq(-1,15,by=0.2)
+global_indiv_boot <- Boot(fit_global, f = predict_function) #998 out of 999
+
+
+preds1_global <- data.frame(ages,
+                     predict(fit_global,data.frame(consensus_age=ages)),
+                     confint(global_indiv_boot))
+
+names(preds1_global) <- c("age","fit","LCI","UCI")
+
+
+
+preds1_obs_global <- filter(preds1_admix,age>=2,age<=8)
+
+
+
+
+vonbert_global <- ggplot() + 
+  geom_ribbon(data = preds1_global, aes(x = age, ymin = LCI, ymax = UCI,fill = "grey", alpha=0.01,), show.legend = F) +
+  geom_point(data = full_ancestry_data, aes(x = consensus_age, y = tl_alive, fill = "grey"), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data=preds1_global, aes(x = age, y = fit)) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values=c("grey")) +
+  scale_y_continuous(name="Total Length (mm)",limits=c(0,530),expand=c(0,0)) +
+  scale_x_continuous(name="Age (years)",expand=c(0,0),limits=c(0,15),breaks=seq(0,15,1)) +
+  theme(axis.title = element_text(size = 20)) + 
+  theme(legend.position = c(0.6,0.2)) +
+  theme(legend.title = element_text(face="bold",size = 20)) +
+  theme(legend.text = element_text(size = 20)) +
+  theme(axis.text = element_text(size = 16)) +
+  scale_alpha(guide = 'none') +
+  theme(axis.title.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+```
+

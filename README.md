@@ -62,7 +62,7 @@ For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see 
 #### Run the code: `ancestry_analysis/smb_fitness_ancestry_analysis.Rmd`
 
 ### Analysis 4: von Bertalanffy individual growth modeling
-
+For this aim, we paramaterized the von Bertlanffy individual growth model (von Bertlanffy 1983) for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
 
 #### Run the code: `growth_analysis/smb_fitness_growth_analysis.Rmd`
 
