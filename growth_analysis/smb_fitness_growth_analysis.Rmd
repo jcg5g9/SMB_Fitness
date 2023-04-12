@@ -9,10 +9,10 @@ output: html_document
 <font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
 
 ## Specific Aim: von Bertalanffy individual growth analysis
-For this aim, we paramaterized the von Bertlanffy individual growth model (von Bertlanffy 1983) for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
+For this aim, paramaterized the von Bertlanffy individual growth model (von Bertlanffy 1983) for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by using the Dahl-Lee linear back-calculation model We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
 
 ## Phases of Analysis
-### Phase 1: Data preparation and linear back-calculation
+### Phase 1: Linear back-calculation
 ### Phase 2: von Bertlanffy growth analysis
 
 ### Libraries needed for analysis
@@ -35,8 +35,20 @@ library(logihist)
 library(ggpubr)
 library(DescTools)
 
-## PHASE 1: DATA PREPARATION AND LINEAR BACK CALCULATION
-In this phase of analysis, we load and prepare real total length (tl_alive) and consensus age data from the full ancestry dataset (Analysis 3).
+## PHASE 1: LINEAR BACK CALCULATION
+In this phase of analysis, we conduct linear back-calculation on a subset of relatively high-age fish in our dataset  and prepare real total length (tl_alive) and consensus age data from the full ancestry dataset (Analysis 3).
+
+### STEP 1: Set "device type" in the package RFishBC (Ogle, 2022) so that GUI will be readible by MAC OS
+In this step, I am running a line of code to set the computing device type to "X11", which allows the GUI within the package RFishBC
+
+##### 
+```{r}
+RFBCoptions(deviceType = "X11")
+digitizeRadii("FBS01.PNG", edgeIsAnnulus = F)
+
+readRDS("FBS01.rds")
+```
+
 
 ### STEP 1: Load full ancestry data and prepare for growth analysis; run the Rmd chunk below.
 
@@ -45,15 +57,13 @@ In this phase of analysis, we load and prepare real total length (tl_alive) and 
 ## Load in full ancestry data curated in Analysis 3 
 load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
-# Filter dataset to keep only fish with total length and concensus age data ("sample"; NOT "reference")
+# Filter dataset to keep only fish with total length and consensus age data ("sample"; NOT "reference")
 full_ancestry_data <- full_ancestry_data %>%
   filter(population == "sample")
-
-RFBCoptions(deviceType = "X11")
-digitizeRadii("FBS01.PNG", edgeIsAnnulus = F)
-
-readRDS("FBS01.rds")
 ```
+
+
+
 
 
 
