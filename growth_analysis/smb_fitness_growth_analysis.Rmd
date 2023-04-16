@@ -24,6 +24,7 @@ library(RFishBC) #v.0.2.4
 library(FSA) #v.0.8.32
 library(boot)
 library(car)
+library(rlist)
 ```
 
 ### maybe
@@ -46,8 +47,18 @@ In this step, I needed to run a line of code built into the RFishBC package to s
 RFBCoptions(deviceType = "X11")
 ```
 
-### STEP 2: 
+### STEP 2: Copy raw otolith images into the working directory (`growth_analysis/`).
+The RFishBC package requires that raw otolith images being read for back-calculation are placed in the working directory for the Rmd file, which, in this case, is the growth_analysis folder. We therefore *temporarily* copied all raw otolith camera images (`../raw_data/otolith_images/raw/`) into the current working directory.
 
+### STEP 3: Estimate radial measurements of otolith annuli.
+In this step, we run the function "digitizeRadii()" from the package RFishBC on each otolith image independently (we list the function for all unique image IDs), which allows interactive radial measurements by drawing radius transects directly on the image. The user is asked to (1) input a unique image ID, (2) draw a linear transect from the nucleus (centroid) to the outer edge of the otolith, and (3) identify each annulus along the transect to match the inferred age of the fish. One output of the function is a data table ("radii", an element of the .rds object) giving the total radius of the otolith and the radii for each individual annulus.
+
+We input the ID given for each otolith (e.g., FBS01, FBS02, etc.). We drew transects from the centroid to the outer edge of the otolith on the same side and just above the sulcus (see Figure S2 in the final manuscript) to standardize radii for each otolith. We identified annuli by placing a reference point on the outermost edge of each annulus. For any otoliths that were cracked (and we could not reliably determine the radius from the nucleus to an otolith edge), cloudy or obscured, or without clearly defined edges, we did not include those samples, and they are indicated within the code chunk.
+
+#### 3a: Estimate radial measurements for Big Sugar Creek samples; run the Rmd chunk below:
+In this step, we estimate radial measurements for the Big Sugar Creek samples only.
+
+##### Run linear-back calculation on each image and generate output radius data:
 ```{r}
 # Run linear back-calculation for Big Sugar Creek samples ("FBS")
 digitizeRadii("FBS01.PNG", edgeIsAnnulus = F)
@@ -96,7 +107,14 @@ digitizeRadii("FBS43.PNG", edgeIsAnnulus = F)
 digitizeRadii("FBS44.PNG", edgeIsAnnulus = F)
 digitizeRadii("FBS45.PNG", edgeIsAnnulus = F)
 digitizeRadii("FBS46.PNG", edgeIsAnnulus = F)
+```
 
+<b>Samples used for back-calculation</b>: <i>N</i> = 46
+
+#### 3b: Estimate radial measurements for Elk River samples; run the Rmd chunk below:
+In this step, we estimate radial measurements for the Elk River samples only.
+
+```{r}
 # Run linear back-calculation for Elk River samples ("FER")
 digitizeRadii("FER01.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER02.PNG", edgeIsAnnulus = F)
@@ -105,7 +123,7 @@ digitizeRadii("FER04.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER05.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER06.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER07.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER08.PNG", edgeIsAnnulus = F)
+#digitizeRadii("FER08.PNG", edgeIsAnnulus = F) ## Cracked otolith, unable to reliably determine radius from nucleus to edge
 digitizeRadii("FER09.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER10.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER11.PNG", edgeIsAnnulus = F)
@@ -122,17 +140,17 @@ digitizeRadii("FER21.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER22.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER23.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER24.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER25.PNG", edgeIsAnnulus = F)
+#digitizeRadii("FER25.PNG", edgeIsAnnulus = F) ## Cracked otolith, unable to reliably determine radius from nucleus to edge
 digitizeRadii("FER26.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER27.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER28.PNG", edgeIsAnnulus = F)
+#digitizeRadii("FER28.PNG", edgeIsAnnulus = F) ## Annuli are too crowded to reliably discern annuli edges
 digitizeRadii("FER29.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER30.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER31.PNG", edgeIsAnnulus = F)
+digitizeRadii("FER30.PNG", edgeIsAnnulus = F) 
+#digitizeRadii("FER31.PNG", edgeIsAnnulus = F) # Otolith image is cloudy and obscured by tissue
 digitizeRadii("FER32.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER33.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER34.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER35.PNG", edgeIsAnnulus = F)
+#digitizeRadii("FER35.PNG", edgeIsAnnulus = F) # Cracked otolith, unable to reliably determine radius from nucleus to edge
 digitizeRadii("FER36.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER37.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER38.PNG", edgeIsAnnulus = F)
@@ -144,14 +162,14 @@ digitizeRadii("FER43.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER44.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER45.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER46.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER47.PNG", edgeIsAnnulus = F)
+#digitizeRadii("FER47.PNG", edgeIsAnnulus = F) # Cracked otolith, unable to reliably determine radius from nucleus to edge
 digitizeRadii("FER48.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER49.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER50.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER51.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER52.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER53.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER54.PNG", edgeIsAnnulus = F)
+# digitizeRadii("FER54.PNG", edgeIsAnnulus = F) # Cracked otolith, unable to reliably determine radius from nucleus to edge
 digitizeRadii("FER55.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER56.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER57.PNG", edgeIsAnnulus = F)
@@ -164,16 +182,72 @@ digitizeRadii("FER63.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER64.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER65.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER66.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER67.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER68.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER69.PNG", edgeIsAnnulus = F)
-digitizeRadii("FER70.PNG", edgeIsAnnulus = F)
+# digitizeRadii("FER70.PNG", edgeIsAnnulus = F) # Poor image quality
 digitizeRadii("FER71.PNG", edgeIsAnnulus = F)
 ```
 
-### STEP 1: Load full ancestry data and prepare for growth analysis; run the Rmd chunk below.
+<b>Samples used for back-calculation</b>: <i>N</i> = 62
 
-readRDS()
+#### 3c: Remove all copied raw otolith images from the working directory.
+
+#### 3d: Move all .rds files generated from the digitizeRadii() function into a new folder: `data/bc_rds/`
+
+### STEP 4: Compile and clean all radius measurements stored in .rds files
+In this step, I wrote a for-loop to extract the "radii" elements from each of the .rds files generated by the digitizeRadii() funtion used in Step 3 above. All radii data were for each sample were then compiled into a single dataframe ("bc"). We then cleaned, filtered, and merged the bc data with total length data to perform linear back-calculation of length-at-age.
+
+#### 4a: Extract radial measurements for each sample from .rds files and compile into a single data frame for back-calculation
+
+##### Extract radial measurements and compile into single dataframe:
+```{r}
+# List rds filers
+rds <- list.files(paste("data/bc_rds/"),
+                  pattern=".rds$")
+
+# Generate data frame of rds file names
+rds_files <- data_frame(rds)
+
+# Generate an empty list to store "radii" data frame elements from .rds files
+rds_list <- list()
+
+# Run for loop on all .rds files to extract radii data frame and add to the rds_list (defined above)
+for(ii in 1:nrow(rds_files)) {
+  
+  ## paste the readRDS() function so that it calls each .rds file in the rds files data frame
+  read_rds <- readRDS(paste("data/bc_rds/", rds_files[ii,"rds"], sep = ""))$radii
+  
+  ## Fill the empty list with the iterative output of each read_rds object (defined above)
+  rds_list[[paste0("element",ii)]] <- read_rds
+  
+}
+
+# Concatenate all data frame elements in the list using the list.rbind() function from the package "rlist"
+bc <- data.frame(list.rbind(rds_list))
+```
+
+#### 4b: Clean, filter, and merge radial measurement data with total length data for back-calculation; run the Rmd chunk below.
+
+##### Clean, filter, and merge radial measurement data:
+```{r}
+# Omit rownames
+rownames(bc) <- NULL
+
+# Omit empty "reading" column
+bc <- bc %>%
+  select(-c(reading))
+
+# Modify column names to be more sensible
+colnames(bc) <- c("sample_id", "consensus_age", "annulus", "annulus_radius", "otolith_radius")
+
+# Save radius data for donwtream analyses
+save(bc, file = "data/bc_data/bc.Rda")
+```
+
+
+#### STEP 1: Load full ancestry data and prepare for growth analysis; run the Rmd chunk below.
+
+
 
 ##### Load and prepare full ancestry data:
 ```{r}
