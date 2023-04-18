@@ -132,7 +132,7 @@ In this step, we read in phenotype data for all fish included in the study. Data
    1. "sample_id": same as in metadata and genotype data (followed by "structure_number"; see Analysis 3, Phase 1, step 1e)
    2. "sex": male or female, determined by internal gonad examination, 
    3. "tl_alive": total length of the fish immediately upon capture by rod-and-reel, as measured from the tip of the lower mandible to the posterior tip of the caudal fin squeezed together
-   4. "tl_dead": total length of the fish upon sample processesing (after approximately one month frozen)
+   4. "tl_dead": total length of the fish upon sample processeing (after approximately one month frozen)
    5. "mass_dead": mass of the fish in grams at time of sample processing
    6. "meas_ints": initials of the person doing the phenotypic measuring, measuring, or assessment, for later analysis of observer/measurement bias
    7. "eddie_age": age estimate based on sagittal otolith annuli, performed by Eddie Sterling
