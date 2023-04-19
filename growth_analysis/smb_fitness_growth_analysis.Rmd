@@ -1219,39 +1219,96 @@ save(smb_predict, file = "data/ancestry_data/smb_predict.Rda")
 save(adm_predict, file = "data/ancestry_data/adm_predict.Rda")
 ```
 
-##### 2d.6. Plot von Bertlanffy growth for sex; run the Rmd chunk below.
+##### 2d.6. Plot von Bertlanffy growth for ancestry group; run the Rmd chunk below.
 
-##### Plot the von Bertalanffy model for sex: `figures/sex.pdf`
+##### Plot the von Bertalanffy model for ancestry group: `figures/ancestry.pdf`
 ```{r}
-# Load in male predicted dataset to plot best fit curve
-load("data/sex_data/m_predict.Rda")
+# Load in NB predicted dataset to plot best fit curve
+load("data/ancestry_data/nb_predict.Rda")
 
-# Load in female predicted dataset to plot best fit curve
-load("data/sex_data/f_predict.Rda")
+# Load in SMB predicted dataset to plot best fit curve
+load("data/ancestry_data/smb_predict.Rda")
+
+# Load in ADM predicted dataset to plot best fit curve
+load("data/ancestry_data/adm_predict.Rda")
 
 # Load in full back-calculuated data to plot all data points
 load("data/global_data/full_bc_data.Rda")
 
-# Bind male and female datasets for plotting
-sex_predict <- rbind(m_predict,
-                     f_predict)
+# Bind ancestry group datasets for plotting
+ancestry_predict <- rbind(nb_predict,
+                          smb_predict,
+                          adm_predict)
 
 # Convert character to factor
-sex_predict <- sex_predict %>%
-  mutate(sex = factor(sex))
+ancestry_predict <- ancestry_predict %>%
+  mutate(ancestry_group = factor(ancestry_group))
 
 # Plot von Bertalanffy model
-pdf("figures/sex.pdf", width = 7, height = 5)
+pdf("figures/ancestry.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = T) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = sex_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = ancestry_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = T) +
   theme_set(theme_cowplot(12)) +
-  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8, color = "blue") +
-  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8, color = "blue") +
-  scale_fill_manual(values = c("grey80","grey20")) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
+  geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8, color = "deepskyblue") +
+  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8, color = "mediumpurple") +
+  geom_hline(yintercept = 542.33111, linetype = "longdash", size = 0.8, color = "deeppink2") +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_color_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))
+
+dev.off()
+```
+
+
+We initially plotted all three ancestry group growth models, including best lines, confidence interval ribbons around the best fit lines, and observed data points, on the same plot. The confidence intervals for Smallmouth Bass (deeppink) were substantially greater than those for Neosho Bass (deepskyblue) and Admixed individuls (mediumpurple) and obscured view of the Neosho Bass and Admixed growth curves. For this reason, we omitted the confidence intervals for this plot and included only the real data points and best fit lines. 
+
+This figure is the basis for Figure S[...] in the final manuscript.
+
+##### 2d.7. Plot von Bertlanffy growth for Neosho Bass (NB) and Admixed (ADM) ancestry groups; run the Rmd chunk below.
+In this step, we plot the same data as above (Step 2d.6), but we include only the data points and associated best fit curves and confidence interval ribbons for the NB and ADM curves for better viewing. We omit data for Smallmouth Bass from the main curve, and instead show the confidence intervals for SMB in an inset plot.
+
+##### Plot the von Bertalanffy model for ancestry group: `figures/nb_adm_ancestry.pdf`
+```{r}
+# Load in NB predicted dataset to plot best fit curve
+load("data/ancestry_data/nb_predict.Rda")
+
+# Load in ADM predicted dataset to plot best fit curve
+load("data/ancestry_data/adm_predict.Rda")
+
+# Load in full back-calculuated data to plot all data points
+load("data/global_data/full_bc_data.Rda")
+
+# Bind ancestry group datasets for plotting
+nb_adm_predict <- rbind(nb_predict,
+                        adm_predict)
+
+# Convert character to factor
+nb_adm_predict <- nb_adm_predict %>%
+  mutate(ancestry_group = factor(ancestry_group))
+
+# Remove SMB from full bc data 
+nb_adm_bc_data <- full_bc_data %>%
+  filter(ancestry_group == "Neosho_Bass" | 
+           ancestry_group == "Admixed")
+
+# Plot von Bertalanffy model
+pdf("figures/nb_adm_ancestry.pdf", width = 7, height = 5)
+
+ggplot() + 
+  geom_ribbon(data = nb_adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = T) +
+  geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8) +
+  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8) +
+  geom_point(data = nb_adm_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = nb_adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
@@ -1261,3 +1318,130 @@ dev.off()
 ```
 
 This figure is the basis for Figure 2d in the final manuscript.
+
+##### 2d.8. Plot von Bertlanffy growth for SMB ancestry group to be included as an inset in Figure 2d (see Step 2d.7 above); run the Rmd chunk below.
+In this step, we plot growth data for Smallmouth Bass only, including real data points, best fit line, and confidence ribbon and include it as in an inset in Figure 2d.
+
+##### Plot the von Bertalanffy model for ancestry group: `figures/smb_ancestry.pdf`
+```{r}
+# Load in SMB predicted dataset to plot best fit curve
+load("data/ancestry_data/smb_predict.Rda")
+
+# Load in full back-calculuated data to plot all data points
+load("data/global_data/full_bc_data.Rda")
+
+# Convert character to factor
+smb_predict <- smb_predict %>%
+  mutate(ancestry_group = factor(ancestry_group))
+
+# Remove SMB from full bc data 
+smb_bc_data <- full_bc_data %>%
+  filter(ancestry_group == "Smallmouth_Bass")
+
+# Plot von Bertalanffy model
+pdf("figures/smb_ancestry.pdf", width = 8, height = 7)
+
+ggplot() + 
+  geom_ribbon(data = smb_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_hline(yintercept = 542.33111, linetype = "solid", size = 0.8) +
+  geom_point(data = smb_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = smb_predict, aes(x = annulus, y = fit), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("deeppink2")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,800), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 25)) + 
+  theme(axis.text = element_text(size = 25)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(15,15,15,15))
+
+dev.off()
+```
+
+### STEP 3: Plot all growth model figures together; run the Rmd chunk below.
+
+##### Generate multi-panel plot for growth models by group of interest.
+```{r}
+# Global plot
+global <- ggplot() + 
+  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = global_predict, aes(x = annulus, y = fit)) +
+  geom_hline(yintercept = 440.94667, linetype = "longdash", size = 0.8) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 18)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_blank()) +
+  theme(plot.margin = margin(10,10,10,10))
+
+# River plot
+river <- ggplot() + 
+  geom_ribbon(data = river_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = river), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = river_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.8) +
+  geom_hline(yintercept = 430.14416, linetype = "dotted", size = 0.8) +
+  scale_fill_manual(values = c("grey80","grey20")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 18)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.title.y = element_blank())  +
+  theme(plot.margin = margin(10,10,10,10))
+
+# Sex plot
+sex <- ggplot() + 
+  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = sex_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8) +
+  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8) +
+  scale_fill_manual(values = c("grey80","grey20")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 18)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+# Ancestry plot
+ancestry <- ggplot() + 
+  geom_ribbon(data = nb_adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8) +
+  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8) +
+  geom_point(data = nb_adm_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = nb_adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 18)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))  +
+  theme(axis.title.y = element_blank()) +
+  theme(plot.margin = margin(10,10,10,10))
+
+# Concatenate all plots
+pdf("figures/growth_models.pdf", width = 12, height = 9)
+
+plot_grid(global,
+          river,
+          sex,
+          ancestry,
+          nrow = 2,
+          ncol = 2,
+          labels = NULL)
+
+dev.off()
+```
+
