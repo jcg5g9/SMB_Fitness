@@ -27,15 +27,6 @@ library(car)
 library(rlist)
 ```
 
-### maybe
-library(nlme)
-library(lme4)
-library(factoextra)
-library(MASS)
-library(logihist)
-library(ggpubr)
-library(DescTools)
-
 ## PHASE 1: LINEAR BACK CALCULATION
 In this phase of analysis, we conduct linear back-calculation on a subset of relatively high-age fish in our dataset to generate estimates of total length for fish at earlier ages. These estimates are not to be considered independent measurements of age and length, because they are calculated based on the assumption of a direct, one-to-one proportional relationship between an individual's total length and the radii of each annulus in the individual's otolith. Each back-calculated length is therefore an estimate of that individual's length at an earlier age. However, given a large sample size, these estimates can be used to approximate or represent lower age estimates within a population.
 
@@ -397,6 +388,7 @@ global_bootstrap <- Boot(global,
 global_confint <- confint(global_bootstrap, 
                           level = 0.95)
 ```
+
 <b>Confidence intervals for global parameter estimates</b>: <br>
 
 <b>L<sub>inf</sub></b>: 408.4898281 - 485.3221992 <br>
@@ -408,7 +400,7 @@ Results from bootstrapping and confidence intervals are given in Table S3a in th
 ##### 2a.4. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
 In this step, we perform bootstrapping over average length-at-age estimates predicted for the dataset and calculate 95% confidence intervals around the parameter estimates.
 
-##### Conduct bootstrapping over predicted values:
+##### Conduct bootstrapping over predicted values for the global dataset:
 ```{r}
 # Define function to predict average length-at-age values for each age (to plot the best fit curve for the von Bertlanffy growth model)
 predict_function <- function(x) {
@@ -429,7 +421,7 @@ global_iconfint <- confint(global_iboot,
                            level = 0.95)
 
 # Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
-global_predict <- data.frame(annulus,
+global_predict <- data.frame(annuli,
                              predict(global, data.frame(annulus = annuli)),
                              global_iconfint)
 
@@ -626,7 +618,7 @@ bs_iconfint <- confint(bs_iboot,
                        level = 0.95)
 
 # Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
-bs_predict <- data.frame(annulus,
+bs_predict <- data.frame(annuli,
                          predict(bs, data.frame(annulus = annuli)),
                          bs_iconfint)
 
@@ -649,7 +641,7 @@ elk_iconfint <- confint(elk_iboot,
                         level = 0.95)
 
 # Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
-elk_predict <- data.frame(annulus,
+elk_predict <- data.frame(annuli,
                           predict(elk, data.frame(annulus = annuli)),
                           elk_iconfint)
 
@@ -761,7 +753,7 @@ f_starts <- vbStarts(bc_tl ~ annulus,
 <b>K</b>: 0.3052123 <br>
 <b>t<sub>0</sub></b>: -0.2546104 <br>
 
-<b>Starting values used for Elk River model</b>: <br>
+<b>Starting values used for female model</b>: <br>
 
 <b>L<sub>inf</sub></b>: 383.0877 <br>
 <b>K</b>: 0.3944219 <br>
@@ -809,7 +801,7 @@ f_coefficients <- summary(f)
 
 Parameter estimates are given in Table S3c in the final manuscript.
 
-##### 2a.4. Perform bootstrapping on sex datasets to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+##### 2c.4. Perform bootstrapping on sex datasets to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
 In this step, we perform bootstrapping on each sex with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the male and female growth models (see Step 2c.3).
 
 ##### Perform bootstrapping on male and female models:
@@ -866,7 +858,7 @@ m_iconfint <- confint(m_iboot,
                       level = 0.95)
 
 # Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
-m_predict <- data.frame(annulus,
+m_predict <- data.frame(annuli,
                         predict(m, data.frame(annulus = annuli)),
                         m_iconfint)
 
@@ -889,7 +881,7 @@ f_iconfint <- confint(f_iboot,
                       level = 0.95)
 
 # Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
-f_predict <- data.frame(annulus,
+f_predict <- data.frame(annuli,
                         predict(f, data.frame(annulus = annuli)),
                         f_iconfint)
 
@@ -951,4 +943,321 @@ dev.off()
 
 This figure is the basis for Figure 2c in the final manuscript.
 
+#### 2d: Generate growth model for each ancestry group (Smallmouth Bass (SMB), Neosho Bass (NB), and Admixed (ADM)) separately.
+In this step, we parameterize the von Bertalanffy growth model for each ancestry group (Smallmouth Bass (SMB), Neosho Bass (NB), and Admixed (ADM)) to assess potential differences in growth due to pure or mixed ancestry.
 
+##### 2d.1. Load full back-calculation data and separate into datasets by ancestry group; run the Rmd chunk below.
+
+##### Separate global dataset by sex:
+```{r}
+# Load full bc data
+load("data/global_data/full_bc_data.Rda")
+
+# Get NB samples only
+full_bc_data_nb <- full_bc_data %>%
+  filter(ancestry_group == "Neosho_Bass")
+
+# Get SMB samples only
+full_bc_data_smb <- full_bc_data %>%
+  filter(ancestry_group == "Smallmouth_Bass")
+
+# Get ADM samples only
+full_bc_data_adm <- full_bc_data %>%
+  filter(ancestry_group == "Admixed")
+
+# save NB data for downstream analyses
+save(full_bc_data_nb, file = "data/ancestry_data/full_bc_data_nb.Rda")
+
+# save SMB data for downstream analyses
+save(full_bc_data_smb, file = "data/ancestry_data/full_bc_data_smb.Rda")
+
+# save ADM data for downstream analyses
+save(full_bc_data_adm, file = "data/ancestry_data/full_bc_data_adm.Rda")
+```
+
+##### 2d.2. Generate model starting values for each ancestry group; run the Rmd chunk below.
+
+##### load data and generate starting values for ancestry group:
+```{r}
+# Load full bc data for NB
+load("data/ancestry_data/full_bc_data_nb.Rda")
+
+# Load full bc data for SMB
+load("data/ancestry_data/full_bc_data_smb.Rda")
+
+# Load full bc data for ADM
+load("data/ancestry_data/full_bc_data_adm.Rda")
+
+# Generate starting values for optimizing the von Bertalanffy model in NB
+nb_starts <- vbStarts(bc_tl ~ annulus, 
+                      data = full_bc_data_nb)
+
+# Generate starting values for optimizing the von Bertalanffy model in SMB
+smb_starts <- vbStarts(bc_tl ~ annulus, 
+                       data = full_bc_data_smb)
+
+# Generate starting values for optimizing the von Bertalanffy model in ADM
+adm_starts <- vbStarts(bc_tl ~ annulus, 
+                       data = full_bc_data_adm)
+```
+
+<b>Starting values used for NB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 445.85 <br>
+<b>K</b>: 0.2884396 <br>
+<b>t<sub>0</sub></b>: -0.2720177 <br>
+
+<b>Starting values used for SMB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 526.263 <br>
+<b>K</b>: 0.2119943 <br>
+<b>t<sub>0</sub></b>: -0.2800102 <br>
+
+<b>Starting values used for ADM model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 375.3536 <br>
+<b>K</b>: 0.4146585 <br>
+<b>t<sub>0</sub></b>: -0.1198689 <br>
+
+##### 2d.3. Model growth for each ancestry group and extract model coefficients; run the Rmd chunk below.
+In this step, we run the non-linear von Bertalanffy model for each ancestry and extract model coefficients from the summary table given with the summary() function.
+
+##### Model von Bertalanffy growth for sex:
+```{r}
+# Run von Bertalanffy growth model for males using back-calculated total length, modeled by annulus number (consensus age)
+nb <- nls(bc_tl ~ vb(annulus,
+                     Linf,
+                     K,
+                     t0), 
+         data = full_bc_data_nb, 
+         start = nb_starts)
+
+# Extract male data coefficients
+nb_coefficients <- summary(nb)
+
+# Run von Bertalanffy growth model for SMB using back-calculated total length, modeled by annulus number (consensus age)
+smb <- nls(bc_tl ~ vb(annulus,
+                      Linf,
+                      K,
+                      t0), 
+         data = full_bc_data_smb, 
+         start = smb_starts)
+
+# Extract female data coefficients
+smb_coefficients <- summary(smb)
+
+# Run von Bertalanffy growth model for ADM using back-calculated total length, modeled by annulus number (consensus age)
+adm <- nls(bc_tl ~ vb(annulus,
+                      Linf,
+                      K,
+                      t0), 
+         data = full_bc_data_adm, 
+         start = adm_starts)
+
+# Extract female data coefficients
+adm_coefficients <- summary(adm)
+```
+
+<b>Parameter estimates for NB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 487.23225 <br>
+<b>K</b>: 0.23643 <br>
+<b>t<sub>0</sub></b>: -0.39424 <br>
+
+<b>Parameter estimates for SMB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 542.33111 <br>
+<b>K</b>: 0.19377 <br>
+<b>t<sub>0</sub></b>: -0.37020 <br>
+
+<b>Parameter estimates for ADM model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 403.55265 <br>
+<b>K</b>: 0.33793 <br>
+<b>t<sub>0</sub></b>: -0.24880 <br>
+
+Parameter estimates are given in Table S3d in the final manuscript.
+
+##### 2d.4. Perform bootstrapping on ancestry group datasets to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+In this step, we perform bootstrapping on each sex with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the ancestry group growth models (see Step 2d.3).
+
+##### Perform bootstrapping on ancestry group models:
+```{r}
+# Conduct bootstrapping on parameter estimates for NB model
+set.seed(47534) # Set seed so that results are reproducible
+nb_bootstrap <- Boot(nb, 
+                     R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for NB model
+nb_confint <- confint(nb_bootstrap, 
+                     level = 0.95)
+
+# Conduct bootstrapping on parameter estimates for SMB model
+set.seed(39084) # Set seed so that results are reproducible
+smb_bootstrap <- Boot(smb, 
+                      R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for ADM model
+smb_confint <- confint(smb_bootstrap, 
+                       level = 0.95)
+
+# Conduct bootstrapping on parameter estimates for ADM model
+set.seed(37822) # Set seed so that results are reproducible
+adm_bootstrap <- Boot(adm, 
+                      R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for ADM model
+adm_confint <- confint(adm_bootstrap, 
+                       level = 0.95)
+```
+
+<b>Confidence intervals for NB parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 431.9843230 - 597.3864203 <br>
+<b>K</b>: 0.1581719 - 0.3204952 <br>
+<b>t<sub>0</sub></b>: -0.7711496 - -0.1205203 <br>
+
+<b>Confidence intervals for SMB parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 323.75679667 - 1259.6571567 <br>
+<b>K</b>: 0.05444464 - 0.5235279 <br>
+<b>t<sub>0</sub></b>: -1.10145867 - -0.1077478 <br>
+
+<b>Confidence intervals for ADM parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 371.6570318 - 447.92298437 <br>
+<b>K</b>: 0.2573298 - 0.42598624 <br>
+<b>t<sub>0</sub></b>: -0.5342975 - -0.04283142 <br>
+
+Results from bootstrapping and confidence intervals are given in Table S3D in the final manuscript.
+
+##### 2d.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+In this step, we perform bootstrapping over average length-at-age estimates predicted for the ancestry group datasets and calculate 95% confidence intervals around the parameter estimates.
+
+We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
+
+##### Conduct bootstrapping over predicted values for ancestry group:
+```{r}
+## Conduct bootstrapping and calculated confidence intervals for NB
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+nb_iboot <- Boot(nb, 
+                 f = predict_function,
+                 R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+nb_iconfint <- confint(nb_iboot, 
+                       level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+nb_predict <- data.frame(annuli,
+                         predict(nb, data.frame(annulus = annuli)),
+                         nb_iconfint)
+
+# Generate column to distinguish these data as male
+nb_predict$ancestry_group <- c(rep("Neosho_Bass", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(nb_predict) <- c("annulus","fit","lci","uci", "ancestry_group")
+
+
+## Conduct bootstrapping and calculated confidence intervals for SMB
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+smb_iboot <- Boot(smb, 
+                  f = predict_function,
+                  R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+smb_iconfint <- confint(smb_iboot, 
+                        level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+smb_predict <- data.frame(annuli,
+                          predict(smb, data.frame(annulus = annuli)),
+                          smb_iconfint)
+
+# Generate column to distinguish these data as female
+smb_predict$ancestry_group <- c(rep("Smallmouth_Bass", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(smb_predict) <- c("annulus","fit","lci","uci", "ancestry_group")
+
+
+## Conduct bootstrapping and calculated confidence intervals for ADM
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+adm_iboot <- Boot(adm, 
+                  f = predict_function,
+                  R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+adm_iconfint <- confint(adm_iboot, 
+                        level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+adm_predict <- data.frame(annuli,
+                          predict(adm, data.frame(annulus = annuli)),
+                          adm_iconfint)
+
+# Generate column to distinguish these data as female
+adm_predict$ancestry_group <- c(rep("Admixed", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(adm_predict) <- c("annulus","fit","lci","uci", "ancestry_group")
+
+
+## Save predicted datasets for downstream analyses 
+
+# Save the predicted NB model dataset for donwstream analyses
+save(nb_predict, file = "data/ancestry_data/nb_predict.Rda")
+
+# Save the predicted SMB model dataset for donwstream analyses
+save(smb_predict, file = "data/ancestry_data/smb_predict.Rda")
+
+# Save the predicted ADM model dataset for donwstream analyses
+save(adm_predict, file = "data/ancestry_data/adm_predict.Rda")
+```
+
+##### 2d.6. Plot von Bertlanffy growth for sex; run the Rmd chunk below.
+
+##### Plot the von Bertalanffy model for sex: `figures/sex.pdf`
+```{r}
+# Load in male predicted dataset to plot best fit curve
+load("data/sex_data/m_predict.Rda")
+
+# Load in female predicted dataset to plot best fit curve
+load("data/sex_data/f_predict.Rda")
+
+# Load in full back-calculuated data to plot all data points
+load("data/global_data/full_bc_data.Rda")
+
+# Bind male and female datasets for plotting
+sex_predict <- rbind(m_predict,
+                     f_predict)
+
+# Convert character to factor
+sex_predict <- sex_predict %>%
+  mutate(sex = factor(sex))
+
+# Plot von Bertalanffy model
+pdf("figures/sex.pdf", width = 7, height = 5)
+
+ggplot() + 
+  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = T) +
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = sex_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8, color = "blue") +
+  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8, color = "blue") +
+  scale_fill_manual(values = c("grey80","grey20")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))
+
+dev.off()
+```
+
+This figure is the basis for Figure 2d in the final manuscript.
