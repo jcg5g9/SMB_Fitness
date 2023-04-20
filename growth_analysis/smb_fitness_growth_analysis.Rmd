@@ -315,6 +315,8 @@ After this step, three samples (FER08, FER47, FER70) were omitted from analyses,
 <b>Final back-calculation data summary</b>:
 <i>N</i><sub>samples</sub> = 337
 
+### ----------------------- END OF PHASE 1: LINEAR BACK-CALCULATION  ----------------------- ###
+
 ## PHASE 2: VON BERTALANFFY GROWTH ANALYSIS
 In this phase of the analysis, we paramaterize the von Bertalanffy growth equation using back-calculated total length and consensus age of samples in the Elk River and Big Sugar Creek to assess patterns of growth in groups of interest (specifically, between the two streams, between sexes, and among genetic ancestry groups). We first quantify overall growth rate and maximum theoretical total length for all fish in the dataset to understand average growth rates across the populations of interest. Next, we quantify any potential differences in growth by (1) individual sex (male or female) or (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assess differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we include linear back-calculated length-at-age estimates for large, older fish to increase sample size.
 
@@ -1444,4 +1446,8 @@ plot_grid(global,
 
 dev.off()
 ```
+This group of figures is the basis of Figure 2 in the final manuscript.
 
+### ----------------------- END OF PHASE 2: VON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
+
+### ----------------------- END OF ANALYSIS 4: FVON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
