@@ -50,7 +50,6 @@ In this step, we prepare all genotype data from the full, filtered dataset (`../
 ##### Load in full, filtered data:
 ```{r}
 load("../filtering_analysis/data/processed_raw_data/full_data.rda")
-load("../filtering_analysis/data/processed_raw_data/full_genotype_data.rda")
 ```
 
 #### 1b: Subset the data to include only individuals for the full population structure analysis and SPB diagnostic SNPs
@@ -60,7 +59,6 @@ In this step, we are sub-setting the fully filtered data to only include samples
 
 ##### Filter out genotype data:
 ```{r}
-full_phenotype_data
 ## retain only sample_id column and genotype data
 full_data <- full_data[,c(2,10:37)]
 ```
@@ -850,13 +848,6 @@ dev.off()
 These plots are the basis for Figure S2c in the final manuscript.
 
 ### ----------------------- END OF PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION ----------------------- ###
-
-```{r}
-## Load in full ancestry data
-load("data/processed_ancestry_data/full_ancestry_data.Rda")
-full_ancestry_data
-```
-
 
 ### ----------------------- END OF ANALYSIS 2: ANCESTRY INFERENCE AND GENETIC GROUP ASSIGNMENT ANALYSIS ----------------------- ###
 
