@@ -34,6 +34,18 @@ library(MuMIn)
 In this step, we read in previously curated metadata for fish collected from two streams within the Neosho Bass native range and for a reference set of fish collected from three streams within the Smallmouth Bass native range (`../raw_data/metadata.xlsx`). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
 #### 1a. Read in and clean sample metadata; run the Rmd chunk below.
+In this step, we read in the full metadata for all fish included in the study. Data include: 
+
+   1. "sample_id": a unique, alphanumeric ID for each sample
+   2. "river_code": the alphabetical prefix for each sample id, where "FBS" stands for "Fitness, Big Sugar Creek" and "FER" stands for "Fitness, Elk River"
+   3. "sample_number": the numerical prefix for each sample (01, 02, 03,..., 71)
+   4. "structure_number": the alphanumerical ID for each individual in the proper format for analysis with the program STRUCTURE
+   5. "easting": easting UTM (ZONE 15S) measurement (GIS)
+   6. "northing": northing UTM (ZONE 15S) measurement (GIS)
+   7. "dist_from_df": distance (m) from Deep Ford Access (DFA) at which each sample was collected
+   8. "range_id": species native range from which each individual was collected
+   9. "river": river or stream frow which each individual was collected 
+   10. "population": designation for whether the sample was included in growth analyses ("sample") or was used solely as a reference for ancestry analysis ("reference")
 
 ##### Read in and clean sample metadata:
 ```{r}
@@ -48,6 +60,7 @@ metadata <- metadata %>%
   mutate(sample_number = as.numeric(sample_number)) %>%
   mutate(easting = as.numeric(easting)) %>%
   mutate(northing = as.numeric(northing)) %>%
+  mutate(dist_from_df = as.numeric(dist_from_df)) %>%
   mutate(range_id = factor(range_id)) %>%
   mutate(river = factor(river)) %>%
   mutate(population = factor(population))
@@ -91,6 +104,11 @@ metadata %>%
 In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
 #### 2a. Read in, clean, and join genotype data with metadata; run the Rmd chunk below.
+In this step, we read in genotype data for all fish included in the study. Data include: 
+
+   1. "sample_id": same as in metadata
+   2. "structure_number": same as in metadata 
+   3. two columns for each microsatellite locus, one column per allele (see description under STEP 2 above for info)
 
 ##### Read in and clean genotype data:
 ```{r}
@@ -250,9 +268,6 @@ full_genotype_data <- merge(metadata,
                    by = c("sample_id",
                           "structure_number"))
 
-# Save the full genotype data
-save(full_genotype_data, file = "data/processed_raw_data/full_genotype_data.Rda")
-
 ## Full phenotype data
 
 # Get full phenotype dataset
@@ -260,9 +275,6 @@ full_phenotype_data <- merge(metadata,
                    phenotype_data,
                    by = c("sample_id",
                           "structure_number"))
-
-# Save the full phenotype data
-save(full_phenotype_data, file = "data/processed_raw_data/full_phenotype_data.Rda")
 
 # Merge all data
 full_data <- merge(full_genotype_data, 
@@ -273,6 +285,7 @@ full_data <- merge(full_genotype_data,
                           "sample_number",
                           "easting",
                           "northing",
+                          "dist_from_df",
                           "range_id",
                           "river",
                           "population"))
@@ -297,13 +310,13 @@ model <- lme(tl_alive ~ tl_dead,
              full_data_age2)
 
 # Summarize model output and coefficients
-summary(model)
+model_coefficients <- summary(model)
 
 # Get r-squared value
-r.squaredGLMM(model)
+model_r <- r.squaredGLMM(model)
 
 # Calculate tl_alive at 224mm tl_dead using model output coefficients:
-1.013964*224 + 3.900107
+length <- 1.013964*224 + 3.900107
 
 # Plot linear model
 pdf("figures/impute_tl_fer71.pdf", width = 6, height = 5)
@@ -312,13 +325,14 @@ ggplot(full_data_age2, aes(x = tl_dead, y = tl_alive)) +
   geom_point(fill = "grey", color = "black", pch = 21, size = 2) +
   theme_set(theme_cowplot(12)) +
   geom_smooth(method = "lm", color = "black") +
-  geom_vline(xintercept = 224, linetype = "longdash", size = 1) + 
-  geom_hline(yintercept = 231, linetype = "longdash", size = 1) +
+  geom_vline(xintercept = 224, linetype = "longdash", size = 0.8) + 
+  geom_hline(yintercept = 231, linetype = "longdash", size = 0.8) +
   labs(x = "Total length dead (mm)", y = "Total length alive (mm)") +
   theme(axis.text = element_text(size = 15)) + 
   theme(axis.title = element_text(size = 15)) +
   scale_x_continuous(expand = c(0,0)) + 
-  scale_y_continuous(expand = c(0,0))
+  scale_y_continuous(expand = c(0,0)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
 
 dev.off()
 ```

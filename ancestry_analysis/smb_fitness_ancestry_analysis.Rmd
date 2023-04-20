@@ -50,6 +50,7 @@ In this step, we prepare all genotype data from the full, filtered dataset (`../
 ##### Load in full, filtered data:
 ```{r}
 load("../filtering_analysis/data/processed_raw_data/full_data.rda")
+load("../filtering_analysis/data/processed_raw_data/full_genotype_data.rda")
 ```
 
 #### 1b: Subset the data to include only individuals for the full population structure analysis and SPB diagnostic SNPs
@@ -59,6 +60,7 @@ In this step, we are sub-setting the fully filtered data to only include samples
 
 ##### Filter out genotype data:
 ```{r}
+full_phenotype_data
 ## retain only sample_id column and genotype data
 full_data <- full_data[,c(2,10:37)]
 ```
@@ -469,7 +471,7 @@ save(ancestry_metadata, file = "data/structure_data/ancestry_data/ancestry_metad
 load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
 
 # Omit unneeded columns
-ancestry_metadata <- ancestry_metadata[,c(1,10:12)]
+ancestry_metadata <- ancestry_metadata[,c(1,11:13)]
 
 # Gather dataset for plotting and convert variables to factors/characters. 'structure_number' was converted to a character in this step, and then factor levels were set in the next step to ensure that individuals were graphed in the same order as in STRUCTURE (for later direct one-to-one comparison)
 ancestry_metadata <- ancestry_metadata %>%
@@ -544,6 +546,7 @@ full_ancestry_data <- merge(full_data,
                           "sample_number", 
                           "easting", 
                           "northing", 
+                          "dist_from_df",
                           "range_id", 
                           "river",
                           "population"))
@@ -557,22 +560,25 @@ In this step, we count sample sizes for each ancestry group and present them in 
 
 ##### Summarize ancestry group data:
 ```{r}
+# Load ancestry group data
+load("data/processed_ancestry_data/full_ancestry_data.Rda")
+
 # Convert ancestry group variable to factor
-full_data <- full_data %>%
+full_ancestry_data <- full_ancestry_data %>%
   mutate(ancestry_group = factor(ancestry_group))
 
 # Count total number of fish per ancestry group
-full_data %>% 
+full_ancestry_data %>% 
   group_by(ancestry_group) %>%
   count()
 
 # Summarize full data by river within ancestry group
-full_data %>% 
+full_ancestry_data %>% 
   group_by(ancestry_group, river) %>%
   count()
 
 # Summarize full data by size bin for sex within river
-full_data %>% 
+full_ancestry_data %>% 
   group_by(size_bin, river, ancestry_group) %>%
   count()
 ```
@@ -844,6 +850,13 @@ dev.off()
 These plots are the basis for Figure S2c in the final manuscript.
 
 ### ----------------------- END OF PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION ----------------------- ###
+
+```{r}
+## Load in full ancestry data
+load("data/processed_ancestry_data/full_ancestry_data.Rda")
+full_ancestry_data
+```
+
 
 ### ----------------------- END OF ANALYSIS 2: ANCESTRY INFERENCE AND GENETIC GROUP ASSIGNMENT ANALYSIS ----------------------- ###
 
