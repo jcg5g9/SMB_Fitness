@@ -461,9 +461,55 @@ save(ancestry_metadata, file = "data/structure_data/ancestry_data/ancestry_metad
 
 ### STEP 2: Plot ancestry coefficients for all individuals. 
 
-#### 2a. Plot ancestry coefficients for all individuals at best K value (K=2) inferred in STRUCTURE; run the rmd chunk below.
+#### 2a. Plot ancestry coefficients for all individuals at best K value (K=2) in order by distance from Deep Ford Access area (DFA; dist_from_df) as inferred in STRUCTURE; run the rmd chunk below.
+In this step, we plot only sample individuals (Big Sugar Creek and Elk River, excluding reference Smallmouth Bass) in order of their linear stream distance (meters) from Deep Ford Access area (the starting point for all field collections). We visually assess the relationship between Smallmouth Bass ancestry and distance from Deep Ford to establish wheter admixture patterns are uniformly distributed in these rivers.
 
-##### STRUCTURE results: `k2.pdf`
+##### STRUCTURE results in order by distance from DFA: `k2_df.pdf`
+```{r}
+# Load in ancestry metadata for proper sample ordering in STRUCTURE plot
+load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
+
+# Keep only "sample" individuals and omit "reference" individuals
+ancestry_metadata <- ancestry_metadata %>%
+  filter(population == "sample")
+
+# Omit unneeded columns
+ancestry_metadata <- ancestry_metadata[,c(1,7,11:12)]
+
+# Gather dataset for plotting and convert variables to factors/characters. 'structure_number' was converted to a character in this step, and then factor levels were set in the next step to ensure that individuals were graphed in the same order as in STRUCTURE (for later direct one-to-one comparison)
+ancestry_metadata <- ancestry_metadata %>%
+  gather(c(3:4), key = "ancestry", value = "q") %>%
+  mutate(ancestry = factor(ancestry))
+
+# Reorder analysis order to be in the same order as Rivers (same as presented in Structure q plot)
+ancestry_metadata <- ancestry_metadata %>% 
+  mutate(structure_number = fct_reorder(structure_number, dist_from_df))
+
+# Plot posterior probability of assignment to each hybrid category as a cumulative bar plot for each individual (colors represent assignment probabilities for each of six possible hybrid categories)
+
+## we include black dashed lines at q=0.25 and q=0.75 to show thresholds for group membership.
+pdf("figures/k2_df.pdf", width=140, height=12)
+
+ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) + 
+  geom_bar(stat = "identity", show.legend = T, color = "black") +
+  geom_hline(yintercept = 0.25, color = "black", linetype = "longdash", size = 4) +
+  geom_hline(yintercept = 0.75, color = "black", linetype = "longdash", size = 4) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Individual", y = "q") +
+  scale_fill_manual(values = c("deepskyblue", "deeppink2")) +
+  theme(axis.title.x = element_blank())  +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(axis.text = element_text(angle = 90)) +
+  scale_y_continuous(expand=c(0,0))
+
+dev.off()
+```
+This plot is used as a component of Figure 1b in the final manuscript.
+
+#### 2b. Plot ancestry coefficients for all individuals at best K value (K=2) in order by the proportion of Smallmouth Bass ancestry inferred in STRUCTURE; run the rmd chunk below.
+In this step, we plot all individuals (including sample Big Sugar Creek and Elk River individuals along with reference Smallmouth Bass) in order of the genomic proportion of Smallmouth Bass ancestry. This plot allows easy interpretation of the number of samples assigned to each genetic ancestry group, as we also indicate the cutoff thresholds of 0.75 and 0.25 for "pure" ancestry (see further explanation in STEP 3 below).
+
+##### STRUCTURE results: `k2_smb_ancestry.pdf`
 ```{r}
 # Load in ancestry metadata for proper sample ordering in STRUCTURE plot
 load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
@@ -474,24 +520,16 @@ ancestry_metadata <- ancestry_metadata[,c(1,11:13)]
 # Gather dataset for plotting and convert variables to factors/characters. 'structure_number' was converted to a character in this step, and then factor levels were set in the next step to ensure that individuals were graphed in the same order as in STRUCTURE (for later direct one-to-one comparison)
 ancestry_metadata <- ancestry_metadata %>%
   gather(c(2:3), key = "ancestry", value = "q") %>%
-  mutate(ancestry = factor(ancestry)) %>%
-  mutate(rank_order = as.character(rank_order))
-
-# Change levels to get the correct order (see explanation for step above)
-ancestry_metadata$rank_order <- factor(ancestry_metadata$rank_order, levels = c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136"))
-
-# Convert analysis order column to factor
-ancestry_metadata <- ancestry_metadata %>%
-  mutate(structure_number = factor(structure_number))
+  mutate(ancestry = factor(ancestry))
 
 # Reorder analysis order to be in the same order as Rivers (same as presented in Structure q plot)
 ancestry_metadata <- ancestry_metadata %>% 
-  mutate(structure_number = fct_reorder(structure_number, as.integer(rank_order)))
+  mutate(structure_number = fct_reorder(structure_number, rank_order))
 
 # Plot posterior probability of assignment to each hybrid category as a cumulative bar plot for each individual (colors represent assignment probabilities for each of six possible hybrid categories)
 
 ## we include black dashed lines at q=0.25 and q=0.75 to show thresholds for group membership.
-pdf("figures/k2.pdf", width=140, height=12)
+pdf("figures/k2_smb_ancestry.pdf", width=140, height=12)
 
 ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) + 
   geom_bar(stat = "identity", show.legend = T, color = "black") +
