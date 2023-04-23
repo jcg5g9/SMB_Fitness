@@ -5,8 +5,8 @@ date: "9/11/2019"
 output: html_document
 ---
 
-## Project: Effects of admixture on fitness in Neosho Bass populations 
-We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard parameterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.
+# Project: Effects of admixture on fitness in Neosho Bass populations 
+<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard parameterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
 
 ## Specific Aim: Generating species range maps for Smallmouth Bass and Neosho Bass
 In this analysis, we generate easily readable maps displaying the geographic scope of the study area. The following code generates two types of maps: 1) a map of the Central Interior Highlands ecoregion, including U.S.A. state outlines, major rivers, and the parapatric native ranges of the two focal species (Neosho Bass and Smallmouth Bass); and 2) a close-up map of the two streams of interest for this study (Big Sugar Creek and Elk River). These are geo-referenced outline maps only. Shapes representing stream sites and/or populations were superimposed <i>a posteriori</i> on the maps in PowerPoint for publication figures.
@@ -69,11 +69,75 @@ shape_neosho <- readOGR(dsn = "data/species_range_shape_files/neosho",
 
 ### STEP 2: Generate maps
 
-#### 2a: Generate a map of the CIH, including states of the United States, rivers in the CIH, the Smallmouth Bass native range, and the Neosho Bass native range. 
+#### 2a: Generate a full species native range map, including the United States, Canada, outlines of the states of the United States, rivers in the CIH, the Smallmouth Bass native range, and the Neosho Bass native range.
+
+##### 2a.1. Run the Rmd chunk below to generate a full range map:
+
+##### Generate full range map: `figures/full_range.pdf`
+```{r}
+# Generate a full range map 
+pdf("figures/full_range.pdf", width=7, height = 5)
+
+# Plot North America first
+plot(shape_na, 
+     col= alpha("white", 0.8), 
+     border = "black", 
+     axes = T, 
+     ylim = c(25,51), 
+     xlim = c(-126,-60)) 
+
+# Plot Canada second
+plot(shape_canada, 
+     add = T,
+     col= alpha("white", 0.8), 
+     border = "black", 
+     axes = T, 
+     ylim = c(25,51), 
+     xlim = c(-126,-60)) 
+
+# Plot states in the United States third
+plot(shape_state, 
+     add = T,
+     col= alpha("white", 0.8), 
+     border = "black", 
+     axes = T, 
+     ylim = c(25,51), 
+     xlim = c(-126,-60)) 
+
+# Plot smallmouth bass fourth
+plot(shape_smb, 
+     add = T,
+     col = alpha("grey84", 0.8), 
+     border = T, 
+     axes = TRUE, 
+     ylim = c(25,51), 
+     xlim = c(-126,-60))
+
+# Plot neosho bass fifth
+plot(shape_neosho, 
+     add = T,
+     col = alpha("grey24", 0.9), 
+     border = T, 
+     axes = TRUE, 
+     ylim = c(25,51), 
+     xlim = c(-126,-60)) 
+
+# Plot legend last
+legend(x = -78, 
+       y = 35, 
+       legend = c("SMB", "NB"),
+       bty = "n",
+       fill = c("grey84","grey24"), 
+       cex = 1.5) 
+
+dev.off()
+```
+
+#### 2b: Generate a map of the CIH, including states of the United States, rivers in the CIH, the Smallmouth Bass native range, and the Neosho Bass native range. 
 
 ### IMPORTANT NOTE: Order of plotting data layers matters for this analysis.
 
-##### 2a.1. Run the Rmd chunk below to generate a CIH range map:
+##### 2b.1. Run the Rmd chunk below to generate a CIH range map:
 
 ##### Generate CIH range map: `figures/cih.pdf`
 ```{r}
@@ -131,6 +195,7 @@ scalebar(transform = T,
 
 dev.off()
 ```
+
 This figure was used as the basis for Figure 1a in the manuscript. See below for more details on final ms map making.
 
 ### STEP 3: Create fine-scale map of Big Sugar Creek and the Elk River 
