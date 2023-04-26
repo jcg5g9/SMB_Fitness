@@ -9,7 +9,7 @@ output: html_document
 <font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
 
 ## Specific Aim: von Bertalanffy individual growth analysis
-For this aim, paramaterized the von Bertlanffy individual growth model (von Bertlanffy 1983) for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by using the Dahl-Lee linear back-calculation model We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
+For this aim, paramaterized the von Bertlanffy individual growth model for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by using the Dahl-Lea linear back-calculation model We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
 
 ## Phases of Analysis
 ### Phase 1: Linear back-calculation
@@ -25,6 +25,7 @@ library(FSA) #v.0.8.32
 library(boot)
 library(car)
 library(rlist)
+library(nlme)
 ```
 
 ## PHASE 1: LINEAR BACK CALCULATION
@@ -100,7 +101,7 @@ digitizeRadii("FBS45.PNG", edgeIsAnnulus = F)
 digitizeRadii("FBS46.PNG", edgeIsAnnulus = F)
 ```
 
-<b>Samples used for back-calculation</b>: <i>N</i> = 46
+<b>Big Sugar Creek samples used for back-calculation</b>: <i>N</i> = 46
 
 #### 3b: Estimate radial measurements for Elk River samples; run the Rmd chunk below:
 In this step, we estimate radial measurements for the Elk River samples only.
@@ -179,7 +180,9 @@ digitizeRadii("FER69.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER71.PNG", edgeIsAnnulus = F)
 ```
 
-<b>Samples used for back-calculation</b>: <i>N</i> = 62
+<b>Elk River samples used for back-calculation</b>: <i>N</i> = 67
+
+<b>Total samples used for back-calculation</b>: <i>N</i> = 113
 
 #### 3c: Remove all copied raw otolith images from the working directory.
 
@@ -448,17 +451,18 @@ load("data/global_data/full_bc_data.Rda")
 pdf("figures/global.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = T) +
+  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
   geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = global_predict, aes(x = annulus, y = fit)) +
-  geom_hline(yintercept = 440.94667, linetype = "longdash", size = 0.8, color = "blue") +
+  geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.8) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("grey")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
 
 dev.off()
 ```
@@ -683,22 +687,26 @@ river_predict <- rbind(bs_predict,
 river_predict <- river_predict %>%
   mutate(river = factor(river))
 
+# Save full river predict file for downstream analysis
+save(river_predict, file = "data/river_data/river_predict.Rda")
+
 # Plot von Bertalanffy model
 pdf("figures/river.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = river_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = T) +
+  geom_ribbon(data = river_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
   geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = river), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.2)) + 
   geom_line(data = river_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.8, color = "blue") +
-  geom_hline(yintercept = 430.14416, linetype = "dotted", size = 0.8, color = "blue") +
+  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.8) +
+  geom_hline(yintercept = 430.14416, linetype = "dotted", size = 0.8) +
   scale_fill_manual(values = c("grey80","grey20")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
 
 dev.off()
 ```
@@ -923,22 +931,26 @@ sex_predict <- rbind(m_predict,
 sex_predict <- sex_predict %>%
   mutate(sex = factor(sex))
 
+# Save full sex predict file for downstream analysis
+save(sex_predict, file = "data/sex_data/sex_predict.Rda")
+
 # Plot von Bertalanffy model
 pdf("figures/sex.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = T) +
+  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
   geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = sex_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8, color = "blue") +
-  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8, color = "blue") +
+  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8) +
+  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8) +
   scale_fill_manual(values = c("grey80","grey20")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
 
 dev.off()
 ```
@@ -1246,12 +1258,15 @@ ancestry_predict <- rbind(nb_predict,
 ancestry_predict <- ancestry_predict %>%
   mutate(ancestry_group = factor(ancestry_group))
 
+# Save full ancestry predict file for downstream analysis
+save(ancestry_predict, file = "data/ancestry_data/ancestry_predict.Rda")
+
 # Plot von Bertalanffy model
 pdf("figures/ancestry.pdf", width = 7, height = 5)
 
 ggplot() + 
   geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = ancestry_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = T) +
+  geom_line(data = ancestry_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
   theme_set(theme_cowplot(12)) +
   geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8, color = "deepskyblue") +
   geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8, color = "mediumpurple") +
@@ -1262,7 +1277,8 @@ ggplot() +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
 
 dev.off()
 ```
@@ -1294,6 +1310,9 @@ nb_adm_predict <- rbind(nb_predict,
 nb_adm_predict <- nb_adm_predict %>%
   mutate(ancestry_group = factor(ancestry_group))
 
+# Save full river predict file for downstream analysis
+save(nb_adm_predict, file = "data/ancestry_data/nb_adm_predict.Rda")
+
 # Remove SMB from full bc data 
 nb_adm_bc_data <- full_bc_data %>%
   filter(ancestry_group == "Neosho_Bass" | 
@@ -1303,7 +1322,7 @@ nb_adm_bc_data <- full_bc_data %>%
 pdf("figures/nb_adm_ancestry.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = nb_adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = T) +
+  geom_ribbon(data = nb_adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
   geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8) +
   geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8) +
   geom_point(data = nb_adm_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
@@ -1314,7 +1333,8 @@ ggplot() +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
 
 dev.off()
 ```
@@ -1364,12 +1384,24 @@ dev.off()
 
 ##### Generate multi-panel plot for growth models by group of interest.
 ```{r}
+# Load in global predicted data 
+load("data/global_data/global_predict.Rda")
+
+# Load in river predicted data
+load("data/river_data/river_predict.Rda")
+
+# Load in sex predicted data 
+load("data/sex_data/sex_predict.Rda")
+
+# Load in ancestry predicted data 
+load("data/ancestry_data/nb_adm_predict.Rda")
+
 # Global plot
 global <- ggplot() + 
   geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
   geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = global_predict, aes(x = annulus, y = fit)) +
-  geom_hline(yintercept = 440.94667, linetype = "longdash", size = 0.8) +
+  geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.8) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("grey")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
@@ -1377,8 +1409,6 @@ global <- ggplot() +
   theme(axis.title = element_text(size = 18)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.text.x = element_blank()) +
   theme(plot.margin = margin(10,10,10,10))
 
 # River plot
@@ -1395,9 +1425,6 @@ river <- ggplot() +
   theme(axis.title = element_text(size = 18)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.text.x = element_blank()) +
-  theme(axis.title.y = element_blank())  +
   theme(plot.margin = margin(10,10,10,10))
 
 # Sex plot
@@ -1430,7 +1457,6 @@ ancestry <- ggplot() +
   theme(axis.title = element_text(size = 18)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size=1))  +
-  theme(axis.title.y = element_blank()) +
   theme(plot.margin = margin(10,10,10,10))
 
 # Concatenate all plots
@@ -1446,6 +1472,7 @@ plot_grid(global,
 
 dev.off()
 ```
+
 This group of figures is the basis of Figure 2 in the final manuscript.
 
 ### ----------------------- END OF PHASE 2: VON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
