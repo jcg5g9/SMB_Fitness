@@ -492,8 +492,6 @@ pdf("figures/k2_df.pdf", width=140, height=12)
 
 ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) + 
   geom_bar(stat = "identity", show.legend = T, color = "black") +
-  geom_hline(yintercept = 0.25, color = "black", linetype = "longdash", size = 4) +
-  geom_hline(yintercept = 0.75, color = "black", linetype = "longdash", size = 4) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Individual", y = "q") +
   scale_fill_manual(values = c("deepskyblue", "deeppink2")) +
@@ -617,13 +615,18 @@ full_ancestry_data %>%
 full_ancestry_data %>% 
   group_by(size_bin, river, ancestry_group) %>%
   count()
+
+full_ancestry_data %>%
+  filter(river == "Elk_River") %>%
+  arrange(desc(smb))
+
 ```
 
 ### Data summary:
 
 ## Totals by ancestry group 
 <b><i>N</i><sub>Neosho_Bass</sub> = 46 </b><br>
-<i>N</i><sub>Smallmouth Bass</sub> = 34 <br>
+<i>N</i><sub>Smallmouth Bass</sub> = 14 <br>
 <i>N</i><sub>Admixed</sub> = 56 <br>
 
 ## By river (wihtin ancestry group)
