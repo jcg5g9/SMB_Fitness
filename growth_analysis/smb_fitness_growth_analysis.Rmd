@@ -290,7 +290,7 @@ bc_data <- bc_data %>%
 #### 5b: Remove all length data corresponding to an annulus-to-otolith radial ratio of 1.00; run the Rmd chunk below.
 In this step, we standardize all total length data such that the consensus age of the fish (determined by estimating the number of annuli deposited on each otolith) corresponds to the radial measurement of the last deposited otolith, rather than the edge of the otolith. For each fish, the margin of the otolith beyond the final annulus represents additional deposition of calcium carbonate over the course of the year; the exact timing of yearly deposition is dependent on the birth date (exact day) of the fish, which may be variable among fish in our sample. Thus, to standardize length-at-age, we only include back-calculated age data corresponding to each annulus, and not to the edge of the otolith. We therefore do not use the observed lengths of fish collected in the field.
 
-From this point further, the column for "consensus_age", which was the age agreed upon for each fish based on the number of annuli present on the otolith, was considered synonmous with the column "annulus", with the highest annulus number for each sample being equivalent to the consensus age. Each lesser annulus number represents earlier ages for each fish, for which total length is back-calculated.
+From this point further, the column for "consensus_age", which was the age agreed upon for each fish based on the number of annuli present on the otolith, was considered synonymous with the column "annulus", with the highest annulus number for each sample being equivalent to the consensus age. Each lesser annulus number represents earlier ages for each fish, for which total length is back-calculated.
 
 ##### Remove fish with annulus-to-otolith radial ratio of 1.00:
 ```{r}
@@ -309,7 +309,7 @@ bc_data %>%
   filter(!bc_data$sample_id %in% full_bc_data$sample_id)
 
 # Save full bc data for downstream growth analysis
-save(full_bc_data, file = "data/global_data/full_bc_data.Rda")
+save(full_bc_data, file = "data/bc_data/full_bc_data.Rda")
 ```
 
 After this step, three samples (FER08, FER47, FER70) were omitted from analyses, because we were unable to measure radii for back-calculation (see Steps 3-4 above). These samples were not included in any growth models.
@@ -335,12 +335,26 @@ vb <- vbFuns(param = "Typical")
 #### 2a: Generate global growth model.
 In this step, we parameterize the von Bertalanffy growth model for the global dataset (all samples), including all fish in the study (across Big Sugar Creek and Elk River, both sexes and all ancestry groups).
 
-##### 2a.1. Load full back-calculation data and generaate model starting values; run the Rmd chunk below.
+##### 2a.1. Load full back-calculation data and generate dataset; run the Rmd chunk below.
+
+##### Separate global dataset by river:
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Get global samples (all samples)
+full_bc_data_global <- full_bc_data
+
+# save Big Sugar Creek data for downstream analyses
+save(full_bc_data_global, file = "data/global_data/full_bc_data_global.Rda")
+```
+
+##### 2a.2. Generate model starting values for the global dataset; run the Rmd chunk below.
 
 ##### load data and generate starting values
 ```{r}
 # Load full bc data
-load("data/global_data/full_bc_data.Rda")
+load("data/bc_data/full_bc_data.Rda")
 
 # Generate starting values for optimizing the von Bertalanffy model
 global_starts <- vbStarts(bc_tl ~ annulus, 
@@ -353,7 +367,7 @@ global_starts <- vbStarts(bc_tl ~ annulus,
 <b>K</b>: 0.4094681 <br>
 <b>t<sub>0</sub></b>: -0.07894399 <br>
 
-##### 2a.2. Model growth for the global dataset and extract model coefficients; run the Rmd chunk below.
+##### 2a.3. Model growth for the global dataset and extract model coefficients; run the Rmd chunk below.
 In this step, we run the non-linear von Bertalanffy model for the global dataset and extract model coefficients from the summary table given with the summary() function.
 
 ##### Model von Bertalanffy growth:
@@ -368,11 +382,6 @@ global <- nls(bc_tl ~ vb(annulus,
 
 # Extract global data coefficients
 global_coefficients <- summary(global)
-
-full_bc_data$res <- resid(global)
-
-ggplot(full_bc_data, aes(x = ancestry_group, y  = res)) +
-  geom_point(position = position_jitter(width = 0.3))
 ```
 
 <b>Parameter estimates for global model</b>: <br>
@@ -383,8 +392,8 @@ ggplot(full_bc_data, aes(x = ancestry_group, y  = res)) +
 
 Parameter estimates are given in Table S3a in the final manuscript.
 
-##### 2a.3. Perform bootstrapping of global data to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
-In this step, we perform bootstrapping on the global dataset with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the global model (see Step 2a.2).
+##### 2a.4. Perform bootstrapping of global data to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+In this step, we perform bootstrapping on the global dataset with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the global model (see Step 2a.3).
 
 ##### Perform bootstrapping on global model:
 ```{r}
@@ -406,7 +415,7 @@ global_confint <- confint(global_bootstrap,
 
 Results from bootstrapping and confidence intervals are given in Table S3a in the final manuscript.
 
-##### 2a.4. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+##### 2a.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
 In this step, we perform bootstrapping over average length-at-age estimates predicted for the dataset and calculate 95% confidence intervals around the parameter estimates.
 
 ##### Conduct bootstrapping over predicted values for the global dataset:
@@ -441,7 +450,7 @@ colnames(global_predict) <- c("annulus","fit","lci","uci")
 save(global_predict, file = "data/global_data/global_predict.Rda")
 ```
 
-##### 2a.5. Plot von Bertlanffy growth for the global dataset; run the Rmd chunk below.
+##### 2a.6. Plot von Bertlanffy growth for the global dataset; run the Rmd chunk below.
 
 ##### Plot the von Bertalanffy model for the global dataset: `figures/global.pdf`
 ```{r}
@@ -481,7 +490,7 @@ In this step, we parameterize the von Bertalanffy growth model for each stream p
 ##### Separate global dataset by river:
 ```{r}
 # Load full bc data
-load("data/global_data/full_bc_data.Rda")
+load("data/bc_data/full_bc_data.Rda")
 
 # Get Big Sugar Creek samples only
 full_bc_data_bs <- full_bc_data %>%
@@ -680,30 +689,25 @@ load("data/river_data/bs_predict.Rda")
 # Load in Elk River predicted dataset to plot best fit curve
 load("data/river_data/elk_predict.Rda")
 
-# Load in full back-calculuated data to plot all data points
-load("data/global_data/full_bc_data.Rda")
+# Load in full back-calculuated data for Big Sugar Creek
+load("data/river_data/full_bc_data_bs.Rda")
 
-# Bind Big Sugar Creek and Elk River datasets for plotting
-river_predict <- rbind(bs_predict,
-                       elk_predict)
-
-# Convert character to factor for 
-river_predict <- river_predict %>%
-  mutate(river = factor(river))
-
-# Save full river predict file for downstream analysis
-save(river_predict, file = "data/river_data/river_predict.Rda")
+# Load in full back-calculuated data for Elk River
+load("data/river_data/full_bc_data_elk.Rda")
 
 # Plot von Bertalanffy model
 pdf("figures/river.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = river_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = river), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = river_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
-  theme_set(theme_cowplot(12)) +
+  geom_ribbon(data = bs_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = elk_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
   geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.8) +
   geom_hline(yintercept = 430.14416, linetype = "dotted", size = 0.8) +
+  geom_point(data = full_bc_data_bs, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_elk, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_line(data = bs_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
+  geom_line(data = elk_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("grey80","grey20")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
@@ -725,7 +729,7 @@ In this step, we parameterize the von Bertalanffy growth model for each sex (Mal
 ##### Separate global dataset by sex:
 ```{r}
 # Load full bc data
-load("data/global_data/full_bc_data.Rda")
+load("data/bc_data/full_bc_data.Rda")
 
 # Get male samples only
 full_bc_data_m <- full_bc_data %>%
@@ -924,31 +928,26 @@ load("data/sex_data/m_predict.Rda")
 # Load in female predicted dataset to plot best fit curve
 load("data/sex_data/f_predict.Rda")
 
-# Load in full back-calculuated data to plot all data points
-load("data/global_data/full_bc_data.Rda")
+# Load in full back-calculated data for males
+load("data/sex_data/full_bc_data_m.Rda")
 
-# Bind male and female datasets for plotting
-sex_predict <- rbind(m_predict,
-                     f_predict)
-
-# Convert character to factor
-sex_predict <- sex_predict %>%
-  mutate(sex = factor(sex))
-
-# Save full sex predict file for downstream analysis
-save(sex_predict, file = "data/sex_data/sex_predict.Rda")
+# Load in full back-calculated data for females
+load("data/sex_data/full_bc_data_f.Rda")
 
 # Plot von Bertalanffy model
 pdf("figures/sex.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = sex_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
-  theme_set(theme_cowplot(12)) +
+  geom_ribbon(data = m_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = f_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
   geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8) +
   geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8) +
-  scale_fill_manual(values = c("grey80","grey20")) +
+  geom_point(data = full_bc_data_m, aes(x = annulus, y = bc_tl, fill = sex, group = sex, shape = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_f, aes(x = annulus, y = bc_tl, fill = sex, group = sex, shape = sex), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_line(data = m_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  geom_line(data = f_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
@@ -1250,31 +1249,29 @@ load("data/ancestry_data/smb_predict.Rda")
 # Load in ADM predicted dataset to plot best fit curve
 load("data/ancestry_data/adm_predict.Rda")
 
-# Load in full back-calculuated data to plot all data points
-load("data/global_data/full_bc_data.Rda")
+# Load in full back-calculated data for NB
+load("data/ancestry_data/full_bc_data_nb.Rda")
 
-# Bind ancestry group datasets for plotting
-ancestry_predict <- rbind(nb_predict,
-                          smb_predict,
-                          adm_predict)
+# Load in full back-calculated data for SMB
+load("data/ancestry_data/full_bc_data_smb.Rda")
 
-# Convert character to factor
-ancestry_predict <- ancestry_predict %>%
-  mutate(ancestry_group = factor(ancestry_group))
-
-# Save full ancestry predict file for downstream analysis
-save(ancestry_predict, file = "data/ancestry_data/ancestry_predict.Rda")
+# Load in full back-calculated data for ADM
+load("data/ancestry_data/full_bc_data_adm.Rda")
 
 # Plot von Bertalanffy model
 pdf("figures/ancestry.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = ancestry_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
-  theme_set(theme_cowplot(12)) +
   geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8, color = "deepskyblue") +
   geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8, color = "mediumpurple") +
   geom_hline(yintercept = 542.33111, linetype = "longdash", size = 0.8, color = "deeppink2") +
+  geom_point(data = full_bc_data_nb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_smb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_point(data = full_bc_data_adm, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 24, position = position_jitter(width = 0.4)) + 
+  geom_line(data = nb_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  geom_line(data = smb_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  geom_line(data = adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
   scale_color_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
@@ -1303,34 +1300,24 @@ load("data/ancestry_data/nb_predict.Rda")
 # Load in ADM predicted dataset to plot best fit curve
 load("data/ancestry_data/adm_predict.Rda")
 
-# Load in full back-calculuated data to plot all data points
-load("data/global_data/full_bc_data.Rda")
+# Load in full back-calculated data for NB
+load("data/ancestry_data/full_bc_data_nb.Rda")
 
-# Bind ancestry group datasets for plotting
-nb_adm_predict <- rbind(nb_predict,
-                        adm_predict)
-
-# Convert character to factor
-nb_adm_predict <- nb_adm_predict %>%
-  mutate(ancestry_group = factor(ancestry_group))
-
-# Save full river predict file for downstream analysis
-save(nb_adm_predict, file = "data/ancestry_data/nb_adm_predict.Rda")
-
-# Remove SMB from full bc data 
-nb_adm_bc_data <- full_bc_data %>%
-  filter(ancestry_group == "Neosho_Bass" | 
-           ancestry_group == "Admixed")
+# Load in full back-calculated data for ADM
+load("data/ancestry_data/full_bc_data_adm.Rda")
 
 # Plot von Bertalanffy model
 pdf("figures/nb_adm_ancestry.pdf", width = 7, height = 5)
 
 ggplot() + 
-  geom_ribbon(data = nb_adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = nb_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
   geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8) +
   geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8) +
-  geom_point(data = nb_adm_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = nb_adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
+  geom_point(data = full_bc_data_nb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_adm, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_line(data = nb_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
+  geom_line(data = adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("mediumpurple","deepskyblue")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
@@ -1353,16 +1340,8 @@ In this step, we plot growth data for Smallmouth Bass only, including real data 
 # Load in SMB predicted dataset to plot best fit curve
 load("data/ancestry_data/smb_predict.Rda")
 
-# Load in full back-calculuated data to plot all data points
-load("data/global_data/full_bc_data.Rda")
-
-# Convert character to factor
-smb_predict <- smb_predict %>%
-  mutate(ancestry_group = factor(ancestry_group))
-
-# Remove SMB from full bc data 
-smb_bc_data <- full_bc_data %>%
-  filter(ancestry_group == "Smallmouth_Bass")
+# Load in full back-calculated data for SMB
+load("data/ancestry_data/full_bc_data_smb.Rda")
 
 # Plot von Bertalanffy model
 pdf("figures/smb_ancestry.pdf", width = 8, height = 7)
@@ -1370,7 +1349,7 @@ pdf("figures/smb_ancestry.pdf", width = 8, height = 7)
 ggplot() + 
   geom_ribbon(data = smb_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
   geom_hline(yintercept = 542.33111, linetype = "solid", size = 0.8) +
-  geom_point(data = smb_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_point(data = full_bc_data_smb, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = smb_predict, aes(x = annulus, y = fit), show.legend = F) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("deeppink2")) +
@@ -1384,100 +1363,7 @@ ggplot() +
 dev.off()
 ```
 
-### STEP 3: Plot all growth model figures together; run the Rmd chunk below.
-
-##### Generate multi-panel plot for growth models by group of interest.
-```{r}
-# Load in global predicted data 
-load("data/global_data/global_predict.Rda")
-
-# Load in river predicted data
-load("data/river_data/river_predict.Rda")
-
-# Load in sex predicted data 
-load("data/sex_data/sex_predict.Rda")
-
-# Load in ancestry predicted data 
-load("data/ancestry_data/nb_adm_predict.Rda")
-
-# Global plot
-global <- ggplot() + 
-  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = global_predict, aes(x = annulus, y = fit)) +
-  geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.8) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_manual(values = c("grey")) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
-  theme(axis.title = element_text(size = 18)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-# River plot
-river <- ggplot() + 
-  geom_ribbon(data = river_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = river), show.legend = F, size=3, pch=21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = river_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.8) +
-  geom_hline(yintercept = 430.14416, linetype = "dotted", size = 0.8) +
-  scale_fill_manual(values = c("grey80","grey20")) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
-  theme(axis.title = element_text(size = 18)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-# Sex plot
-sex <- ggplot() + 
-  geom_ribbon(data = sex_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = sex_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8) +
-  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8) +
-  scale_fill_manual(values = c("grey80","grey20")) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
-  theme(axis.title = element_text(size = 18)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-# Ancestry plot
-ancestry <- ggplot() + 
-  geom_ribbon(data = nb_adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
-  geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8) +
-  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8) +
-  geom_point(data = nb_adm_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
-  geom_line(data = nb_adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_manual(values = c("mediumpurple","deepskyblue")) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
-  theme(axis.title = element_text(size = 18)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size=1))  +
-  theme(plot.margin = margin(10,10,10,10))
-
-# Concatenate all plots
-pdf("figures/growth_models.pdf", width = 12, height = 9)
-
-plot_grid(global,
-          river,
-          sex,
-          ancestry,
-          nrow = 2,
-          ncol = 2,
-          labels = NULL)
-
-dev.off()
-```
-
-This group of figures is the basis of Figure 2 in the final manuscript.
+This figure is the basis for Figure S4 in the final manuscript.
 
 ### ----------------------- END OF PHASE 2: VON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
 
