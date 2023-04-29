@@ -1,7 +1,7 @@
 ---
 title: "Analysis 4: von Bertalanffy Individual Growth Analysis"
 author: "Joe Gunn"
-date: "2022-07-28"
+date: "2023-04-28"
 output: html_document
 ---
 
@@ -25,7 +25,6 @@ library(FSA) #v.0.8.32
 library(boot)
 library(car)
 library(rlist)
-library(nlme)
 ```
 
 ## PHASE 1: LINEAR BACK CALCULATION
@@ -369,6 +368,11 @@ global <- nls(bc_tl ~ vb(annulus,
 
 # Extract global data coefficients
 global_coefficients <- summary(global)
+
+full_bc_data$res <- resid(global)
+
+ggplot(full_bc_data, aes(x = ancestry_group, y  = res)) +
+  geom_point(position = position_jitter(width = 0.3))
 ```
 
 <b>Parameter estimates for global model</b>: <br>

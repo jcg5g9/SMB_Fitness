@@ -1,7 +1,7 @@
 ---
 title: "Analysis 2: Filtering Analysis"
 author: "Joe Gunn"
-date: "2022-07-28"
+date: "2023-04-28"
 output: html_document
 ---
 
@@ -20,12 +20,6 @@ For this aim, we clean, filter, and summarize the full genotype data (14 microsa
 library(readxl)
 library(tidyverse)
 library(cowplot)
-library(devtools)
-library(pophelper)
-library(genepopedit)
-library(nlme)
-library(lme4)
-library(MuMIn)
 ```
 
 ## PHASE 1: DATA READ-IN AND PREPARATION
@@ -103,7 +97,7 @@ metadata %>%
 ### STEP 2: Read in genotype data for all samples and references (one single genotype file)
 In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
-#### 2a. Read in, clean, and join genotype data with metadata; run the Rmd chunk below.
+#### 2a. Read in and clean genotype data; run the Rmd chunk below.
 In this step, we read in genotype data for all fish included in the study. Data include: 
 
    1. "sample_id": same as in metadata
@@ -122,6 +116,7 @@ genotype_data <- genotype_data %>%
 ```
 
 #### 2b. Enumerate full genotype data; run the Rmd chunk below.
+In this step, we determine the total number of samples in the dataset.
 
 ##### Summarize genotype data:
 ```{r}
@@ -131,6 +126,7 @@ genotype_data %>%
 ```
 
 ##### 2b.1. Compare metadata and genotype data to check for sample number discrepancies; run the Rmd chunk below.
+In this step, we compare the metadata and genotype data to see if there are any discrepancies in samples between datasets (samples are present in one, but not the other).
 
 ##### Resolve sample number discrepancy:
 ```{r}
@@ -165,7 +161,7 @@ In this step, we read in phenotype data for all fish included in the study. Data
 
 Additionally, we did not collect phenotype data for the reference set (Smallmouth Bass), as these samples were used only as a reference for genetic ancestry inference in STRUCTURE in subsequent analyses. We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
-#### 3a. Read in, clean, and join phenotype data with metadata; run the Rmd chunk below.
+#### 3a. Read in and clean the phenotype dataset; run the Rmd chunk below.
 
 ##### Read in and clean phenotype data:
 ```{r}
@@ -193,6 +189,7 @@ phenotype_data <- phenotype_data %>%
 ```
 
 #### 3b. Enumerate full phenotype data; run the Rmd chunk below.
+In this step, we determine the total number of samples in the phenotype dataset.
 
 ##### Summarize phenotype data:
 ```{r}
@@ -204,6 +201,7 @@ phenotype_data %>%
 There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 136) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
 
 ##### 3b.1. Compare metadata and phenotype data to resolve sample number discrepancy; run the Rmd chunk below.
+In this step, we compare the metadata and phenotype data to see if there are any discrepancies in samples between datasets (samples are present in one, but not the other).
 
 ##### Resolve sample number discrepancy:
 ```{r}

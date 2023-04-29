@@ -1,0 +1,34 @@
+---
+title: "Analysis 5: Heterozygosity fitness correlation analysis"
+author: "Joe Gunn"
+date: "2023-04-28"
+output: html_document
+---
+
+# Project: Effects of admixture on fitness in Neosho Bass populations 
+<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
+
+## Specific Aim: Heterozygosity fitness correlation analysis
+For this aim, we assessed the linear relationship (correlation) between standardized multi-locus heterozygosity (a proxy measure of genome-wide heterozygosity, which is related to interspecific ancestry) and individual body condition (a proxy of individual fitness) to determine the magnitude and direction of heterozygosity-fitness correlation related to admixture in Big Sugar Creek and Elk River. Heterozygosity-fitness correlation (HFC) may be positive (fitness increases with heterozygosity; heterosis by relief from inbreeding depression or hybrid vigor), negative (fitness decreases with heterozygosity; outbreeding depression by breakdown of coadapted gene complexes), or neutral (no effect of heterozygosity on fitness). 
+
+## Phases of Analysis
+### Phase 1: Linear back-calculation
+### Phase 2: von Bertlanffy growth analysis
+
+### Libraries needed for analysis
+```{r, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(cowplot)
+library(inbreedR) #v.0.3.3
+```
+
+# Maybes
+library(nlme)
+library(MuMIn)
+library(bbmle)
+library(lme4)
+library(lmerTest)
+library(multcomp)
+library(scales)
+

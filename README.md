@@ -67,9 +67,6 @@ For this aim, we paramaterized the von Bertlanffy individual growth model (von B
 #### Run the code: `growth_analysis/smb_fitness_growth_analysis.Rmd`
 
 ### Analysis 5: Heterozygosity fitness correlation analysis
-
+For this aim, we assessed the linear relationship (correlation) between standardized multi-locus heterozygosity (a proxy measure of genome-wide heterozygosity, which is related to interspecific ancestry) and individual body condition (a proxy of individual fitness) to determine the magnitude and direction of heterozygosity-fitness correlation related to admixture in Big Sugar Creek and Elk River. Heterozygosity-fitness correlation (HFC) may be positive (fitness increases with heterozygosity; heterosis by relief from inbreeding depression or hybrid vigor), negative (fitness decreases with heterozygosity; outbreeding depression by breakdown of coadapted gene complexes), or neutral (no effect of heterozygosity on fitness). 
 
 #### Run the code: `hfc_analysis/smb_fitness_hfc_analysis.Rmd`
-
-
-
