@@ -458,16 +458,16 @@ save(global_predict, file = "data/global_data/global_predict.Rda")
 load("data/global_data/global_predict.Rda")
 
 # Load in full back-calculuated data to plot all data points
-load("data/global_data/full_bc_data.Rda")
+load("data/global_data/full_bc_data_global.Rda")
 
 # Plot von Bertalanffy model
-pdf("figures/global.pdf", width = 7, height = 5)
+pdf("figures/global.pdf", width = 5, height = 4)
 
 ggplot() + 
   geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_point(data = full_bc_data_global, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = global_predict, aes(x = annulus, y = fit)) +
-  geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.8) +
+  geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.5) +
   theme_set(theme_cowplot(12)) +
   scale_fill_manual(values = c("grey")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
@@ -696,19 +696,19 @@ load("data/river_data/full_bc_data_bs.Rda")
 load("data/river_data/full_bc_data_elk.Rda")
 
 # Plot von Bertalanffy model
-pdf("figures/river.pdf", width = 7, height = 5)
+pdf("figures/river.pdf", width = 5, height = 4)
 
 ggplot() + 
   geom_ribbon(data = bs_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
   geom_ribbon(data = elk_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
-  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.8) +
-  geom_hline(yintercept = 430.14416, linetype = "dotted", size = 0.8) +
-  geom_point(data = full_bc_data_bs, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
-  geom_point(data = full_bc_data_elk, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.5) +
+  geom_hline(yintercept = 430.14416, linetype = "dashed", size = 0.5) +
+  geom_point(data = full_bc_data_bs, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_elk, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = bs_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
   geom_line(data = elk_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  scale_fill_manual(values = c("grey80","grey20")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
@@ -935,13 +935,13 @@ load("data/sex_data/full_bc_data_m.Rda")
 load("data/sex_data/full_bc_data_f.Rda")
 
 # Plot von Bertalanffy model
-pdf("figures/sex.pdf", width = 7, height = 5)
+pdf("figures/sex.pdf", width = 5, height = 4)
 
 ggplot() + 
   geom_ribbon(data = m_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
   geom_ribbon(data = f_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
-  geom_hline(yintercept = 445.5611, linetype = "dotted", size = 0.8) +
-  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.8) +
+  geom_hline(yintercept = 445.5611, linetype = "dashed", size = 0.5) +
+  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.5) +
   geom_point(data = full_bc_data_m, aes(x = annulus, y = bc_tl, fill = sex, group = sex, shape = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
   geom_point(data = full_bc_data_f, aes(x = annulus, y = bc_tl, fill = sex, group = sex, shape = sex), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
   geom_line(data = m_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
@@ -1259,7 +1259,7 @@ load("data/ancestry_data/full_bc_data_smb.Rda")
 load("data/ancestry_data/full_bc_data_adm.Rda")
 
 # Plot von Bertalanffy model
-pdf("figures/ancestry.pdf", width = 7, height = 5)
+pdf("figures/ancestry.pdf", width = 6, height = 4)
 
 ggplot() + 
   geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8, color = "deepskyblue") +
@@ -1307,13 +1307,13 @@ load("data/ancestry_data/full_bc_data_nb.Rda")
 load("data/ancestry_data/full_bc_data_adm.Rda")
 
 # Plot von Bertalanffy model
-pdf("figures/nb_adm_ancestry.pdf", width = 7, height = 5)
+pdf("figures/nb_adm_ancestry.pdf", width = 5, height = 4)
 
 ggplot() + 
   geom_ribbon(data = nb_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
   geom_ribbon(data = adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
-  geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8) +
-  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8) +
+  geom_hline(yintercept = 487.23225, linetype = "dashed", size = 0.5) +
+  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.5) +
   geom_point(data = full_bc_data_nb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
   geom_point(data = full_bc_data_adm, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
   geom_line(data = nb_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
