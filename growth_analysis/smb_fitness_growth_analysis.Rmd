@@ -396,7 +396,7 @@ Parameter estimates are given in Table S3a in the final manuscript.
 ##### 2a.4. Perform bootstrapping of global data to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
 In this step, we perform bootstrapping on the global dataset with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the global model (see Step 2a.3).
 
-##### Perform bootstrapping on global model:
+##### Perform bootstrapping on global model and plot histogram of results: `figures/bootstrap_plots/global.pdf`
 ```{r}
 # Conduct bootstrapping on parameter estimates
 set.seed(34349) # Set seed so that results are reproducible
@@ -406,6 +406,9 @@ global_bootstrap <- Boot(global,
 # Calculate bootstrapped 95% confidence intervals for parameter estimates
 global_confint <- confint(global_bootstrap, 
                           level = 0.95)
+
+# Save global bootstrap data for downstream analysis
+save(global_bootstrap, file = "data/global_data/global_bootstrap.Rda")
 ```
 
 <b>Confidence intervals for global parameter estimates</b>: <br>
@@ -415,6 +418,72 @@ global_confint <- confint(global_bootstrap,
 <b>t<sub>0</sub></b>: -0.5030147 - -0.1412999 <br>
 
 Results from bootstrapping and confidence intervals are given in Table S3a in the final manuscript.
+
+##### 2a.5. Plot histograms of bootstrap results for global data; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for the global data: `figures/bootstrap_plots/global.pdf`
+```{r}
+# Load global bootstrap data
+load("data/global_data/global_bootstrap.Rda")
+
+# Convert bootstrap data to dataframe
+global_boot_data <- data.frame(global_bootstrap$t)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot(global_boot_data, aes(x = Linf, fill = "grey")) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 408.4898281, xend = 485.3221992, y = 1300, yend = 1300), color = "black", stat = "identity") +
+  geom_point(aes(x = 440.94667, y = 1300, fill = "grey"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot(global_boot_data, aes(x = K, fill = "grey")) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.2287383, xend = 0.3429249, y = 1050, yend = 1050), color = "black", stat = "identity") +
+  geom_point(aes(x = 0.28338, y = 1050, fill = "grey"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot(global_boot_data, aes(x = t0, fill = "grey")) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.5030147, xend = -0.1412999, y = 1050, yend = 1050), color = "black", stat = "identity") +
+  geom_point(aes(x = -0.30329, y = 1050, fill = "grey"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) 
+
+# Plot histograms of each parameter estimate together for the global data
+pdf("figures/bootstrap_plots/global.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
 
 ##### 2a.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
 In this step, we perform bootstrapping over average length-at-age estimates predicted for the dataset and calculate 95% confidence intervals around the parameter estimates.
@@ -453,7 +522,7 @@ save(global_predict, file = "data/global_data/global_predict.Rda")
 
 ##### 2a.6. Plot von Bertlanffy growth for the global dataset; run the Rmd chunk below.
 
-##### Plot the von Bertalanffy model for the global dataset: `figures/global.pdf`
+##### Plot the von Bertalanffy model for the global dataset: `figures/vb_plots/global.pdf`
 ```{r}
 # Load in global predicted dataset to plot best fit curve
 load("data/global_data/global_predict.Rda")
@@ -600,16 +669,18 @@ set.seed(57458) # Set seed so that results are reproducible
 elk_bootstrap <- Boot(elk, 
                      R = 9999)
 
-# Calculate bootstrapped 95% confidence intervals for parameter estimates for Elk River model
-elk_confint <- confint(elk_bootstrap, 
-                      level = 0.95)
+# Save Big Sugar Creek bootstrap data for downstream analysis
+save(bs_bootstrap, file = "data/river_data/bs_bootstrap.Rda")
+
+# Save Elk River bootstrap data for downstream analysis
+save(elk_bootstrap, file = "data/river_data/elk_bootstrap.Rda")
 ```
 
 <b>Confidence intervals for Big Sugar Creek parameter estimates</b>: <br>
 
 <b>L<sub>inf</sub></b>: 417.9443640 - 556.1500369 <br>
 <b>K</b>: 0.1771707 - 0.3226116 <br>
-<b>t<sub>0</sub></b>: -0.6254293 - 0.1084089 <br>
+<b>t<sub>0</sub></b>: -0.6254293 - -0.1084089 <br>
 
 <b>Confidence intervals for Elk River parameter estimates</b>: <br>
 
@@ -619,7 +690,95 @@ elk_confint <- confint(elk_bootstrap,
 
 Results from bootstrapping and confidence intervals are given in Table S3b in the final manuscript.
 
-##### 2b.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+##### 2b.5. Plot histograms of bootstrap results for rivers; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for Big Sugar Creek and Elk River: `figures/bootstrap_plots/river.pdf`
+```{r}
+# Load Big Sugar Creek bootstrap data
+load("data/river_data/bs_bootstrap.Rda")
+
+# Load Elk River bootstrap data
+load("data/river_data/elk_bootstrap.Rda")
+
+# Convert bootstrap data for Big Sugar Creek to dataframe
+bs_boot_data <- data.frame(bs_bootstrap$t)
+
+# Convert bootstrap data for Elk River to dataframe
+elk_boot_data <- data.frame(elk_bootstrap$t)
+
+# Create column for Big Sugar Creek identifier in Big Sugar Creek bootstrap dataframe
+bs_boot_data$river <- factor(rep("Big_Sugar", rep = 9999))
+
+# Create column for Elk River identifier in Elk River bootstrap dataframe
+elk_boot_data$river <- factor(rep("Elk_River", rep = 9999))
+
+# rbind Big Sugar Creek and Elk River bootstrap data
+river_boot_data <- rbind(bs_boot_data,
+                         elk_boot_data)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot(river_boot_data, aes(x = Linf, fill = river)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 391.2426135, xend = 490.53084606, y = 2100, yend = 2100), color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 417.9443640, xend = 556.15003690, y = 1600, yend = 1600), color = "grey20", stat = "identity") +
+  geom_point(aes(x = 430.14416, y = 2100, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 464.18395, y = 1600, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80", "grey20", "grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot(river_boot_data, aes(x = K, fill = river)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.2246298, xend = 0.39204444, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 0.1771707, xend = 0.32261160, y = 1400,  yend = 1400), color = "grey20", stat = "identity") +
+  geom_point(aes(x = 0.30578, y = 1200, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.25180, y = 1400, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80", "grey20", "grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot(river_boot_data, aes(x = t0, fill = river)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.5779102, xend = -0.07034693, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
+  geom_segment(aes(x = -0.6254293, xend = -0.10840890, y = 1400, yend = 1400), color = "grey20", stat = "identity") +
+  geom_point(aes(x = -0.30943, y = 1200, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.28753, y = 1400, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80", "grey20", "grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) 
+
+# Plot histograms of each parameter estimate together for the river data
+pdf("figures/bootstrap_plots/river.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2b.6. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
 In this step, we perform bootstrapping over average length-at-age estimates predicted for the Big Sugar Creek and Elk River datasets and calculate 95% confidence intervals around the parameter estimates.
 
 We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
@@ -680,9 +839,9 @@ save(bs_predict, file = "data/river_data/bs_predict.Rda")
 save(elk_predict, file = "data/river_data/elk_predict.Rda")
 ```
 
-##### 2b.6. Plot von Bertlanffy growth for rivers; run the Rmd chunk below.
+##### 2b.7. Plot von Bertlanffy growth for rivers; run the Rmd chunk below.
 
-##### Plot the von Bertalanffy model for rivers: `figures/river.pdf`
+##### Plot the von Bertalanffy model for rivers: `figures/vb_plots/river.pdf`
 ```{r}
 # Load in Big Sugar Creek predicted dataset to plot best fit curve
 load("data/river_data/bs_predict.Rda")
@@ -842,6 +1001,12 @@ f_bootstrap <- Boot(f,
 # Calculate bootstrapped 95% confidence intervals for parameter estimates for female model
 f_confint <- confint(f_bootstrap, 
                      level = 0.95)
+
+# Save male bootstrap data for downstream analysis
+save(m_bootstrap, file = "data/sex_data/m_bootstrap.Rda")
+
+# Save female bootstrap data for downstream analysis
+save(f_bootstrap, file = "data/sex_data/f_bootstrap.Rda")
 ```
 
 <b>Confidence intervals for male parameter estimates</b>: <br>
@@ -858,7 +1023,95 @@ f_confint <- confint(f_bootstrap,
 
 Results from bootstrapping and confidence intervals are given in Table S3c in the final manuscript.
 
-##### 2c.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+##### 2c.5. Plot histograms of bootstrap results for sexes; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for males and females: `figures/bootstrap_plots/sex.pdf`
+```{r}
+# Load male bootstrap data
+load("data/sex_data/m_bootstrap.Rda")
+
+# Load female bootstrap data
+load("data/sex_data/f_bootstrap.Rda")
+
+# Convert bootstrap data for males to dataframe
+m_boot_data <- data.frame(m_bootstrap$t)
+
+# Convert bootstrap data for females to dataframe
+f_boot_data <- data.frame(f_bootstrap$t)
+
+# Create column for female identifier in female bootstrap dataframe
+m_boot_data$sex <- factor(rep("Male", rep = 9999))
+
+# Create column for female identifier in male bootstrap dataframe
+f_boot_data$sex <- factor(rep("Female", rep = 9999))
+
+# rbind male and female bootstrap data
+sex_boot_data <- rbind(m_boot_data,
+                       f_boot_data)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot(sex_boot_data, aes(x = Linf, fill = sex)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "grey20", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "grey80", stat = "identity") +
+  geom_point(aes(x = 445.56110, y = 2300, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("grey80","grey20","grey80","grey20")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot(sex_boot_data, aes(x = K, fill = sex)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.2137145, xend = 0.37185320, y = 1200, yend = 1200), color = "grey20", stat = "identity") +
+  geom_segment(aes(x = 0.1967684, xend = 0.35531175, y = 1100,  yend = 1100), color = "grey80", stat = "identity") +
+  geom_point(aes(x = 0.28940, y = 1200, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.27610, y = 1100, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("grey80","grey20","grey80","grey20")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot(sex_boot_data, aes(x = t0, fill = sex)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.5874782, xend = -0.06788280, y = 1300, yend = 1300), color = "grey20", stat = "identity") +
+  geom_segment(aes(x = -0.6221602, xend = -0.09637011, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
+  geom_point(aes(x = -0.28420, y = 1300, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.31403, y = 1200, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("grey80","grey20","grey80","grey20")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) 
+
+# Plot histograms of each parameter estimate together for the sex data
+pdf("figures/bootstrap_plots/sex.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2c.6. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
 In this step, we perform bootstrapping over average length-at-age estimates predicted for the male and female datasets and calculate 95% confidence intervals around the parameter estimates.
 
 We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
@@ -919,7 +1172,7 @@ save(m_predict, file = "data/sex_data/m_predict.Rda")
 save(f_predict, file = "data/sex_data/f_predict.Rda")
 ```
 
-##### 2c.6. Plot von Bertlanffy growth for sex; run the Rmd chunk below.
+##### 2c.7. Plot von Bertlanffy growth for sex; run the Rmd chunk below.
 
 ##### Plot the von Bertalanffy model for sex: `figures/sex.pdf`
 ```{r}
@@ -1127,6 +1380,15 @@ adm_bootstrap <- Boot(adm,
 # Calculate bootstrapped 95% confidence intervals for parameter estimates for ADM model
 adm_confint <- confint(adm_bootstrap, 
                        level = 0.95)
+
+# Save NB bootstrap data for downstream analysis
+save(nb_bootstrap, file = "data/ancestry_data/nb_bootstrap.Rda")
+
+# Save SMB bootstrap data for downstream analysis
+save(smb_bootstrap, file = "data/ancestry_data/smb_bootstrap.Rda")
+
+# Save ADM bootstrap data for downstream analysis
+save(adm_bootstrap, file = "data/ancestry_data/adm_bootstrap.Rda")
 ```
 
 <b>Confidence intervals for NB parameter estimates</b>: <br>
@@ -1149,7 +1411,111 @@ adm_confint <- confint(adm_bootstrap,
 
 Results from bootstrapping and confidence intervals are given in Table S3D in the final manuscript.
 
-##### 2d.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+##### 2d.5. Plot histograms of bootstrap results for ancestry; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for ancestry groups: `figures/bootstrap_plots/ancestry.pdf`
+```{r}
+# Load NB bootstrap data
+load("data/ancestry_data/nb_bootstrap.Rda")
+
+# Load SMB bootstrap data
+load("data/ancestry_data/smb_bootstrap.Rda")
+
+# Load ADM bootstrap data
+load("data/ancestry_data/adm_bootstrap.Rda")
+
+# Convert bootstrap data for NB to dataframe
+nb_boot_data <- data.frame(nb_bootstrap$t)
+
+# Convert bootstrap data for SMB to dataframe
+smb_boot_data <- data.frame(smb_bootstrap$t)
+
+# Convert bootstrap data for ADM to dataframe
+adm_boot_data <- data.frame(adm_bootstrap$t)
+
+# Create column for NB identifier in NB bootstrap dataframe
+nb_boot_data$ancestry <- factor(rep("NB", rep = 9999))
+
+# Create column for SMB identifier in SMB bootstrap dataframe
+smb_boot_data$ancestry <- factor(rep("SMB", rep = 9999))
+
+# Create column for ADM identifier in ADM bootstrap dataframe
+adm_boot_data$ancestry <- factor(rep("ADM", rep = 9999))
+
+# rbind ancestry group bootstrap data
+ancestry_boot_data <- rbind(nb_boot_data,
+                            smb_boot_data,
+                            adm_boot_data)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot(ancestry_boot_data, aes(x = Linf, fill = ancestry)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 445.56110, y = 2300, fill = "deepskyblue"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "mediumpurple"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "deeppink2"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("deepskyblue","mediumpurple","deeppink2","deepskyblue","mediumpurple","deeppink2")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot(ancestry_boot_data, aes(x = K, fill = ancestry)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 445.56110, y = 2300, fill = "deepskyblue"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "mediumpurple"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "deeppink2"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("deepskyblue","mediumpurple","deeppink2","deepskyblue","mediumpurple","deeppink2")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot(ancestry_boot_data, aes(x = t0, fill = ancestry)) + 
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 445.56110, y = 2300, fill = "deepskyblue"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "mediumpurple"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050, fill = "deeppink2"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("deepskyblue","mediumpurple","deeppink2","deepskyblue","mediumpurple","deeppink2")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) 
+
+# Plot histograms of each parameter estimate together for the sex data
+pdf("figures/bootstrap_plots/sex.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2d.6. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
 In this step, we perform bootstrapping over average length-at-age estimates predicted for the ancestry group datasets and calculate 95% confidence intervals around the parameter estimates.
 
 We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
@@ -1237,7 +1603,7 @@ save(smb_predict, file = "data/ancestry_data/smb_predict.Rda")
 save(adm_predict, file = "data/ancestry_data/adm_predict.Rda")
 ```
 
-##### 2d.6. Plot von Bertlanffy growth for ancestry group; run the Rmd chunk below.
+##### 2d.7. Plot von Bertlanffy growth for ancestry group; run the Rmd chunk below.
 
 ##### Plot the von Bertalanffy model for ancestry group: `figures/ancestry.pdf`
 ```{r}
@@ -1285,12 +1651,11 @@ ggplot() +
 dev.off()
 ```
 
-
 We initially plotted all three ancestry group growth models, including best lines, confidence interval ribbons around the best fit lines, and observed data points, on the same plot. The confidence intervals for Smallmouth Bass (deeppink) were substantially greater than those for Neosho Bass (deepskyblue) and Admixed individuls (mediumpurple) and obscured view of the Neosho Bass and Admixed growth curves. For this reason, we omitted the confidence intervals for this plot and included only the real data points and best fit lines. 
 
 This figure is the basis for Figure S[...] in the final manuscript.
 
-##### 2d.7. Plot von Bertlanffy growth for Neosho Bass (NB) and Admixed (ADM) ancestry groups; run the Rmd chunk below.
+##### 2d.8. Plot von Bertlanffy growth for Neosho Bass (NB) and Admixed (ADM) ancestry groups; run the Rmd chunk below.
 In this step, we plot the same data as above (Step 2d.6), but we include only the data points and associated best fit curves and confidence interval ribbons for the NB and ADM curves for better viewing. We omit data for Smallmouth Bass from the main curve, and instead show the confidence intervals for SMB in an inset plot.
 
 ##### Plot the von Bertalanffy model for ancestry group: `figures/nb_adm_ancestry.pdf`
@@ -1333,7 +1698,7 @@ dev.off()
 
 This figure is the basis for Figure 2d in the final manuscript.
 
-##### 2d.8. Plot von Bertlanffy growth for SMB ancestry group to be included as an inset in Figure 2d (see Step 2d.7 above); run the Rmd chunk below.
+##### 2d.9. Plot von Bertlanffy growth for SMB ancestry group to be included as an inset in Figure 2d (see Step 2d.7 above); run the Rmd chunk below.
 In this step, we plot growth data for Smallmouth Bass only, including real data points, best fit line, and confidence ribbon and include it as in an inset in Figure 2d.
 
 ##### Plot the von Bertalanffy model for ancestry group: `figures/smb_ancestry.pdf`
@@ -1381,64 +1746,61 @@ full_bc_data$ancestry_mod <- with(full_bc_data, ifelse(ancestry_group=="Smallmou
                                              ifelse(ancestry_group=="Admixed", "Admixed",
                                                     ifelse(ancestry_group=="Neosho_Bass", "Neosho_Bass", "done"))))
 
-full_bc_data <- full_bc_data %>%
-  mutate(ancestry_mod = factor(ancestry_mod))
-
-full_bc_data <- full_bc_data %>%
-  mutate(river = factor(river))
+full_bc_data_nb_adm <- full_bc_data_nb_adm %>%
+  mutate(ancestry_group = factor(ancestry_group))
 
 com <- bc_tl ~ Linf*(1-exp(-K*(annulus-t0)))
-com_starts <- vbStarts(bc_tl ~ annulus, data = full_bc_data)
+com_starts <- vbStarts(bc_tl ~ annulus, data = full_bc_data_nb_adm)
 fit_com <- nls(com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = com_starts)
 
-
-gen <- bc_tl ~ Linf[river]*(1-exp(-K[river]*(annulus-t0[river])))
+gen <- bc_tl ~ Linf[ancestry_group]*(1-exp(-K[ancestry_group]*(annulus-t0[ancestry_group])))
 gen_starts <- lapply(com_starts, rep, 2)
 fit_gen <- nls(gen,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = gen_starts)
 
-L_com <- bc_tl ~ Linf*(1-exp(-K[river]*(annulus-t0[river])))
+L_com <- bc_tl ~ Linf*(1-exp(-K[ancestry_group]*(annulus-t0[ancestry_group])))
 L_com_starts <- mapply(rep, com_starts, c(1,2,2))
 fit_L_com <- nls(L_com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = L_com_starts)
 
-K_com <- bc_tl ~ Linf[river]*(1-exp(-K*(annulus-t0[river])))
+summary(fit_L_com)
+
+K_com <- bc_tl ~ Linf[ancestry_group]*(1-exp(-K*(annulus-t0[ancestry_group])))
 K_com_starts <- mapply(rep, com_starts, c(2,1,2))
 fit_K_com <- nls(K_com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = K_com_starts)
 
-t_com <- bc_tl ~ Linf[river]*(1-exp(-K[river]*(annulus-t0)))
+t_com <- bc_tl ~ Linf[ancestry_group]*(1-exp(-K[ancestry_group]*(annulus-t0)))
 t_com_starts <-mapply(rep, com_starts, c(2,2,1))
 fit_t_com <- nls(t_com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = t_com_starts)
 
-K_L_com <- bc_tl ~ Linf*(1-exp(-K*(annulus-t0[river])))
+K_L_com <- bc_tl ~ Linf*(1-exp(-K*(annulus-t0[ancestry_group])))
 K_L_com_starts <- mapply(rep, com_starts, c(1,1,2))
 fit_K_L_com <- nls(K_L_com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = K_L_com_starts)
 
-K_t_com <- bc_tl ~ Linf[river]*(1-exp(-K*(annulus-t0)))
+K_t_com <- bc_tl ~ Linf[ancestry_group]*(1-exp(-K*(annulus-t0)))
 K_t_com_starts <- mapply(rep, com_starts, c(2,1,1))
 fit_K_t_com <- nls(K_t_com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = K_t_com_starts)
 
-L_t_com <- bc_tl ~ Linf*(1-exp(-K[river]*(annulus-t0)))
+L_t_com <- bc_tl ~ Linf*(1-exp(-K[ancestry_group]*(annulus-t0)))
 L_t_com_starts <- mapply(rep, com_starts, c(1,2,1))
 fit_L_t_com <- nls(L_t_com,
-               data = full_bc_data,
+               data = full_bc_data_nb_adm,
                start = L_t_com_starts)
 
 anova(fit_com, fit_gen)
 
-summary(fit_t_com)
 anova(fit_L_com, fit_gen)
 anova(fit_K_com, fit_gen)
 anova(fit_t_com, fit_gen)
@@ -1446,11 +1808,46 @@ anova(fit_t_com, fit_gen)
 anova(fit_K_t_com, fit_t_com)
 anova(fit_L_t_com, fit_t_com)
 
-anova(fit_L_t_com, fit_com)
+anova(fit_t_com, fit_com)
 
 AICc(fit_com, fit_gen, fit_K_com, fit_L_com, fit_t_com, fit_K_L_com, fit_K_t_com, fit_L_t_com)
 
 library(MuMIn)
 
-summary(fit_K_L_com)
+
+coef(fit_L_t_com)[-2]
+
+plot(bc_tl~jitter(annulus,0.3),data=full_bc_data,subset=river=="Big_Sugar",pch=19,xlab="Age (yrs)",
+ylab="Total Length (mm)")
+points(bc_tl~jitter(annulus,0.3),data=full_bc_data,subset=river=="Elk_River",pch=19,col="gray")
+vbTypical <- vbFuns("typical")
+curve(vbTypical(x,Linf=coef(fit_t_com)[-3]),from=1,to=10,lwd=2,add=TRUE)
+curve(vbTypical(x,Linf=coef(fit_L_t_com)[-2]),from=1,to=10,col="gray",lwd=2,add=TRUE)
+legend("topleft",legend=c("Big Sugar","Elk"),col=c("black","gray"),lwd=2,lty=1,cex=0.75)
+
+vb_model <- function(annulus, Linf, K, t0) {
+  bc_tl = Linf*(1-exp(-K*(annulus-t0)))
+  return(bc_tl)
+}
+
+mod <- nlme(bc_tl ~ model(annulus, Linf, K, t0),
+            fixed = list(Linf ~ 1, K ~ 1, t0 ~ 1), 
+            random = t0 ~ 1 | river,
+            data = full_bc_data_nb_adm,
+            start = list(fixed = c(Linf = 381.2697, K = 0.4110884, t0 = -0.09600566)),
+            method = "REML")
+
+coef(mod)
+
+library(lme4)
+
+nlmer(bc_tl ~ vb_model(annulus, Linf, K, t0),
+      fixed = list(Linf ~ 1, K ~ 1, t0 ~1),
+      random = list(t0 ~ 1|river), 
+      nAGQ = 0, 
+      data = full_bc_data_nb_adm, 
+      start = c(Linf = 381.2697, K = 0.4110884, t0 = -0.09600566), 
+      verbose = T)
+
+example(SSfol)
 ```
