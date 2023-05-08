@@ -731,11 +731,11 @@ Linf <- ggplot(river_boot_data, aes(x = Linf, fill = river)) +
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
   geom_segment(aes(x = 391.2426135, xend = 490.53084606, y = 2100, yend = 2100), color = "grey80", stat = "identity") +
   geom_segment(aes(x = 417.9443640, xend = 556.15003690, y = 1600, yend = 1600), color = "grey20", stat = "identity") +
-  geom_point(aes(x = 430.14416, y = 2100, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 464.18395, y = 1600, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 430.14416, y = 2100), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 464.18395, y = 1600), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "L∞", y = "Frequency") +
-  scale_fill_manual(values = c("grey20","grey80", "grey20", "grey80")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
@@ -747,11 +747,11 @@ K <- ggplot(river_boot_data, aes(x = K, fill = river)) +
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
   geom_segment(aes(x = 0.2246298, xend = 0.39204444, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
   geom_segment(aes(x = 0.1771707, xend = 0.32261160, y = 1400,  yend = 1400), color = "grey20", stat = "identity") +
-  geom_point(aes(x = 0.30578, y = 1200, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 0.25180, y = 1400, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.30578, y = 1200), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.25180, y = 1400), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "K", y = "Frequency") +
-  scale_fill_manual(values = c("grey20","grey80", "grey20", "grey80")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.title.x = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
@@ -761,14 +761,14 @@ K <- ggplot(river_boot_data, aes(x = K, fill = river)) +
 
 # Plot histogram of t<sub>0</sub> bootstrap values
 t0 <- ggplot(river_boot_data, aes(x = t0, fill = river)) + 
-  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F +
   geom_segment(aes(x = -0.5779102, xend = -0.07034693, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
   geom_segment(aes(x = -0.6254293, xend = -0.10840890, y = 1400, yend = 1400), color = "grey20", stat = "identity") +
-  geom_point(aes(x = -0.30943, y = 1200, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = -0.28753, y = 1400, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.30943, y = 1200), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.28753, y = 1400), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "t0", y = "Frequency") +
-  scale_fill_manual(values = c("grey20","grey80", "grey20", "grey80")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
@@ -1059,16 +1059,19 @@ f_boot_data$sex <- factor(rep("Female", rep = 9999))
 sex_boot_data <- rbind(m_boot_data,
                        f_boot_data)
 
+# Reorder levels so that histogram colors plot in the right order (light gray on top)
+sex_boot_data$sex = factor(sex_boot_data$sex, levels = c("Female","Male"))
+
 # Plot histogram of Linf bootstrap values
 Linf <- ggplot(sex_boot_data, aes(x = Linf, fill = sex)) + 
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
-  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "grey20", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "grey80", stat = "identity") +
-  geom_point(aes(x = 445.56110, y = 2300, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "grey20", stat = "identity") +
+  geom_point(aes(x = 445.56110, y = 2300), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "L∞", y = "Frequency") +
-  scale_fill_manual(values = c("grey80","grey20","grey80","grey20")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
@@ -1078,13 +1081,13 @@ Linf <- ggplot(sex_boot_data, aes(x = Linf, fill = sex)) +
 # Plot histogram of K bootstrap values
 K <- ggplot(sex_boot_data, aes(x = K, fill = sex)) + 
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
-  geom_segment(aes(x = 0.2137145, xend = 0.37185320, y = 1200, yend = 1200), color = "grey20", stat = "identity") +
-  geom_segment(aes(x = 0.1967684, xend = 0.35531175, y = 1100,  yend = 1100), color = "grey80", stat = "identity") +
-  geom_point(aes(x = 0.28940, y = 1200, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 0.27610, y = 1100, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_segment(aes(x = 0.2137145, xend = 0.37185320, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 0.1967684, xend = 0.35531175, y = 1100,  yend = 1100), color = "grey20", stat = "identity") +
+  geom_point(aes(x = 0.28940, y = 1200), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.27610, y = 1100), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "K", y = "Frequency") +
-  scale_fill_manual(values = c("grey80","grey20","grey80","grey20")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.title.x = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
@@ -1095,18 +1098,18 @@ K <- ggplot(sex_boot_data, aes(x = K, fill = sex)) +
 # Plot histogram of t<sub>0</sub> bootstrap values
 t0 <- ggplot(sex_boot_data, aes(x = t0, fill = sex)) + 
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
-  geom_segment(aes(x = -0.5874782, xend = -0.06788280, y = 1300, yend = 1300), color = "grey20", stat = "identity") +
-  geom_segment(aes(x = -0.6221602, xend = -0.09637011, y = 1200, yend = 1200), color = "grey80", stat = "identity") +
-  geom_point(aes(x = -0.28420, y = 1300, fill = "grey20"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = -0.31403, y = 1200, fill = "grey80"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_segment(aes(x = -0.5874782, xend = -0.06788280, y = 1300, yend = 1300), color = "grey80", stat = "identity") +
+  geom_segment(aes(x = -0.6221602, xend = -0.09637011, y = 1200, yend = 1200), color = "grey20", stat = "identity") +
+  geom_point(aes(x = -0.28420, y = 1300), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.31403, y = 1200), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "t0", y = "Frequency") +
-  scale_fill_manual(values = c("grey80","grey20","grey80","grey20")) +
+  scale_fill_manual(values = c("grey20","grey80")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
   theme(plot.margin = margin(10,10,10,10)) +
-  xlab(expression(italic("t"[0]))) 
+  xlab(expression(italic("t"[0])))
 
 # Plot histograms of each parameter estimate together for the sex data
 pdf("figures/bootstrap_plots/sex.pdf", width = 15, height = 4)
@@ -1459,61 +1462,64 @@ ancestry_boot_data <- rbind(nb_boot_data,
 
 # Plot histogram of Linf bootstrap values
 Linf <- ggplot(ancestry_boot_data, aes(x = Linf, fill = ancestry)) + 
-  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
-  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "deepskyblue", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "mediumpurple", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "deeppink2", stat = "identity") +
-  geom_point(aes(x = 445.56110, y = 2300, fill = "deepskyblue"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "mediumpurple"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "deeppink2"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F, bins = 40) +
+  geom_segment(aes(x = 431.98432300, xend = 597.38642030, y = 2200, yend = 2200), color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 371.65703180, xend = 447.92298437, y = 4200, yend = 4200), color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 323.75679667, xend = 1259.6571567, y = 800, yend = 800), color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 487.23225, y = 2200), fill = "deepskyblue", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 403.55265, y = 4200), fill = "mediumpurple", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 542.33111, y = 800), fill = "deeppink2", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "L∞", y = "Frequency") +
-  scale_fill_manual(values = c("deepskyblue","mediumpurple","deeppink2","deepskyblue","mediumpurple","deeppink2")) +
+  scale_fill_manual(values = c("deepskyblue","deeppink2","mediumpurple")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
   theme(plot.margin = margin(10,10,10,10)) +
-  xlab(expression(italic(L[infinity])))
+  xlab(expression(italic(L[infinity]))) +
+  xlim(150,1260)
 
 # Plot histogram of K bootstrap values
 K <- ggplot(ancestry_boot_data, aes(x = K, fill = ancestry)) + 
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
-  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "deepskyblue", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "mediumpurple", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "deeppink2", stat = "identity") +
-  geom_point(aes(x = 445.56110, y = 2300, fill = "deepskyblue"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "mediumpurple"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "deeppink2"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_segment(aes(x = 0.15817190, xend = 0.32049520, y = 1600, yend = 1600), color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 0.25732980, xend = 0.42598624, y = 1500, yend = 1500), color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 0.05444464, xend = 0.52352790, y = 700, yend = 700), color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 0.23643, y = 1600), fill = "deepskyblue", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.33793, y = 1500), fill = "mediumpurple", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.19377, y = 700), fill = "deeppink2", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "K", y = "Frequency") +
-  scale_fill_manual(values = c("deepskyblue","mediumpurple","deeppink2","deepskyblue","mediumpurple","deeppink2")) +
+  scale_fill_manual(values = c("deepskyblue","deeppink2","mediumpurple")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.title.x = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
   theme(plot.margin = margin(10,10,10,10)) +
-  xlab(expression(italic(K[B])))
+  xlab(expression(italic(K[B]))) +
+  xlim(0,0.53)
 
 # Plot histogram of t<sub>0</sub> bootstrap values
 t0 <- ggplot(ancestry_boot_data, aes(x = t0, fill = ancestry)) + 
   geom_histogram(color = "black", alpha = 0.8, position = "identity", show.legend = F) +
-  geom_segment(aes(x = 407.1501469, xend = 511.68671810, y = 2300, yend = 2300), color = "deepskyblue", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "mediumpurple", stat = "identity") +
-  geom_segment(aes(x = 396.3111777, xend = 515.08685844, y = 2050, yend = 2050), color = "deeppink2", stat = "identity") +
-  geom_point(aes(x = 445.56110, y = 2300, fill = "deepskyblue"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "mediumpurple"), color = "black", pch = 21, size = 4, show.legend = F) +
-  geom_point(aes(x = 440.35229, y = 2050, fill = "deeppink2"), color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_segment(aes(x = -0.77114960, xend = -0.12052030, y = 1500, yend = 1500), color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = -0.53429750, xend = -0.04283142, y = 1900, yend = 1900), color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = -1.10145867, xend = -0.10774780, y = 800, yend = 800), color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = -0.39424, y = 1500), fill = "deepskyblue", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.24880, y = 1900), fill = "mediumpurple", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.37020, y = 800), fill = "deeppink2", color = "black", pch = 21, size = 4, show.legend = F) +
   theme_set(theme_cowplot(12)) +
   labs(x = "t0", y = "Frequency") +
-  scale_fill_manual(values = c("deepskyblue","mediumpurple","deeppink2","deepskyblue","mediumpurple","deeppink2")) +
+  scale_fill_manual(values = c("deepskyblue","deeppink2","mediumpurple")) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
   theme(plot.margin = margin(10,10,10,10)) +
-  xlab(expression(italic("t"[0]))) 
+  xlab(expression(italic("t"[0]))) +
+  xlim(-1.5,0.5)
 
 # Plot histograms of each parameter estimate together for the sex data
-pdf("figures/bootstrap_plots/sex.pdf", width = 15, height = 4)
+pdf("figures/bootstrap_plots/ancestry.pdf", width = 15, height = 4)
 
 plot_grid(Linf, 
           K, 
