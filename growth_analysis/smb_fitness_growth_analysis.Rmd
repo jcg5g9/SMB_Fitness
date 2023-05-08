@@ -180,7 +180,6 @@ digitizeRadii("FER69.PNG", edgeIsAnnulus = F)
 digitizeRadii("FER71.PNG", edgeIsAnnulus = F)
 ```
 
-
 <b>Elk River samples used for back-calculation</b>: <i>N</i> = 67
 <b>Total samples used for back-calculation</b>: <i>N</i> = 113
 
@@ -359,7 +358,7 @@ load("data/bc_data/full_bc_data.Rda")
 
 # Generate starting values for optimizing the von Bertalanffy model
 global_starts <- vbStarts(bc_tl ~ annulus, 
-                            data = full_bc_data)
+                          data = full_bc_data)
 ```
 
 <b>Starting values used for global model</b>: <br>
@@ -383,6 +382,16 @@ global <- nls(bc_tl ~ vb(annulus,
 
 # Extract global data coefficients
 global_coefficients <- summary(global)
+
+full_bc_data$residuals <- resid(global)
+
+ggplot(full_bc_data, aes(x = tl_alive)) +
+  geom_histogram()
+
+
+ggplot(full_bc_data, aes(x = annulus, y = residuals)) +
+  geom_point(position = position_jitter(width = 0.3))
+
 ```
 
 <b>Parameter estimates for global model</b>: <br>
@@ -1174,7 +1183,7 @@ save(f_predict, file = "data/sex_data/f_predict.Rda")
 
 ##### 2c.7. Plot von Bertlanffy growth for sex; run the Rmd chunk below.
 
-##### Plot the von Bertalanffy model for sex: `figures/sex.pdf`
+##### Plot the von Bertalanffy model for sex: `figures/vb_plots/sex.pdf`
 ```{r}
 # Load in male predicted dataset to plot best fit curve
 load("data/sex_data/m_predict.Rda")
@@ -1248,7 +1257,7 @@ save(full_bc_data_adm, file = "data/ancestry_data/full_bc_data_adm.Rda")
 
 ##### 2d.2. Generate model starting values for each ancestry group; run the Rmd chunk below.
 
-##### load data and generate starting values for ancestry group:
+##### Load data and generate starting values for ancestry group:
 ```{r}
 # Load full bc data for NB
 load("data/ancestry_data/full_bc_data_nb.Rda")
@@ -1605,7 +1614,7 @@ save(adm_predict, file = "data/ancestry_data/adm_predict.Rda")
 
 ##### 2d.7. Plot von Bertlanffy growth for ancestry group; run the Rmd chunk below.
 
-##### Plot the von Bertalanffy model for ancestry group: `figures/ancestry.pdf`
+##### Plot the von Bertalanffy model for ancestry group: `figures/vb_plots/ancestry.pdf`
 ```{r}
 # Load in NB predicted dataset to plot best fit curve
 load("data/ancestry_data/nb_predict.Rda")
@@ -1658,7 +1667,7 @@ This figure is the basis for Figure S[...] in the final manuscript.
 ##### 2d.8. Plot von Bertlanffy growth for Neosho Bass (NB) and Admixed (ADM) ancestry groups; run the Rmd chunk below.
 In this step, we plot the same data as above (Step 2d.6), but we include only the data points and associated best fit curves and confidence interval ribbons for the NB and ADM curves for better viewing. We omit data for Smallmouth Bass from the main curve, and instead show the confidence intervals for SMB in an inset plot.
 
-##### Plot the von Bertalanffy model for ancestry group: `figures/nb_adm_ancestry.pdf`
+##### Plot the von Bertalanffy model for ancestry group: `figures/vb_plots/nb_adm_ancestry.pdf`
 ```{r}
 # Load in NB predicted dataset to plot best fit curve
 load("data/ancestry_data/nb_predict.Rda")
@@ -1701,7 +1710,7 @@ This figure is the basis for Figure 2d in the final manuscript.
 ##### 2d.9. Plot von Bertlanffy growth for SMB ancestry group to be included as an inset in Figure 2d (see Step 2d.7 above); run the Rmd chunk below.
 In this step, we plot growth data for Smallmouth Bass only, including real data points, best fit line, and confidence ribbon and include it as in an inset in Figure 2d.
 
-##### Plot the von Bertalanffy model for ancestry group: `figures/smb_ancestry.pdf`
+##### Plot the von Bertalanffy model for ancestry group: `figures/vb_plots/smb_ancestry.pdf`
 ```{r}
 # Load in SMB predicted dataset to plot best fit curve
 load("data/ancestry_data/smb_predict.Rda")
@@ -1733,8 +1742,11 @@ This figure is the basis for Figure S4 in the final manuscript.
 
 ### ----------------------- END OF PHASE 2: VON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
 
-### ----------------------- END OF ANALYSIS 4: FVON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
+### ----------------------- END OF ANALYSIS 4: VON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
 
+
+
+#### EXPERIMENTING WITH OTHER DATA ANALYSES
 
 ```{r}
 load("data/bc_data/full_bc_data.Rda")
@@ -1813,6 +1825,16 @@ anova(fit_t_com, fit_com)
 AICc(fit_com, fit_gen, fit_K_com, fit_L_com, fit_t_com, fit_K_L_com, fit_K_t_com, fit_L_t_com)
 
 library(MuMIn)
+
+full_bc_data <- full_bc_data %>%
+  mutate(size_index = bc_tl/annulus)
+
+ggplot(full_bc_data, aes(x = size_index)) +
+  geom_histogram()
+
+ggplot(full_bc_data, aes(x = size_index, y = smb, color = ancestry_group)) +
+  geom_point() + 
+  geom_smooth(method = "lm")
 
 
 coef(fit_L_t_com)[-2]
