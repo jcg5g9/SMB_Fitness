@@ -385,12 +385,22 @@ global_coefficients <- summary(global)
 
 full_bc_data$residuals <- resid(global)
 
-ggplot(full_bc_data, aes(x = tl_alive)) +
+
+ggplot(full_bc_data, aes(x = residuals)) +
   geom_histogram()
 
+full_bc_data_four <- full_bc_data %>%
+  filter(annulus > 3)
 
-ggplot(full_bc_data, aes(x = annulus, y = residuals)) +
-  geom_point(position = position_jitter(width = 0.3))
+ggplot(full_bc_data_four, aes(x = ancestry_group, y = residuals)) +
+  geom_boxplot() +
+  geom_point()
+
+mod <- lm(residuals ~ ancestry_group, full_bc_data_four)
+
+summary(mod)
+
+(position = position_jitter(width = 0.3))
 
 ```
 
@@ -542,13 +552,16 @@ load("data/global_data/full_bc_data_global.Rda")
 # Plot von Bertalanffy model
 pdf("figures/global.pdf", width = 5, height = 4)
 
+full_bc_data_global <- full_bc_data_global %>%
+  mutate(ancestry_group = factor(ancestry_group))
+
 ggplot() + 
-  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
-  geom_point(data = full_bc_data_global, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = T) +
+  geom_point(data = full_bc_data_global, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
   geom_line(data = global_predict, aes(x = annulus, y = fit)) +
   geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.5) +
   theme_set(theme_cowplot(12)) +
-  scale_fill_manual(values = c("grey")) +
+  scale_fill_manual(values = c("grey", "blue", "red", "green")) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
   theme(axis.title = element_text(size = 15)) + 
@@ -643,6 +656,8 @@ elk <- nls(bc_tl ~ vb(annulus,
 
 # Extract Big Sugar data coefficients
 elk_coefficients <- summary(elk)
+
+
 ```
 
 <b>Parameter estimates for Big Sugar Creek model</b>: <br>
@@ -1641,7 +1656,7 @@ load("data/ancestry_data/full_bc_data_smb.Rda")
 load("data/ancestry_data/full_bc_data_adm.Rda")
 
 # Plot von Bertalanffy model
-pdf("figures/ancestry.pdf", width = 6, height = 4)
+pdf("figures/vb_plots/ancestry.pdf", width = 6, height = 4)
 
 ggplot() + 
   geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8, color = "deepskyblue") +
