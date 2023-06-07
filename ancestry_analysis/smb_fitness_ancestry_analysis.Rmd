@@ -716,7 +716,7 @@ In this step, we format the genotype data (two columns per locus, each column co
 ```{r}
 ## Load in full ancestry data
 load("data/processed_ancestry_data/full_ancestry_data.Rda")
-
+full_ancestry_data
 # Read in the fully processed genotype data
 genotypes <- read_excel("data/processed_genotype_data/genotype_data.xlsx")
 
@@ -884,6 +884,25 @@ scatter(dapc,
         cell = 1)
 
 dev.off()
+
+load("data/processed_ancestry_data/dapc.Rda")
+
+data <- data.frame(cbind(dapc$ind.coord, ancestry_group))
+
+data_neosho <- data %>%
+  filter(ancestry_group == "2")
+
+data_admix %>%
+  arrange(LD1)
+
+data_neosho %>%
+  arrange(LD1)
+  
+Indidivudal 2 and 4 in the dataset should become neosho_bass
+
+Individual 39 should be admixed
+
+full_ancestry_data
 ```
 
 These plots are the basis for Figure S2c in the final manuscript.

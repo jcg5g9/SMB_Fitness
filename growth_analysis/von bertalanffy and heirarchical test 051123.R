@@ -75,8 +75,7 @@ dat = list(age = age, length = length, group = group, N = length(age), G = lengt
 
 
 #  ******** SMB Data ********
-
-load('full_bc_data.rda')
+load('growth_analysis/data/bc_data/full_bc_data.rda')
 unique(as.factor(full_bc_data$ancestry_group))
 # [1] Admixed         Neosho_Bass     Smallmouth_Bass
 # Levels: Admixed Neosho_Bass Smallmouth_Bass
@@ -311,6 +310,7 @@ test3 <- jagsUI::jags(data=bc_data, inits=inits, parameters.to.save=params, mode
                      n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, n.adapt=na, parallel=T)
 print(test3, digits=3)
 jagsUI::traceplot(test)
+
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # 04 putting all covariates straight into VB equation "vb_test4"
