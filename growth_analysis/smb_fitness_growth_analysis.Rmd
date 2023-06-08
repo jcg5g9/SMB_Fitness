@@ -317,6 +317,61 @@ After this step, three samples (FER08, FER47, FER70) were omitted from analyses,
 <b>Final back-calculation data summary</b>:
 <i>N</i><sub>samples</sub> = 337
 
+### STEP 6: Summarize full back-calculation data for the final manuscript; run the Rmd chunk below.
+In this step, we summarize the full back-calculated dataset, which includes back-calculated length-at-annulus datapoins for all annuli for each fish in the dataset. 
+
+##### Summarize full back-calculated dataset.
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Get sample size for each annulus for the global dataset (number of fish with a length measurement at each annulus)
+full_bc_data %>%
+  group_by(annulus) %>%
+  count()
+
+# Get mean and standard deviation of back-calculated total length for the global dataset
+full_bc_data %>%
+  group_by(annulus) %>%
+  summarize(mean_bctl = mean(bc_tl),
+            sd_bctl = sd(bc_tl))
+
+# Get sample size for each annulus for the stream datasets (number of fish with a length measurement at each annulus within each stream)
+full_bc_data %>%
+  group_by(annulus, river) %>%
+  count()
+
+# Get mean and standard deviation of back-calculated total length for each stream dataset
+full_bc_data %>%
+  group_by(annulus, river) %>%
+  summarize(mean_bctl = mean(bc_tl),
+            sd_bctl = sd(bc_tl))
+
+# Get sample size for each annulus for the sex datasets (number of fish with a length measurement at each annulus within each sex)
+full_bc_data %>%
+  group_by(annulus, sex) %>%
+  count()
+
+# Get mean and standard deviation of back-calculated total length for each sex dataset
+full_bc_data %>%
+  group_by(annulus, sex) %>%
+  summarize(mean_bctl = mean(bc_tl),
+            sd_bctl = sd(bc_tl))
+
+# Get sample size for each annulus for the ancestry group datasets (number of fish with a length measurement at each annulus within each ancestry group)
+full_bc_data %>%
+  group_by(annulus, ancestry_group) %>%
+  count()
+
+# Get mean and standard deviation of back-calculated total length for each sex dataset
+full_bc_data %>%
+  group_by(annulus, ancestry_group) %>%
+  summarize(mean_bctl = mean(bc_tl),
+            sd_bctl = sd(bc_tl))
+
+```
+
+
 ### ----------------------- END OF PHASE 1: LINEAR BACK-CALCULATION  ----------------------- ###
 
 ## PHASE 2: VON BERTALANFFY GROWTH ANALYSIS
