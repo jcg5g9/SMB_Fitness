@@ -12,8 +12,8 @@ output: html_document
 For this aim, we assessed the linear relationship (correlation) between standardized multi-locus heterozygosity (a proxy measure of genome-wide heterozygosity, which is related to interspecific ancestry) and individual body condition (a proxy of individual fitness) to determine the magnitude and direction of heterozygosity-fitness correlation related to admixture in Big Sugar Creek and Elk River. Heterozygosity-fitness correlation (HFC) may be positive (fitness increases with heterozygosity; heterosis by relief from inbreeding depression or hybrid vigor), negative (fitness decreases with heterozygosity; outbreeding depression by breakdown of coadapted gene complexes), or neutral (no effect of heterozygosity on fitness). 
 
 ## Phases of Analysis
-### Phase 1: Linear back-calculation
-### Phase 2: von Bertlanffy growth analysis
+### Phase 1: Body condition and heterozygosity calculations
+### Phase 2: Linear regression of heterozygosity and body condition
 
 ### Libraries needed for analysis
 ```{r, include=FALSE}
@@ -21,6 +21,8 @@ library(readxl)
 library(tidyverse)
 library(cowplot)
 library(inbreedR) #v.0.3.3
+library(boot)
+library(jagsUI)
 ```
 
 # Maybes
@@ -32,3 +34,28 @@ library(lmerTest)
 library(multcomp)
 library(scales)
 
+## PHASE 1: BODY CONDITION AND HETEROZYGOSITY CALCULATIONS
+In this phase of analysis, we calculate 1)body condition and 2) standardized heterozygosity for each fish using the raw total length observation data (not including the back-calculated length-at-age data points ascertained in Analysis 4). To calculate body condition, we use the Fulton Condition Index: F(W,TL) = W/(TL)^3; where F(W,TL) is the Fulton Condition Index at mass (g) W and total length (mm) TL. We measured mass (g) and TL (mm) at the time of sample processing, after fish had died and been preserved on ice. We therefore used measures of mass and TL after some loss of weight due to freeze-thawing. To calculate standardized heterozygosity, we use the R package inbreedR v.0.3.3 to divide multi-locus heterozygosity by the global average heterozygosity across all samples.
+
+### STEP 1: Read in full raw data and calculate body condition; run the Rmd chunk below.
+In this step, I calculate body condition using the total length of dead fish (tl_dead) and mass of dead fish (mass_dead), as described above, on raw TL data points.
+
+##### Read in full raw data and calculate body condition:
+```{r}
+# Load in full ancestry data curated in Analysis 3 
+load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# Calculate body condition
+full_ancestry_data <- full_ancestry_data %>%
+  mutate(log_mass_dead = log10(mass_dead)) %>%
+  mutate(log_tl_dead = log10(tl_dead)) %>%
+  mutate(condition = log_mass_dead/((log_tl_dead)^3))
+
+
+ggplot(full_ancestry_data, aes(x = log_mass_dead, y = log_tl_dead)) +
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(full_ancestry_data, aes(x = condition)) +
+  geom_histogram()
+```

@@ -371,6 +371,106 @@ full_bc_data %>%
 
 ```
 
+### STEP 7: Plot average back-calculated total length for the global dataset, by river, by sex, and by ancestry group, to show general trends.
+In this step, we generate box plots to show the average and standard deviation of back-calculated total length across ages (annuli) in the global dataset (including all back-calculated data points), by river, by sex, and by ancestry group.
+
+#### 7a: Plot average back-calculated total length for the global dataset; run the Rmd chunk below.
+
+##### Plot mean back-calculated total length for the global datset: `figures/vb_plots/global_ave.pdf`
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+full_bc_data <- full_bc_data %>%
+  mutate(annulus = factor(annulus))
+
+pdf("figures/global_ave.pdf", width = 6, height = 4)
+
+ggplot(full_bc_data, aes(x = annulus, y = bc_tl)) +
+  geom_boxplot(alpha = 0.6, fill = "grey", outlier.shape = NA) +
+  geom_point(position = position_jitter(width = 0.2), alpha = 0.7, pch = 21, fill = "grey", show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Annulus (years)", y = "Back-calculated total length (mm)") +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15))
+
+dev.off()
+```
+
+#### 7b: Plot average back-calculated total length for rivers; run the Rmd chunk below.
+
+##### Plot mean back-calculated total length for rivers: `figures/vb_plots/river_ave.pdf`
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Convert annulus (age) to factor for plotting
+full_bc_data <- full_bc_data %>%
+  mutate(annulus = factor(annulus))
+
+pdf("figures/river_ave.pdf", width = 6, height = 4)
+
+ggplot(full_bc_data, aes(x = annulus, y = bc_tl, fill = river)) +
+  geom_boxplot(position = position_dodge(), alpha = 0.6, outlier.shape = NA, show.legend = F) +
+  geom_point(position = position_jitterdodge(), alpha = 0.7, pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  labs(x = "Annulus (years)", y = "Back-calculated total length (mm)") +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15))
+
+dev.off()
+```
+
+#### 7c: Plot average back-calculated total length for sex; run the Rmd chunk below.
+
+##### Plot mean back-calculated total length for sex: `figures/vb_plots/sex_ave.pdf`
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Convert annulus (age) to factor for plotting
+full_bc_data <- full_bc_data %>%
+  mutate(annulus = factor(annulus))
+
+pdf("figures/sex_ave.pdf", width = 6, height = 4)
+
+ggplot(full_bc_data, aes(x = annulus, y = bc_tl, fill = sex)) +
+  geom_boxplot(position = position_dodge(), alpha = 0.6, outlier.shape = NA, show.legend = F) +
+  geom_point(position = position_jitterdodge(), alpha = 0.7, pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  labs(x = "Annulus (years)", y = "Back-calculated total length (mm)") +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15))
+
+dev.off()
+```
+
+#### 7d: Plot average back-calculated total length for ancestry groups; run the Rmd chunk below.
+
+##### Plot mean back-calculated total length for ancestry groups: `figures/vb_plots/ancestry_ave.pdf`
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Convert annulus (age) to factor for plotting
+full_bc_data <- full_bc_data %>%
+  mutate(annulus = factor(annulus))
+
+pdf("figures/ancestry_ave.pdf", width = 6, height = 4)
+
+ggplot(full_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group)) +
+  geom_boxplot(position = position_dodge(), alpha = 0.6, outlier.shape = NA, show.legend = F) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.7, pch = 21, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  labs(x = "Annulus (years)", y = "Back-calculated total length (mm)") +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15))
+
+dev.off()
+```
 
 ### ----------------------- END OF PHASE 1: LINEAR BACK-CALCULATION  ----------------------- ###
 
