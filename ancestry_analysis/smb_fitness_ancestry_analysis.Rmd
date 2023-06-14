@@ -716,7 +716,7 @@ In this step, we format the genotype data (two columns per locus, each column co
 ```{r}
 ## Load in full ancestry data
 load("data/processed_ancestry_data/full_ancestry_data.Rda")
-full_ancestry_data
+
 # Read in the fully processed genotype data
 genotypes <- read_excel("data/processed_genotype_data/genotype_data.xlsx")
 
@@ -824,8 +824,8 @@ This plot is the basis for Figure S2b in the final manuscript.
 
 We found that the optimal number of PCs for DAPC (based on 10-fold cross-validation analysis) is 30. We therefore input 30 as the number of PCs to retain for analysis.
 
-#### 4c. Run DAPC analysis and plot results; run the Rmd chunk below.
-In this step, we run DAPC analysis and plot using built-in functions in the R package "adegenet."
+#### 4c. Run DAPC analysis; run the Rmd chunk below.
+In this step, we run DAPC analysis.
 
 ##### Run DAPC and plot: 1) `figures/dapc.pdf` and 2) `figures/dapc_legends.pdf`
 ```{r}
@@ -845,6 +845,15 @@ dapc <- dapc(genind, ancestry_group)
 
 #Save dapc for future plotting
 save(dapc, file = "data/processed_ancestry_data/dapc.Rda")
+```
+
+#### 4d: Plot DAPC results; run the Rmd chunk below.
+In this step, we plot DAPC results using built-in functions in the R package "adegenet."
+
+##### Plot DAPC results: 1) `figures/dapc.pdf` and 2) `figures/dapc_legends.pdf`
+```{r}
+# Load DAPC results
+load("data/processed_ancestry_data/dapc.Rda")
 
 # Choose color palette for plotting.
 color_palette <- c("mediumpurple","deepskyblue","deeppink2")
@@ -864,7 +873,7 @@ scatter(dapc,
         posi.pca = "topleft",
         scree.da = F,
         posi.da = "topright",
-        cell = 1)
+        cell = 2.5)
 
 dev.off()
 
@@ -884,6 +893,15 @@ scatter(dapc,
         cell = 1)
 
 dev.off()
+```
+
+These plots are the basis for Figure S2c in the final manuscript.
+
+### ----------------------- END OF PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION ----------------------- ###
+
+### ----------------------- END OF ANALYSIS 2: ANCESTRY INFERENCE AND GENETIC GROUP ASSIGNMENT ANALYSIS ----------------------- ###
+
+### Extra stuff for deciding whether three data points should switch ancestry group labels.
 
 load("data/processed_ancestry_data/dapc.Rda")
 
@@ -903,12 +921,4 @@ Indidivudal 2 and 4 in the dataset should become neosho_bass
 Individual 39 should be admixed
 
 full_ancestry_data
-```
-
-These plots are the basis for Figure S2c in the final manuscript.
-
-### ----------------------- END OF PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION ----------------------- ###
-
-### ----------------------- END OF ANALYSIS 2: ANCESTRY INFERENCE AND GENETIC GROUP ASSIGNMENT ANALYSIS ----------------------- ###
-
 

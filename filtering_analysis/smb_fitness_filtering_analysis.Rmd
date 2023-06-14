@@ -20,6 +20,8 @@ For this aim, we clean, filter, and summarize the full genotype data (14 microsa
 library(readxl)
 library(tidyverse)
 library(cowplot)
+library(lme4)
+library(MuMIn)
 ```
 
 ## PHASE 1: DATA READ-IN AND PREPARATION
@@ -299,22 +301,18 @@ In this step, we filter the dataset to only age-2 fish, and we examine the linea
 # Filter only age-2 fish and retain only tl_alive, tl_dead, and river columns. Drop NA values.
 full_data_age2 <- full_data %>%
   filter(consensus_age == "2") %>%
-  select(tl_alive, tl_dead, river) %>% 
+  select(tl_alive, tl_dead, river, sex) %>% 
   drop_na()
 
-# Run a linear mixed effect model, with stream as a random effect
-model <- lme(tl_alive ~ tl_dead, 
-             random = ~1|river, 
-             full_data_age2)
+# Run a linear mixed effect model with river and sex as random effects
+model <- lmer(tl_alive ~ tl_dead + (1|river) + (1|sex), 
+              data = full_data_age2)
 
 # Summarize model output and coefficients
 model_coefficients <- summary(model)
 
-# Get r-squared value
-model_r <- r.squaredGLMM(model)
-
 # Calculate tl_alive at 224mm tl_dead using model output coefficients:
-length <- 1.013964*224 + 3.900107
+length <- 1.01396*224 + 3.90011 
 
 # Plot linear model
 pdf("figures/impute_tl_fer71.pdf", width = 6, height = 5)
@@ -335,13 +333,13 @@ ggplot(full_data_age2, aes(x = tl_dead, y = tl_alive)) +
 dev.off()
 ```
 
-This figure is the basis for Supplementary Figure (XXX) in the final manuscript.
+This figure is the basis for Supplementary Figure S2 in the final manuscript.
 
-We found a strong correlation between total length dead and total length alive (<i>p</i> = < 0.0001; r<sup>2</sup> = 0.955), with the equation:
+We found a strong correlation between total length dead and total length alive (<i>p</i> = < 0.0001; r<sup>2</sup> = 0.96), with the equation:
 
-tl_alive(tl_dead) = 1.013964(tl_dead) + 3.900107
+tl_alive <- 1.01396*224 + 3.90011 
 
-Thus, tl_alive(224) = 231.028, which we rounded to 231 mm. We input this value for tl_alive for this sample for all subsequent analyses.
+Thus, tl_alive = 231.0272, which we rounded to 231 mm. We input this value for tl_alive for this sample for all subsequent analyses.
 
 ##### 5b.1. Input the tl_alive value for sample FER71 (231) in the full dataframe; run the Rmd chunk below.
 ```{r}
