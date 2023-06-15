@@ -203,8 +203,8 @@ colnames(genotype_data) <- c("mdo9","NA","mdo5","NA","mdo7","NA","mdo10","NA","m
 save(genotype_data, file = "data/genotype_data.Rda")
 ```
 
-#### 2b: Convert genotype data to inbreedR compatible format and calculate g2 statistic; run the Rmd chunk below.
-In this step, I read in the formatted file generated in Step 2a above and convert it to the appropriate format for the inbreedR package using the built-in "convert_raw()" function. I then calculate the g2 identity disequilibrium statistic for the full dataset to determine whether the data have sufficient power for detecting a heterozygosity-fitness correlation.
+#### 2b: Convert genotype data to inbreedR compatible format; run the Rmd chunk below.
+In this step, I read in the formatted file generated in Step 2a above and convert it to the appropriate format for the inbreedR package using the built-in "convert_raw()" function.
 
 ##### Convert genotype data to inbreedR format and calculate g2 statistics: 
 ```{r}
@@ -219,8 +219,24 @@ check_data(i_data) ## data are in correct format
 
 # Save inbreedR data for downstream analyses
 save(i_data, file = "data/i_data.Rda")
+```
 
-# Calculate g2 statistic, using 1,000 permutations, 1,000 bootstrap replicates, and 95% confidence intervals
+
+#### 2c: Calculate g2 statistic; run the Rmd chunk below.
+In this step, I calculate the g2 identity disequilibrium statistic for the full dataset to determine whether the data have sufficient power for detecting a heterozygosity-fitness correlation.
+
+Parameters for g2 statistic calculation:
+
+<b>Permutations</b>= 1,000 <br>
+<b>Bootstrap replicates</b>= 1,000
+<b>95% Confidence Intervals</b>
+
+##### Calculate g2 identity disequilibrium statistic for microsatellite loci
+```{r}
+# Load inbreedR formatted data
+load("data/i_data.Rda")
+
+# Calculate g2 statistic for microsatellite data
 g2 <- g2_microsats(i_data, 
                    nperm = 1000, 
                    nboot = 1000, 
@@ -235,10 +251,10 @@ g2 <- g2_microsats(i_data,
 
 There is significant power for detecting heterozygosity-fitness correlation if one exists for these data.
 
-#### 2c: Calculate standardized multi-locus heterozygosity; run the Rmd chunk below.
+#### 2d: Calculate standardized multi-locus heterozygosity; run the Rmd chunk below.
 In this step, we use the genotype data formatted in step 2a above to calculate standardized multi-locus heterozygosity for each fish, defined as the individual multi-locus heterozygosity divided by the average heterozygosity of the full dataset.
 
-##### Convert genotype data to inbreedR format and calculate g2 statistics: 
+##### Calculate standardized multi-locus heterozygosity and bind to the condition dataset: 
 ```{r}
 # Calculate standardized multi-locus heterozygosity using the "sMLH()" function
 h <- data.frame(sMLH(i_data))
@@ -255,16 +271,18 @@ colnames(h) <- c("sample_id", "h")
 load("data/condition_data.Rda")
 
 # Bind condition data with h data for downstream analyses
-condition_data <- merge(condition_data, 
-                        h, 
-                        by = "sample_id")
+hfc_data <- merge(condition_data, 
+                  h, 
+                  by = "sample_id")
 
-ggplot(condition_data, aes(x = h, y = condition)) +
-  geom_point() +
-  geom_smooth(method = "lm")
+# Save hfc data for downstream analyses
+save(hfc_data, file = "data/hfc_data.Rda")
+```
 
-ggplot(condition_data, aes(x = ancestry_group, y = condition)) +
-  geom_boxplot()
+### STEP 2: Assess heterozygosity-fitness corrlation
+In this step, I use the condition data and standardized multi-locus heterozygosity to assess the correlation between these variables, i.e., to determine if there is a generalized heterozygosity-fitness correlation (HFC)
 
-summary(lm(condition ~ h, data = condition_data))
+##### Assess heterozygosity fitness correlation:
+```{r}
+load("data/hfc_data.Rda")
 ```
