@@ -285,4 +285,38 @@ In this step, I use the condition data and standardized multi-locus heterozygosi
 ##### Assess heterozygosity fitness correlation:
 ```{r}
 load("data/hfc_data.Rda")
+
+hfc_data %>%
+  arrange(condition)
+
+hfc_data <- hfc_data %>%
+  mutate(condition_alive = 1000*(mass_dead/(tl_alive^3)))
+
+hfc_4 <- hfc_data %>%
+  filter(consensus_age != "8") %>%
+  filter(consensus_age != "7") %>%
+  filter(consensus_age != "6") %>%
+  filter(consensus_age != "5") %>%
+  filter(ancestry_group == "Admixed")
+  
+ggplot(hfc_data, aes(x = smb, y = condition, color = ancestry_group)) +
+  geom_point(position = position_jitter()) +
+  geom_smooth(method = "lm")
+
+mod <- lm(condition ~ smb, data = hfc_data)
+
+summary(mod)
+
 ```
+
+
+
+
+
+
+
+
+
+
+
+
