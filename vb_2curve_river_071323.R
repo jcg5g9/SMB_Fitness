@@ -1,5 +1,5 @@
 # von  Bertalanffy equation - Jags
-# 1 curve per genetic group, with individual random effect
+# 1 curve per river, with individual random effect
 
 
 # code from G Adams github (modifed a bit)
@@ -39,7 +39,7 @@ river[river==3] <- 2
 # Data set for models!
 bc_data <-  list(age = age2, length = length2, length2=length2,group = group2, 
                  river=river, sex=sex, id=id,
-                 N = length(age2), G = length(unique(group2)))
+                 N = length(age2), G = length(unique(river)))
 
 # group sample sizes - smb = 44, nb = 134, adm = 159
 
@@ -68,12 +68,12 @@ setwd('C:\\Users\\sarah.clements1\\Documents\\GitHub\\SMB_Fitness')
 # added random group effect
 
 
-sink('vb_3curve_061323.jags')
+sink('vb_2curve_river_071323.jags')
 cat(
   "model{
 for(i in 1:N){
 length[i] ~ dnorm(y.hat[i], tau.y)
-y.hat[i] = Linf[group[i]] * (1-exp(-k[group[i]] * (age[i] - t0))) + idr[id[i]]
+y.hat[i] = Linf[river[i]] * (1-exp(-k[river[i]] * (age[i] - t0))) + idr[id[i]]
 }
  
 # SD
@@ -123,20 +123,20 @@ sink()
 
 #PARAMETERS TO MONITOR
 params = c("Linf", "k", "t0", "mu.Linf", "mu.k", "mu.t0", "mu.Linf", 
-           "mu.k", "mu.t0", "sig.Linf","sig.k","sig.t0","sig.idr","sigma", 'idr')
+           "mu.k", "mu.t0", "sig.Linf","sig.k","sig.t0","sig.idr","sigma")
 inits = function(){list()}
 
 
 # dat = simulated data from G Adams, bc_data = Joe's data w/back calculated tl
-vbc <- jagsUI::jags(data=bc_data, inits=inits, parameters.to.save=params, model.file="vb_3curve_061323.jags", 
+vbc <- jagsUI::jags(data=bc_data, inits=inits, parameters.to.save=params, model.file="vb_2curve_river_071323.jags", 
                     n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, n.adapt=na, parallel=T)
 print(vbc, digits=3)
 # a lot of credible interval overlap in both parameters among the 3 groups
 jagsUI::traceplot(vbc)
 
-#save(vbc, file='vb_3curve_070723.rda')
+save(vbc, file='vb_2curve_river_071323.rda')
 
-load('C:\\Users\\sarah.clements1\\Documents\\GitHub\\SMB_Fitness\\vb_3curve_070723.rda')
+load('C:\\Users\\sarah.clements1\\Documents\\GitHub\\SMB_Fitness\\vb_2curve_river_071323.rda')
 
 
 # plot curves
@@ -155,9 +155,7 @@ LINF1 <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[1]')],
 LINF2<-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[2]')], 
            vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[2]')], 
            vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[2]')])
-LINF3 <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[3]')], 
-            vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[3]')], 
-            vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[3]')])
+
 
 K1 <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[1]')], 
          vbc$samples[[2]][,which(row.names(vbc$summary)=='k[1]')], 
@@ -165,23 +163,21 @@ K1 <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[1]')],
 K2<-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[2]')], 
         vbc$samples[[2]][,which(row.names(vbc$summary)=='k[2]')], 
         vbc$samples[[3]][,which(row.names(vbc$summary)=='k[2]')])
-K3 <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[3]')], 
-         vbc$samples[[2]][,which(row.names(vbc$summary)=='k[3]')], 
-         vbc$samples[[3]][,which(row.names(vbc$summary)=='k[3]')])
 
-boxplot(K1,K2,K3)
-boxplot(LINF1,LINF2,LINF3)
 
-linftable <- data.frame(Linf = c(LINF1, LINF2, LINF3), 
-                     Group=c(rep("Admixed", length(LINF1)), rep("Neosho", length(LINF2)), rep("Smallmouth", length(LINF3))))
-ktable <- data.frame(K = c(K1, K2, K3), 
-                     Group=c(rep("Admixed", length(K1)), rep("Neosho", length(K2)), rep("Smallmouth", length(K3))))
+boxplot(K1,K2)
+boxplot(LINF1,LINF2)
 
-linf_group <-ggplot(linftable)+
-  aes(x=Group, y=Linf, fill=Group)+
+linftable <- data.frame(Linf = c(LINF1, LINF2), 
+                        River=c(rep("Big Sugar", length(LINF1)), rep("Elk River", length(LINF2))))
+ktable <- data.frame(K = c(K1, K2), 
+                     River=c(rep("Big Sugar", length(K1)), rep("Elk River", length(K2))))
+
+linf_river <-ggplot(linftable)+
+  aes(x=River, y=Linf, fill=River)+
   geom_boxplot(outlier.shape=NA, alpha=0.9, width=0.5)+
-  scale_fill_manual("",values=c("mediumpurple","deepskyblue", "deeppink2"), 
-                    labels=c('Admixed', "Neosho", "Smallmouth")) +
+  scale_fill_manual("",values=c("gray20","gray80"), 
+                    labels=c('Big Sugar', "Elk River")) +
   theme_bw()+
   theme(axis.title = element_text(size = 18)) +
   theme(axis.text = element_text(size = 16)) +
@@ -191,16 +187,16 @@ linf_group <-ggplot(linftable)+
   theme(legend.text = element_text(size = 16)) +
   ylab("Linf")+
   xlab("")+
-  scale_x_discrete(labels=c('Admixed', "Neosho", "Smallmouth"))+
+  scale_x_discrete(labels=c('Big Sugar', "Elk River"))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         legend.position='none')
-linf_group
+linf_river
 
 k_group <-ggplot(ktable)+
-  aes(x=Group, y=K, fill=Group)+
+  aes(x=River, y=K, fill=River)+
   geom_boxplot(outlier.shape=NA, alpha=0.9, width=0.5)+
-  scale_fill_manual("",values=c("mediumpurple","deepskyblue", "deeppink2"), 
-                    labels=c('Admixed', "Neosho", "Smallmouth")) +
+  scale_fill_manual("",values=c("gray20","gray80"), 
+                    labels=c('Big Sugar', "Elk River")) +
   theme_bw()+
   theme(axis.title = element_text(size = 18)) +
   theme(axis.text = element_text(size = 16)) +
@@ -210,33 +206,28 @@ k_group <-ggplot(ktable)+
   theme(legend.text = element_text(size = 16)) +
   ylab("K")+
   xlab("")+
-  scale_x_discrete(labels=c('Admixed', "Neosho", "Smallmouth"))+
+  scale_x_discrete(labels=c('Big Sugar', "Elk River"))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         legend.position='none')
 k_group
 
 
 # organize data for prediction plots (in base r, could be done in ggplot just as easy)
-LINF <- data.frame(LINF1=LINF1, LINF2=LINF2, LINF3=LINF3)
-K <- data.frame(K1=K1, K2=K2, K3=K3)
+LINF <- data.frame(LINF1=LINF1, LINF2=LINF2)
+K <- data.frame(K1=K1, K2=K2)
 
 age_seq <- seq(min(age2), max(age2), by=1)
 age_seq <- seq(min(age2), 16, by=1)
 
-c1 <- c2 <- c3 <- data.frame(mean=rep(NA, length(age_seq)), lci=rep(NA, length(age_seq)), hci=rep(NA, length(age_seq)))
+c1 <- c2  <- data.frame(mean=rep(NA, length(age_seq)), lci=rep(NA, length(age_seq)), hci=rep(NA, length(age_seq)))
 
-curves <- list(c1, c2, c3)
-
-cu1 <- cu2 <- cu3 <- matrix(nrow=length(T0), ncol=length(age_seq))
-curves2 <- list(cu1, cu2, cu3)
-
-
+curves <- list(c1, c2)
 
 # make curves
 # I may or may not be making the curve correctly (quantile linf and t0 too or just k)??
 
 # way #1 calculate size once per age with quantiles of parameter estimates
-for (i in 1:3){
+for (i in 1:2){
   for (j in 1:length(age_seq)){
     curves[[i]]$mean[j] <- mean(LINF[,i]) * (1-exp(-(mean(K[,i])) * (age_seq[j] - mean(T0))))
     curves[[i]]$lci[j] <- quantile(LINF[,i],probs=0.025) * (1-exp(-(quantile(K[,i], probs=0.025)) * (age_seq[j] - quantile(T0, probs=0.025))))
@@ -245,40 +236,27 @@ for (i in 1:3){
 } 
 
 
-
 # make transparent colors
-col2rgb('deeppink2')
-trpurple <- rgb(147,112,219,90,maxColorValue=255)
-trblue <- rgb(0,191,255,90,maxColorValue=255)
-trpink <- rgb(238,18,137,90,maxColorValue=255)
+col2rgb('gray80')
+#trpurple <- rgb(147,112,219,90,maxColorValue=255)
+#trblue <- rgb(0,191,255,90,maxColorValue=255)
+trgray80 <- rgb(204,204,204,75,maxColorValue=255)
+trgray20 <- rgb(51,51,51,75, maxColorValue=255)
 trgray <- rgb(0,0,0,75, maxColorValue=255)
-
 # look at curves
 plot(x=age_seq, y=curves[[1]]$mean, type='n', ylim=c(100,470),
      xlab="Age", ylab="Total Length") 
 # raw data
 points(x=bc_data$age, y=bc_data$length, pch=16, col=trgray)
 # ribbons
-polygon(x=c(age_seq,rev(age_seq)), y=c(curves[[1]]$lci,rev(curves[[1]]$hci)), col=trpurple, border=NA)
-polygon(x=c(age_seq,rev(age_seq)), y=c(curves[[2]]$lci,rev(curves[[2]]$hci)), col=trblue, border=NA)
-polygon(x=c(age_seq,rev(age_seq)), y=c(curves[[3]]$lci,rev(curves[[3]]$hci)), col=trpink, border=NA)
+polygon(x=c(age_seq,rev(age_seq)), y=c(curves[[1]]$lci,rev(curves[[1]]$hci)), col=trgray20, border=NA)
+polygon(x=c(age_seq,rev(age_seq)), y=c(curves[[2]]$lci,rev(curves[[2]]$hci)), col=trgray80, border=NA)
 # lines
-lines(x=age_seq, y=curves[[1]]$mean, type='l', col='purple', lwd=2) # admixed
-lines(x=age_seq, y=curves[[2]]$mean, col='deepskyblue', lwd=2) # neosho
-lines(x=age_seq, y=curves[[3]]$mean, col='deeppink2', lwd=2) # smallmouth
+lines(x=age_seq, y=curves[[1]]$mean, type='l', col='gray20', lwd=2) # big sugar
+lines(x=age_seq, y=curves[[2]]$mean, col='gray50', lwd=2) # elk river
 # linf lines
-abline(h=mean(LINF[,1]), lwd=2, lty='dotted', col='purple')
-abline(h=mean(LINF[,2]), lwd=2, col='deepskyblue', lty='dotted')
-abline(h=mean(LINF[,3]), lwd=2, col='deeppink2', lty='dotted')
+abline(h=mean(LINF[,1]), lwd=2, lty='dotted', col='gray20')
+abline(h=mean(LINF[,2]), lwd=2, col='gray50', lty='dotted')
 
-
-
-#lines(x=age_seq, y=curves[[2]]$mean, col='red') # neosho
-#lines(x=age_seq, y=curves[[2]]$lci, col='red', lty=2)
-#lines(x=age_seq, y=curves[[2]]$hci, col='red', lty=2)
-
-#lines(x=age_seq, y=curves[[3]]$mean, col='blue') # smallmouth
-#lines(x=age_seq, y=curves[[3]]$lci, col='blue', lty=2)
-#lines(x=age_seq, y=curves[[3]]$hci, col='blue', lty=2)
 
 
