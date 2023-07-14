@@ -616,10 +616,15 @@ full_ancestry_data %>%
   group_by(size_bin, river, ancestry_group) %>%
   count()
 
+# Summarize SMB ancestry range in reference SMB samples 
 full_ancestry_data %>%
-  filter(river == "Elk_River") %>%
+  filter(population == "reference") %>%
   arrange(desc(smb))
 
+# Summarize SMB ancestry range in native NB samples
+full_ancestry_data %>%
+  filter(population == "sample") %>%
+  arrange(desc(smb))
 ```
 
 ### Data summary:

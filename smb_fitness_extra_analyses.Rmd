@@ -1,0 +1,1421 @@
+---
+title: "smb_fitness_extra_analyses"
+author: "Joe Gunn"
+date: "2023-07-10"
+output: html_document
+---
+### STEP 1: Define the von Bertlanffy growth model; run the Rmd chunk below.
+In this step, we use the vbFuns() function in the R package FSA to generate a function using the "typical" parameterization of the von Bertlanffy equation.
+
+##### Define von Bertalanffy growth model:
+```{r}
+vb <- vbFuns(param = "Typical")
+```
+
+### STEP 2: Parameterize the von Bertalanffy model for study groups of interest.
+
+#### 2a: Generate global growth model.
+In this step, we parameterize the von Bertalanffy growth model for the global dataset (all samples), including all fish in the study (across Big Sugar Creek and Elk River, both sexes and all ancestry groups).
+
+##### 2a.1. Load full back-calculation data and generate dataset; run the Rmd chunk below.
+
+##### Separate global dataset by river:
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Get global samples (all samples)
+full_bc_data_global <- full_bc_data
+
+# save Big Sugar Creek data for downstream analyses
+save(full_bc_data_global, file = "data/global_data/full_bc_data_global.Rda")
+```
+
+##### 2a.2. Generate model starting values for the global dataset; run the Rmd chunk below.
+
+##### load data and generate starting values
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Generate starting values for optimizing the von Bertalanffy model
+global_starts <- vbStarts(bc_tl ~ annulus, 
+                          data = full_bc_data)
+```
+
+<b>Starting values used for global model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 382.0127 <br>
+<b>K</b>: 0.4094681 <br>
+<b>t<sub>0</sub></b>: -0.07894399 <br>
+
+##### 2a.3. Model growth for the global dataset and extract model coefficients; run the Rmd chunk below.
+In this step, we run the non-linear von Bertalanffy model for the global dataset and extract model coefficients from the summary table given with the summary() function.
+
+##### Model von Bertalanffy growth:
+```{r}
+# Run von Bertalanffy growth model using back-calculated total length, modeled by annulus number (consensus age)
+global <- nls(bc_tl ~ vb(annulus,
+                         Linf,
+                         K,
+                         t0), 
+              data = full_bc_data, 
+              start = global_starts)
+
+# Extract global data coefficients
+global_coefficients <- summary(global)
+```
+
+<b>Parameter estimates for global model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 440.94667 <br>
+<b>K</b>: 0.28338 <br>
+<b>t<sub>0</sub></b>: -0.30329 <br>
+
+Parameter estimates are given in Table S3a in the final manuscript.
+
+##### 2a.4. Perform bootstrapping of global data to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+In this step, we perform bootstrapping on the global dataset with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the global model (see Step 2a.3).
+
+##### Perform bootstrapping on global model and plot histogram of results: `figures/bootstrap_plots/global.pdf`
+```{r}
+# Conduct bootstrapping on parameter estimates
+set.seed(34349) # Set seed so that results are reproducible
+global_bootstrap <- Boot(global, 
+                         R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates
+global_confint <- confint(global_bootstrap, 
+                          level = 0.95)
+
+# Save global bootstrap data for downstream analysis
+save(global_bootstrap, file = "data/global_data/global_bootstrap.Rda")
+```
+
+<b>Confidence intervals for global parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 408.4898281 - 485.3221992 <br>
+<b>K</b>: 0.2287383 - 0.3429249 <br>
+<b>t<sub>0</sub></b>: -0.5030147 - -0.1412999 <br>
+
+Results from bootstrapping and confidence intervals are given in Table S3a in the final manuscript.
+
+##### 2a.5. Plot histograms of bootstrap results for global data; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for the global data: `figures/bootstrap_plots/global.pdf`
+```{r}
+# Load global bootstrap data
+load("data/global_data/global_bootstrap.Rda")
+
+# Convert bootstrap data to dataframe
+global_boot_data <- data.frame(global_bootstrap$t)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot() + 
+  geom_histogram(data = global_boot_data, aes(x = Linf, fill = "grey"), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 408.4898281, xend = 485.3221992), y = 1300, yend = 1300, color = "black", stat = "identity") +
+  geom_point(aes(x = 440.94667, y = 1300, fill = "grey"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot() + 
+  geom_histogram(data = global_boot_data, aes(x = K, fill = "grey"), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.2287383, xend = 0.3429249), y = 1050, yend = 1050, color = "black", stat = "identity") +
+  geom_point(aes(x = 0.28338, y = 1050, fill = "grey"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot() + 
+  geom_histogram(data = global_boot_data, aes(x = t0, fill = "grey"), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.5030147, xend = -0.1412999), y = 1050, yend = 1050, color = "black", stat = "identity") +
+  geom_point(aes(x = -0.30329, y = 1050, fill = "grey"), color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) 
+
+# Plot histograms of each parameter estimate together for the global data
+pdf("figures/bootstrap_plots/global.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2a.5. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+In this step, we perform bootstrapping over average length-at-age estimates predicted for the dataset and calculate 95% confidence intervals around the parameter estimates.
+
+##### Conduct bootstrapping over predicted values for the global dataset:
+```{r}
+# Define function to predict average length-at-age values for each age (to plot the best fit curve for the von Bertlanffy growth model)
+predict_function <- function(x) {
+  predict(x, 
+          data.frame(annulus = annuli))
+}
+
+# Define range of theoretical annulus values over which to calculate length-at-age
+annuli <- seq(-1, 15, by = 0.2)
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+global_iboot <- Boot(global, 
+                     f = predict_function,
+                     R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+global_iconfint <- confint(global_iboot, 
+                           level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+global_predict <- data.frame(annuli,
+                             predict(global, data.frame(annulus = annuli)),
+                             global_iconfint)
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(global_predict) <- c("annulus","fit","lci","uci")
+
+# Save the predicted global model dataset for donwstream analyses
+save(global_predict, file = "data/global_data/global_predict.Rda")
+```
+
+##### 2a.6. Plot von Bertlanffy growth for the global dataset; run the Rmd chunk below.
+
+##### Plot the von Bertalanffy model for the global dataset: `figures/vb_plots/global.pdf`
+```{r}
+# Load in global predicted dataset to plot best fit curve
+load("data/global_data/global_predict.Rda")
+
+# Load in full back-calculuated data to plot all data points
+load("data/global_data/full_bc_data_global.Rda")
+
+# Plot von Bertalanffy model
+pdf("figures/global.pdf", width = 5, height = 4)
+
+ggplot() + 
+  geom_ribbon(data = global_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = "grey", 0.3), show.legend = F) +
+  geom_point(data = full_bc_data_global, aes(x = annulus, y = bc_tl, fill = "grey"), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = global_predict, aes(x = annulus, y = fit)) +
+  geom_hline(yintercept = 440.94667, linetype = "solid", size = 0.5) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,500), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+This figure is the basis for Figure 2a in the final manuscript.
+
+#### 2b: Generate growth model for each river (Big Sugar Creek, Elk River) separately.
+In this step, we parameterize the von Bertalanffy growth model for each stream population (Big Sugar Creek and Elk River) to assess potential differences in growth due to stream ecology.
+
+##### 2b.1. Load full back-calculation data and separate into datasets by stream; run the Rmd chunk below.
+
+##### Separate global dataset by river:
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Get Big Sugar Creek samples only
+full_bc_data_bs <- full_bc_data %>%
+  filter(river == "Big_Sugar")
+
+# Get Elk River samples only
+full_bc_data_elk <- full_bc_data %>%
+  filter(river == "Elk_River")
+
+# save Big Sugar Creek data for downstream analyses
+save(full_bc_data_bs, file = "data/river_data/full_bc_data_bs.Rda")
+
+# save Elk River data for downstream analyses
+save(full_bc_data_elk, file = "data/river_data/full_bc_data_elk.Rda")
+```
+
+##### 2b.2. Generate model starting values for each river; run the Rmd chunk below.
+
+##### load data and generate starting values for rivers:
+```{r}
+# Load full bc data for Big Sugar Creek
+load("data/river_data/full_bc_data_bs.Rda")
+
+# Load full bc data for Elk River
+load("data/river_data/full_bc_data_elk.Rda")
+
+# Generate starting values for optimizing the von Bertalanffy model in Big Sugar Creek
+bs_starts <- vbStarts(bc_tl ~ annulus, 
+                      data = full_bc_data_bs)
+
+# Generate starting values for optimizing the von Bertalanffy model in Elk River
+elk_starts <- vbStarts(bc_tl ~ annulus, 
+                       data = full_bc_data_elk)
+```
+
+<b>Starting values used for Big Sugar Creek model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 455.5685 <br>
+<b>K</b>: 0.2670832 <br>
+<b>t<sub>0</sub></b>: -0.2545336 <br>
+
+<b>Starting values used for Elk River model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 381.0677 <br>
+<b>K</b>: 0.4223898 <br>
+<b>t<sub>0</sub></b>: -0.09427 <br>
+
+##### 2b.3. Model growth for each river population and extract model coefficients; run the Rmd chunk below.
+In this step, we run the non-linear von Bertalanffy model for each river dataset and extract model coefficients from the summary table given with the summary() function.
+
+##### Model von Bertalanffy growth for rivers:
+```{r}
+# Run von Bertalanffy growth model using back-calculated total length, modeled by annulus number (consensus age)
+bs <- nls(bc_tl ~ vb(annulus,
+                     Linf,
+                     K,
+                     t0), 
+          data = full_bc_data_bs, 
+          start = bs_starts)
+
+# Extract Big Sugar data coefficients
+bs_coefficients <- summary(bs)
+
+# Run von Bertalanffy growth model using back-calculated total length, modeled by annulus number (consensus age)
+elk <- nls(bc_tl ~ vb(annulus,
+                      Linf,
+                      K,
+                      t0), 
+           data = full_bc_data_elk, 
+           start = elk_starts)
+
+# Extract Big Sugar data coefficients
+elk_coefficients <- summary(elk)
+
+
+```
+
+<b>Parameter estimates for Big Sugar Creek model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 464.18395 <br>
+<b>K</b>: 0.25180 <br>
+<b>t<sub>0</sub></b>: -0.30943 <br>
+
+<b>Parameter estimates for Elk River model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 430.14416 <br>
+<b>K</b>: 0.30578 <br>
+<b>t<sub>0</sub></b>: -0.28753 <br>
+
+Parameter estimates are given in Table S3b in the final manuscript.
+
+##### 2b.4. Perform bootstrapping of river population datasets to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+In this step, we perform bootstrapping on each river population dataset with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the Big Sugar Creek and Elk River models (see Step 2b.3).
+
+##### Perform bootstrapping on Big Sugar Creek and Elk River models:
+```{r}
+# Conduct bootstrapping on parameter estimates for Big Sugar Creek model
+set.seed(49504) # Set seed so that results are reproducible
+bs_bootstrap <- Boot(bs, 
+                     R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for Big Sugar Creek model
+bs_confint <- confint(bs_bootstrap, 
+                      level = 0.95)
+
+# Conduct bootstrapping on parameter estimates for Elk River model
+set.seed(57458) # Set seed so that results are reproducible
+elk_bootstrap <- Boot(elk, 
+                     R = 9999)
+
+# Save Big Sugar Creek bootstrap data for downstream analysis
+save(bs_bootstrap, file = "data/river_data/bs_bootstrap.Rda")
+
+# Save Elk River bootstrap data for downstream analysis
+save(elk_bootstrap, file = "data/river_data/elk_bootstrap.Rda")
+```
+
+<b>Confidence intervals for Big Sugar Creek parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 417.9443640 - 556.1500369 <br>
+<b>K</b>: 0.1771707 - 0.3226116 <br>
+<b>t<sub>0</sub></b>: -0.6254293 - -0.1084089 <br>
+
+<b>Confidence intervals for Elk River parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 391.2426135 - 490.53084606 <br>
+<b>K</b>: 0.2246298 - 0.39204444 <br>
+<b>t<sub>0</sub></b>: -0.5779102 - -0.07034693 <br>
+
+Results from bootstrapping and confidence intervals are given in Table S3b in the final manuscript.
+
+##### 2b.5. Plot histograms of bootstrap results for rivers; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for Big Sugar Creek and Elk River: `figures/bootstrap_plots/river.pdf`
+```{r}
+# Load Big Sugar Creek bootstrap data
+load("data/river_data/bs_bootstrap.Rda")
+
+# Load Elk River bootstrap data
+load("data/river_data/elk_bootstrap.Rda")
+
+# Convert bootstrap data for Big Sugar Creek to dataframe
+bs_boot_data <- data.frame(bs_bootstrap$t)
+
+# Convert bootstrap data for Elk River to dataframe
+elk_boot_data <- data.frame(elk_bootstrap$t)
+
+# Create column for Big Sugar Creek identifier in Big Sugar Creek bootstrap dataframe
+bs_boot_data$river <- factor(rep("Big_Sugar", rep = 9999))
+
+# Create column for Elk River identifier in Elk River bootstrap dataframe
+elk_boot_data$river <- factor(rep("Elk_River", rep = 9999))
+
+# rbind Big Sugar Creek and Elk River bootstrap data
+river_boot_data <- rbind(bs_boot_data,
+                         elk_boot_data)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot() + 
+  geom_histogram(data = river_boot_data, aes(x = Linf, fill = river), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 391.2426135, xend = 490.53084606), y = 2100, yend = 2100, color = "grey80", stat = "identity", inherit.aes = F) +
+  geom_segment(aes(x = 417.9443640, xend = 556.15003690), y = 1600, yend = 1600, color = "grey20", stat = "identity", inherit.aes = F) +
+  geom_point(aes(x = 430.14416, y = 2100), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F, inherit.aes = F) +
+  geom_point(aes(x = 464.18395, y = 1600), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F, inherit.aes = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot() + 
+  geom_histogram(data = river_boot_data, aes(x = K, fill = river), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.2246298, xend = 0.39204444), y = 1200, yend = 1200, color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 0.1771707, xend = 0.32261160), y = 1400,  yend = 1400, color = "grey20", stat = "identity") +
+  geom_point(aes(x = 0.30578, y = 1200), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.25180, y = 1400), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot() +
+  geom_histogram(data = river_boot_data, aes(x = t0, fill = river), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.5779102, xend = -0.07034693), y = 1200, yend = 1200, color = "grey80", stat = "identity") +
+  geom_segment(aes(x = -0.6254293, xend = -0.10840890), y = 1400, yend = 1400, color = "grey20", stat = "identity") +
+  geom_point(aes(x = -0.30943, y = 1200), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.28753, y = 1400), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) 
+
+# Plot histograms of each parameter estimate together for the river data
+pdf("figures/bootstrap_plots/river.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2b.6. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+In this step, we perform bootstrapping over average length-at-age estimates predicted for the Big Sugar Creek and Elk River datasets and calculate 95% confidence intervals around the parameter estimates.
+
+We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
+
+##### Conduct bootstrapping over predicted values for rivers:
+```{r}
+## Conduct bootstrapping and calculated confidence intervals for Big Sugar Creek
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+bs_iboot <- Boot(bs, 
+                 f = predict_function,
+                 R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+bs_iconfint <- confint(bs_iboot, 
+                       level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+bs_predict <- data.frame(annuli,
+                         predict(bs, data.frame(annulus = annuli)),
+                         bs_iconfint)
+
+# Generate column to distinguish these data as Big Sugar Creek
+bs_predict$river <- c(rep("Big_Sugar", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(bs_predict) <- c("annulus","fit","lci","uci", "river")
+
+
+## Conduct bootstrapping and calculated confidence intervals for Elk River
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+elk_iboot <- Boot(elk, 
+                  f = predict_function,
+                  R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+elk_iconfint <- confint(elk_iboot, 
+                        level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+elk_predict <- data.frame(annuli,
+                          predict(elk, data.frame(annulus = annuli)),
+                          elk_iconfint)
+
+# Generate column to distinguish these data as Elk River
+elk_predict$river <- c(rep("Elk_River", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(elk_predict) <- c("annulus","fit","lci","uci", "river")
+
+## Save predicted datasets for downstream analyses 
+
+# Save the predicted Big Sugar Creek model dataset for donwstream analyses
+save(bs_predict, file = "data/river_data/bs_predict.Rda")
+
+# Save the predicted Elk River model dataset for donwstream analyses
+save(elk_predict, file = "data/river_data/elk_predict.Rda")
+```
+
+##### 2b.7. Plot von Bertlanffy growth for rivers; run the Rmd chunk below.
+
+##### Plot the von Bertalanffy model for rivers: `figures/vb_plots/river.pdf`
+```{r}
+# Load in Big Sugar Creek predicted dataset to plot best fit curve
+load("data/river_data/bs_predict.Rda")
+
+# Load in Elk River predicted dataset to plot best fit curve
+load("data/river_data/elk_predict.Rda")
+
+# Load in full back-calculuated data for Big Sugar Creek
+load("data/river_data/full_bc_data_bs.Rda")
+
+# Load in full back-calculuated data for Elk River
+load("data/river_data/full_bc_data_elk.Rda")
+
+# Plot von Bertalanffy model
+pdf("figures/river.pdf", width = 5, height = 4)
+
+ggplot() + 
+  geom_ribbon(data = bs_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = elk_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = river, alpha = 0.2), show.legend = F) +
+  geom_hline(yintercept = 464.18395, linetype = "solid", size = 0.5) +
+  geom_hline(yintercept = 430.14416, linetype = "dashed", size = 0.5) +
+  geom_point(data = full_bc_data_bs, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_elk, aes(x = annulus, y = bc_tl, fill = river, group = river, shape = river), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = bs_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
+  geom_line(data = elk_predict, aes(x = annulus, y = fit, linetype = river), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+This figure is the basis for Figure 2b in the final manuscript.
+
+#### 2c: Generate growth model for each sex (Male, Female) separately.
+In this step, we parameterize the von Bertalanffy growth model for each sex (Male, Female) to assess potential differences in growth due to sexual dimorphism.
+
+##### 2c.1. Load full back-calculation data and separate into datasets by sex; run the Rmd chunk below.
+
+##### Separate global dataset by sex:
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Get male samples only
+full_bc_data_m <- full_bc_data %>%
+  filter(sex == "Male")
+
+# Get female samples only
+full_bc_data_f <- full_bc_data %>%
+  filter(sex == "Female")
+
+# save male data for downstream analyses
+save(full_bc_data_m, file = "data/sex_data/full_bc_data_m.Rda")
+
+# save female data for downstream analyses
+save(full_bc_data_f, file = "data/sex_data/full_bc_data_f.Rda")
+```
+
+##### 2c.2. Generate model starting values for each sex; run the Rmd chunk below.
+
+##### load data and generate starting values for sex:
+```{r}
+# Load full bc data for males
+load("data/sex_data/full_bc_data_m.Rda")
+
+# Load full bc data for females
+load("data/sex_data/full_bc_data_f.Rda")
+
+# Generate starting values for optimizing the von Bertalanffy model in males
+m_starts <- vbStarts(bc_tl ~ annulus, 
+                     data = full_bc_data_m)
+
+# Generate starting values for optimizing the von Bertalanffy model in females
+f_starts <- vbStarts(bc_tl ~ annulus, 
+                     data = full_bc_data_f)
+```
+
+<b>Starting values used for male model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 436.1392 <br>
+<b>K</b>: 0.3052123 <br>
+<b>t<sub>0</sub></b>: -0.2546104 <br>
+
+<b>Starting values used for female model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 383.0877 <br>
+<b>K</b>: 0.3944219 <br>
+<b>t<sub>0</sub></b>: -0.09356921 <br>
+
+##### 2c.3. Model growth for each sex and extract model coefficients; run the Rmd chunk below.
+In this step, we run the non-linear von Bertalanffy model for each sex and extract model coefficients from the summary table given with the summary() function.
+
+##### Model von Bertalanffy growth for sex:
+```{r}
+# Run von Bertalanffy growth model for males using back-calculated total length, modeled by annulus number (consensus age)
+m <- nls(bc_tl ~ vb(annulus,
+                    Linf,
+                    K,
+                    t0), 
+         data = full_bc_data_m, 
+         start = m_starts)
+
+# Extract male data coefficients
+m_coefficients <- summary(m)
+
+# Run von Bertalanffy growth model for females using back-calculated total length, modeled by annulus number (consensus age)
+f <- nls(bc_tl ~ vb(annulus,
+                    Linf,
+                    K,
+                    t0), 
+         data = full_bc_data_f, 
+         start = f_starts)
+
+# Extract female data coefficients
+f_coefficients <- summary(f)
+```
+
+<b>Parameter estimates for male model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 445.5611 <br>
+<b>K</b>: 0.2894 <br>
+<b>t<sub>0</sub></b>: -0.2842 <br>
+
+<b>Parameter estimates for female model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 440.35229 <br>
+<b>K</b>: 0.27610 <br>
+<b>t<sub>0</sub></b>: -0.31403 <br>
+
+Parameter estimates are given in Table S3c in the final manuscript.
+
+##### 2c.4. Perform bootstrapping on sex datasets to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+In this step, we perform bootstrapping on each sex with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the male and female growth models (see Step 2c.3).
+
+##### Perform bootstrapping on male and female models:
+```{r}
+# Conduct bootstrapping on parameter estimates for male model
+set.seed(53744) # Set seed so that results are reproducible
+m_bootstrap <- Boot(m, 
+                    R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for male model
+m_confint <- confint(m_bootstrap, 
+                     level = 0.95)
+
+# Conduct bootstrapping on parameter estimates for female model
+set.seed(340985) # Set seed so that results are reproducible
+f_bootstrap <- Boot(f, 
+                    R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for female model
+f_confint <- confint(f_bootstrap, 
+                     level = 0.95)
+
+# Save male bootstrap data for downstream analysis
+save(m_bootstrap, file = "data/sex_data/m_bootstrap.Rda")
+
+# Save female bootstrap data for downstream analysis
+save(f_bootstrap, file = "data/sex_data/f_bootstrap.Rda")
+```
+
+<b>Confidence intervals for male parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 407.1501469 - 511.6867181 <br>
+<b>K</b>: 0.2137145 - 0.3718532 <br>
+<b>t<sub>0</sub></b>: -0.5874782 - -0.0678828 <br>
+
+<b>Confidence intervals for female parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 396.3111777 - 515.08685844 <br>
+<b>K</b>: 0.1967684 - 0.35531175 <br>
+<b>t<sub>0</sub></b>: -0.6221602 - -0.09637011 <br>
+
+Results from bootstrapping and confidence intervals are given in Table S3c in the final manuscript.
+
+##### 2c.5. Plot histograms of bootstrap results for sexes; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for males and females: `figures/bootstrap_plots/sex.pdf`
+```{r}
+# Load male bootstrap data
+load("data/sex_data/m_bootstrap.Rda")
+
+# Load female bootstrap data
+load("data/sex_data/f_bootstrap.Rda")
+
+# Convert bootstrap data for males to dataframe
+m_boot_data <- data.frame(m_bootstrap$t)
+
+# Convert bootstrap data for females to dataframe
+f_boot_data <- data.frame(f_bootstrap$t)
+
+# Create column for female identifier in female bootstrap dataframe
+m_boot_data$sex <- factor(rep("Male", rep = 9999))
+
+# Create column for female identifier in male bootstrap dataframe
+f_boot_data$sex <- factor(rep("Female", rep = 9999))
+
+# rbind male and female bootstrap data
+sex_boot_data <- rbind(m_boot_data,
+                       f_boot_data)
+
+# Reorder levels so that histogram colors plot in the right order (light gray on top)
+sex_boot_data$sex = factor(sex_boot_data$sex, levels = c("Female","Male"))
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot() + 
+  geom_histogram(data = sex_boot_data, aes(x = Linf, fill = sex), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 407.1501469, xend = 511.68671810), y = 2300, yend = 2300, color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 396.3111777, xend = 515.08685844), y = 2050, yend = 2050, color = "grey20", stat = "identity") +
+  geom_point(aes(x = 445.56110, y = 2300), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 440.35229, y = 2050), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity])))
+
+# Plot histogram of K bootstrap values
+K <- ggplot() + 
+  geom_histogram(data = sex_boot_data, aes(x = K, fill = sex), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.2137145, xend = 0.37185320), y = 1200, yend = 1200, color = "grey80", stat = "identity") +
+  geom_segment(aes(x = 0.1967684, xend = 0.35531175), y = 1100,  yend = 1100, color = "grey20", stat = "identity") +
+  geom_point(aes(x = 0.28940, y = 1200), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.27610, y = 1100), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B])))
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot() + 
+  geom_histogram(data = sex_boot_data, aes(x = t0, fill = sex), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.5874782, xend = -0.06788280), y = 1300, yend = 1300, color = "grey80", stat = "identity") +
+  geom_segment(aes(x = -0.6221602, xend = -0.09637011), y = 1200, yend = 1200, color = "grey20", stat = "identity") +
+  geom_point(aes(x = -0.28420, y = 1300), fill = "grey80", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.31403, y = 1200), fill = "grey20", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0])))
+
+# Plot histograms of each parameter estimate together for the sex data
+pdf("figures/bootstrap_plots/sex.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2c.6. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+In this step, we perform bootstrapping over average length-at-age estimates predicted for the male and female datasets and calculate 95% confidence intervals around the parameter estimates.
+
+We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
+
+##### Conduct bootstrapping over predicted values:
+```{r}
+## Conduct bootstrapping and calculated confidence intervals for males
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+m_iboot <- Boot(m, 
+                f = predict_function,
+                R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+m_iconfint <- confint(m_iboot, 
+                      level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+m_predict <- data.frame(annuli,
+                        predict(m, data.frame(annulus = annuli)),
+                        m_iconfint)
+
+# Generate column to distinguish these data as male
+m_predict$sex <- c(rep("Male", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(m_predict) <- c("annulus","fit","lci","uci", "sex")
+
+
+## Conduct bootstrapping and calculated confidence intervals for females
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+f_iboot <- Boot(f, 
+                f = predict_function,
+                R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+f_iconfint <- confint(f_iboot, 
+                      level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+f_predict <- data.frame(annuli,
+                        predict(f, data.frame(annulus = annuli)),
+                        f_iconfint)
+
+# Generate column to distinguish these data as female
+f_predict$sex <- c(rep("Female", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(f_predict) <- c("annulus","fit","lci","uci", "sex")
+
+## Save predicted datasets for downstream analyses 
+
+# Save the predicted male model dataset for donwstream analyses
+save(m_predict, file = "data/sex_data/m_predict.Rda")
+
+# Save the predicted female model dataset for donwstream analyses
+save(f_predict, file = "data/sex_data/f_predict.Rda")
+```
+
+##### 2c.7. Plot von Bertlanffy growth for sex; run the Rmd chunk below.
+
+##### Plot the von Bertalanffy model for sex: `figures/vb_plots/sex.pdf`
+```{r}
+# Load in male predicted dataset to plot best fit curve
+load("data/sex_data/m_predict.Rda")
+
+# Load in female predicted dataset to plot best fit curve
+load("data/sex_data/f_predict.Rda")
+
+# Load in full back-calculated data for males
+load("data/sex_data/full_bc_data_m.Rda")
+
+# Load in full back-calculated data for females
+load("data/sex_data/full_bc_data_f.Rda")
+
+# Plot von Bertalanffy model
+pdf("figures/sex.pdf", width = 5, height = 4)
+
+ggplot() + 
+  geom_ribbon(data = m_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = f_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = sex, alpha = 0.2), show.legend = F) +
+  geom_hline(yintercept = 445.5611, linetype = "dashed", size = 0.5) +
+  geom_hline(yintercept = 440.35229, linetype = "solid", size = 0.5) +
+  geom_point(data = full_bc_data_m, aes(x = annulus, y = bc_tl, fill = sex, group = sex, shape = sex), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_f, aes(x = annulus, y = bc_tl, fill = sex, group = sex, shape = sex), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_line(data = m_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  geom_line(data = f_predict, aes(x = annulus, y = fit, linetype = sex), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey20","grey80")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+This figure is the basis for Figure 2c in the final manuscript.
+
+#### 2d: Generate growth model for each ancestry group (Smallmouth Bass (SMB), Neosho Bass (NB), and Admixed (ADM)) separately.
+In this step, we parameterize the von Bertalanffy growth model for each ancestry group (Smallmouth Bass (SMB), Neosho Bass (NB), and Admixed (ADM)) to assess potential differences in growth due to pure or mixed ancestry.
+
+##### 2d.1. Load full back-calculation data and separate into datasets by ancestry group; run the Rmd chunk below.
+
+##### Separate global dataset by sex:
+```{r}
+# Load full bc data
+load("data/bc_data/full_bc_data.Rda")
+
+# Get NB samples only
+full_bc_data_nb <- full_bc_data %>%
+  filter(ancestry_group == "Neosho_Bass")
+
+# Get SMB samples only
+full_bc_data_smb <- full_bc_data %>%
+  filter(ancestry_group == "Smallmouth_Bass")
+
+# Get ADM samples only
+full_bc_data_adm <- full_bc_data %>%
+  filter(ancestry_group == "Admixed")
+
+# save NB data for downstream analyses
+save(full_bc_data_nb, file = "data/ancestry_data/full_bc_data_nb.Rda")
+
+# save SMB data for downstream analyses
+save(full_bc_data_smb, file = "data/ancestry_data/full_bc_data_smb.Rda")
+
+# save ADM data for downstream analyses
+save(full_bc_data_adm, file = "data/ancestry_data/full_bc_data_adm.Rda")
+```
+
+##### 2d.2. Generate model starting values for each ancestry group; run the Rmd chunk below.
+
+##### Load data and generate starting values for ancestry group:
+```{r}
+# Load full bc data for NB
+load("data/ancestry_data/full_bc_data_nb.Rda")
+
+# Load full bc data for SMB
+load("data/ancestry_data/full_bc_data_smb.Rda")
+
+# Load full bc data for ADM
+load("data/ancestry_data/full_bc_data_adm.Rda")
+
+# Generate starting values for optimizing the von Bertalanffy model in NB
+nb_starts <- vbStarts(bc_tl ~ annulus, 
+                      data = full_bc_data_nb)
+
+# Generate starting values for optimizing the von Bertalanffy model in SMB
+smb_starts <- vbStarts(bc_tl ~ annulus, 
+                       data = full_bc_data_smb)
+
+# Generate starting values for optimizing the von Bertalanffy model in ADM
+adm_starts <- vbStarts(bc_tl ~ annulus, 
+                       data = full_bc_data_adm)
+```
+
+<b>Starting values used for NB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 445.85 <br>
+<b>K</b>: 0.2884396 <br>
+<b>t<sub>0</sub></b>: -0.2720177 <br>
+
+<b>Starting values used for SMB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 526.263 <br>
+<b>K</b>: 0.2119943 <br>
+<b>t<sub>0</sub></b>: -0.2800102 <br>
+
+<b>Starting values used for ADM model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 375.3536 <br>
+<b>K</b>: 0.4146585 <br>
+<b>t<sub>0</sub></b>: -0.1198689 <br>
+
+##### 2d.3. Model growth for each ancestry group and extract model coefficients; run the Rmd chunk below.
+In this step, we run the non-linear von Bertalanffy model for each ancestry and extract model coefficients from the summary table given with the summary() function.
+
+##### Model von Bertalanffy growth for sex:
+```{r}
+# Run von Bertalanffy growth model for males using back-calculated total length, modeled by annulus number (consensus age)
+nb <- nls(bc_tl ~ vb(annulus,
+                     Linf,
+                     K,
+                     t0), 
+         data = full_bc_data_nb, 
+         start = nb_starts)
+
+# Extract male data coefficients
+nb_coefficients <- summary(nb)
+
+# Run von Bertalanffy growth model for SMB using back-calculated total length, modeled by annulus number (consensus age)
+smb <- nls(bc_tl ~ vb(annulus,
+                      Linf,
+                      K,
+                      t0), 
+         data = full_bc_data_smb, 
+         start = smb_starts)
+
+# Extract female data coefficients
+smb_coefficients <- summary(smb)
+
+# Run von Bertalanffy growth model for ADM using back-calculated total length, modeled by annulus number (consensus age)
+adm <- nls(bc_tl ~ vb(annulus,
+                      Linf,
+                      K,
+                      t0), 
+         data = full_bc_data_adm, 
+         start = adm_starts)
+
+# Extract female data coefficients
+adm_coefficients <- summary(adm)
+```
+
+<b>Parameter estimates for NB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 487.23225 <br>
+<b>K</b>: 0.23643 <br>
+<b>t<sub>0</sub></b>: -0.39424 <br>
+
+<b>Parameter estimates for SMB model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 542.33111 <br>
+<b>K</b>: 0.19377 <br>
+<b>t<sub>0</sub></b>: -0.37020 <br>
+
+<b>Parameter estimates for ADM model</b>: <br>
+
+<b>L<sub>inf</sub></b>: 403.55265 <br>
+<b>K</b>: 0.33793 <br>
+<b>t<sub>0</sub></b>: -0.24880 <br>
+
+Parameter estimates are given in Table S3d in the final manuscript.
+
+##### 2d.4. Perform bootstrapping on ancestry group datasets to estimate 95% confidence intervals around each parameter estimate; run the Rmd chunk below.
+In this step, we perform bootstrapping on each sex with 9999 bootstrap replicates and calculate 95% confidence intervals around the parameter estimates given in the ancestry group growth models (see Step 2d.3).
+
+##### Perform bootstrapping on ancestry group models:
+```{r}
+# Conduct bootstrapping on parameter estimates for NB model
+set.seed(47534) # Set seed so that results are reproducible
+nb_bootstrap <- Boot(nb, 
+                     R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for NB model
+nb_confint <- confint(nb_bootstrap, 
+                     level = 0.95)
+
+# Conduct bootstrapping on parameter estimates for SMB model
+set.seed(39084) # Set seed so that results are reproducible
+smb_bootstrap <- Boot(smb, 
+                      R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for ADM model
+smb_confint <- confint(smb_bootstrap, 
+                       level = 0.95)
+
+# Conduct bootstrapping on parameter estimates for ADM model
+set.seed(37822) # Set seed so that results are reproducible
+adm_bootstrap <- Boot(adm, 
+                      R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for parameter estimates for ADM model
+adm_confint <- confint(adm_bootstrap, 
+                       level = 0.95)
+
+# Save NB bootstrap data for downstream analysis
+save(nb_bootstrap, file = "data/ancestry_data/nb_bootstrap.Rda")
+
+# Save SMB bootstrap data for downstream analysis
+save(smb_bootstrap, file = "data/ancestry_data/smb_bootstrap.Rda")
+
+# Save ADM bootstrap data for downstream analysis
+save(adm_bootstrap, file = "data/ancestry_data/adm_bootstrap.Rda")
+```
+
+<b>Confidence intervals for NB parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 431.9843230 - 597.3864203 <br>
+<b>K</b>: 0.1581719 - 0.3204952 <br>
+<b>t<sub>0</sub></b>: -0.7711496 - -0.1205203 <br>
+
+<b>Confidence intervals for SMB parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 323.75679667 - 1259.6571567 <br>
+<b>K</b>: 0.05444464 - 0.5235279 <br>
+<b>t<sub>0</sub></b>: -1.10145867 - -0.1077478 <br>
+
+<b>Confidence intervals for ADM parameter estimates</b>: <br>
+
+<b>L<sub>inf</sub></b>: 371.6570318 - 447.92298437 <br>
+<b>K</b>: 0.2573298 - 0.42598624 <br>
+<b>t<sub>0</sub></b>: -0.5342975 - -0.04283142 <br>
+
+Results from bootstrapping and confidence intervals are given in Table S3D in the final manuscript.
+
+##### 2d.5. Plot histograms of bootstrap results for ancestry; run the Rmd chunk below.
+In this step, we plot histograms of the bootstrap replicate results to visualize 95% confidence intervals.
+
+##### Plot histograms of bootstrap results for ancestry groups: `figures/bootstrap_plots/ancestry.pdf`
+```{r}
+# Load NB bootstrap data
+load("data/ancestry_data/nb_bootstrap.Rda")
+
+# Load SMB bootstrap data
+load("data/ancestry_data/smb_bootstrap.Rda")
+
+# Load ADM bootstrap data
+load("data/ancestry_data/adm_bootstrap.Rda")
+
+# Convert bootstrap data for NB to dataframe
+nb_boot_data <- data.frame(nb_bootstrap$t)
+
+# Convert bootstrap data for SMB to dataframe
+smb_boot_data <- data.frame(smb_bootstrap$t)
+
+# Convert bootstrap data for ADM to dataframe
+adm_boot_data <- data.frame(adm_bootstrap$t)
+
+# Create column for NB identifier in NB bootstrap dataframe
+nb_boot_data$ancestry <- factor(rep("NB", rep = 9999))
+
+# Create column for SMB identifier in SMB bootstrap dataframe
+smb_boot_data$ancestry <- factor(rep("SMB", rep = 9999))
+
+# Create column for ADM identifier in ADM bootstrap dataframe
+adm_boot_data$ancestry <- factor(rep("ADM", rep = 9999))
+
+# rbind ancestry group bootstrap data
+ancestry_boot_data <- rbind(nb_boot_data,
+                            smb_boot_data,
+                            adm_boot_data)
+
+# Plot histogram of Linf bootstrap values
+Linf <- ggplot() + 
+  geom_histogram(data = ancestry_boot_data, aes(x = Linf, fill = ancestry), color = "black", alpha = 0.8, position = "identity", show.legend = F, bins = 40) +
+  geom_segment(aes(x = 431.98432300, xend = 597.38642030), y = 2200, yend = 2200, color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 371.65703180, xend = 447.92298437), y = 4200, yend = 4200, color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 323.75679667, xend = 1259.6571567), y = 800, yend = 800, color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 487.23225, y = 2200), fill = "deepskyblue", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 403.55265, y = 4200), fill = "mediumpurple", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 542.33111, y = 800), fill = "deeppink2", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "L∞", y = "Frequency") +
+  scale_fill_manual(values = c("deepskyblue","deeppink2","mediumpurple")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(L[infinity]))) +
+  xlim(150,1260)
+
+# Plot histogram of K bootstrap values
+K <- ggplot() + 
+  geom_histogram(data = ancestry_boot_data, aes(x = K, fill = ancestry), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = 0.15817190, xend = 0.32049520), y = 1600, yend = 1600, color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = 0.25732980, xend = 0.42598624), y = 1500, yend = 1500, color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = 0.05444464, xend = 0.52352790), y = 700, yend = 700, color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = 0.23643, y = 1600), fill = "deepskyblue", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.33793, y = 1500), fill = "mediumpurple", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = 0.19377, y = 700), fill = "deeppink2", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "K", y = "Frequency") +
+  scale_fill_manual(values = c("deepskyblue","deeppink2","mediumpurple")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.title.x = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic(K[B]))) +
+  xlim(0,0.53)
+
+# Plot histogram of t<sub>0</sub> bootstrap values
+t0 <- ggplot() + 
+  geom_histogram(data = ancestry_boot_data, aes(x = t0, fill = ancestry), color = "black", alpha = 0.8, position = "identity", show.legend = F) +
+  geom_segment(aes(x = -0.77114960, xend = -0.12052030), y = 1500, yend = 1500, color = "deepskyblue", stat = "identity") +
+  geom_segment(aes(x = -0.53429750, xend = -0.04283142), y = 1900, yend = 1900, color = "mediumpurple", stat = "identity") +
+  geom_segment(aes(x = -1.10145867, xend = -0.10774780), y = 800, yend = 800, color = "deeppink2", stat = "identity") +
+  geom_point(aes(x = -0.39424, y = 1500), fill = "deepskyblue", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.24880, y = 1900), fill = "mediumpurple", color = "black", pch = 21, size = 4, show.legend = F) +
+  geom_point(aes(x = -0.37020, y = 800), fill = "deeppink2", color = "black", pch = 21, size = 4, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "t0", y = "Frequency") +
+  scale_fill_manual(values = c("deepskyblue","deeppink2","mediumpurple")) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10)) +
+  xlab(expression(italic("t"[0]))) +
+  xlim(-1.5,0.5)
+
+# Plot histograms of each parameter estimate together for the sex data
+pdf("figures/bootstrap_plots/ancestry.pdf", width = 15, height = 4)
+
+plot_grid(Linf, 
+          K, 
+          t0, 
+          nrow = 1, 
+          ncol = 3)
+
+dev.off()
+```
+
+##### 2d.6. Perform bootstrapping of predicted average length-at-age values and calculate 95% confidence intervals; run the Rmd chunk below.
+In this step, we perform bootstrapping over average length-at-age estimates predicted for the ancestry group datasets and calculate 95% confidence intervals around the parameter estimates.
+
+We use the function and sequence of annulus values ("annuli") defined in Step 2a.4 (above). 
+
+##### Conduct bootstrapping over predicted values for ancestry group:
+```{r}
+## Conduct bootstrapping and calculated confidence intervals for NB
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+nb_iboot <- Boot(nb, 
+                 f = predict_function,
+                 R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+nb_iconfint <- confint(nb_iboot, 
+                       level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+nb_predict <- data.frame(annuli,
+                         predict(nb, data.frame(annulus = annuli)),
+                         nb_iconfint)
+
+# Generate column to distinguish these data as male
+nb_predict$ancestry_group <- c(rep("Neosho_Bass", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(nb_predict) <- c("annulus","fit","lci","uci", "ancestry_group")
+
+
+## Conduct bootstrapping and calculated confidence intervals for SMB
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+smb_iboot <- Boot(smb, 
+                  f = predict_function,
+                  R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+smb_iconfint <- confint(smb_iboot, 
+                        level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+smb_predict <- data.frame(annuli,
+                          predict(smb, data.frame(annulus = annuli)),
+                          smb_iconfint)
+
+# Generate column to distinguish these data as female
+smb_predict$ancestry_group <- c(rep("Smallmouth_Bass", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(smb_predict) <- c("annulus","fit","lci","uci", "ancestry_group")
+
+
+## Conduct bootstrapping and calculated confidence intervals for ADM
+
+# Conduct bootstrapping with 9999 bootstrap replicates to calculate confidence intervals around the best fit curve
+adm_iboot <- Boot(adm, 
+                  f = predict_function,
+                  R = 9999)
+
+# Calculate bootstrapped 95% confidence intervals for all parameter estimates
+adm_iconfint <- confint(adm_iboot, 
+                        level = 0.95)
+
+# Predict average back-calculated length-at-age for all fish based on model fit and confidence intervals
+adm_predict <- data.frame(annuli,
+                          predict(adm, data.frame(annulus = annuli)),
+                          adm_iconfint)
+
+# Generate column to distinguish these data as female
+adm_predict$ancestry_group <- c(rep("Admixed", times = 81))
+
+# Modify column names (lci = lower confidence interval [2.5%]; uci = upper confidence interval [97.5%])
+colnames(adm_predict) <- c("annulus","fit","lci","uci", "ancestry_group")
+
+
+## Save predicted datasets for downstream analyses 
+
+# Save the predicted NB model dataset for donwstream analyses
+save(nb_predict, file = "data/ancestry_data/nb_predict.Rda")
+
+# Save the predicted SMB model dataset for donwstream analyses
+save(smb_predict, file = "data/ancestry_data/smb_predict.Rda")
+
+# Save the predicted ADM model dataset for donwstream analyses
+save(adm_predict, file = "data/ancestry_data/adm_predict.Rda")
+```
+
+##### 2d.7. Plot von Bertlanffy growth for ancestry group; run the Rmd chunk below.
+
+##### Plot the von Bertalanffy model for ancestry group: `figures/vb_plots/ancestry.pdf`
+```{r}
+# Load in NB predicted dataset to plot best fit curve
+load("data/ancestry_data/nb_predict.Rda")
+
+# Load in SMB predicted dataset to plot best fit curve
+load("data/ancestry_data/smb_predict.Rda")
+
+# Load in ADM predicted dataset to plot best fit curve
+load("data/ancestry_data/adm_predict.Rda")
+
+# Load in full back-calculated data for NB
+load("data/ancestry_data/full_bc_data_nb.Rda")
+
+# Load in full back-calculated data for SMB
+load("data/ancestry_data/full_bc_data_smb.Rda")
+
+# Load in full back-calculated data for ADM
+load("data/ancestry_data/full_bc_data_adm.Rda")
+
+# Plot von Bertalanffy model
+pdf("figures/vb_plots/ancestry.pdf", width = 6, height = 4)
+
+ggplot() + 
+  geom_hline(yintercept = 487.23225, linetype = "dotted", size = 0.8, color = "deepskyblue") +
+  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.8, color = "mediumpurple") +
+  geom_hline(yintercept = 542.33111, linetype = "longdash", size = 0.8, color = "deeppink2") +
+  geom_point(data = full_bc_data_nb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_smb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_point(data = full_bc_data_adm, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 24, position = position_jitter(width = 0.4)) + 
+  geom_line(data = nb_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  geom_line(data = smb_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  geom_line(data = adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_color_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+We initially plotted all three ancestry group growth models, including best lines, confidence interval ribbons around the best fit lines, and observed data points, on the same plot. The confidence intervals for Smallmouth Bass (deeppink) were substantially greater than those for Neosho Bass (deepskyblue) and Admixed individuls (mediumpurple) and obscured view of the Neosho Bass and Admixed growth curves. For this reason, we omitted the confidence intervals for this plot and included only the real data points and best fit lines. 
+
+This figure is the basis for Figure S[...] in the final manuscript.
+
+##### 2d.8. Plot von Bertlanffy growth for Neosho Bass (NB) and Admixed (ADM) ancestry groups; run the Rmd chunk below.
+In this step, we plot the same data as above (Step 2d.6), but we include only the data points and associated best fit curves and confidence interval ribbons for the NB and ADM curves for better viewing. We omit data for Smallmouth Bass from the main curve, and instead show the confidence intervals for SMB in an inset plot.
+
+##### Plot the von Bertalanffy model for ancestry group: `figures/vb_plots/nb_adm_ancestry.pdf`
+```{r}
+# Load in NB predicted dataset to plot best fit curve
+load("data/ancestry_data/nb_predict.Rda")
+
+# Load in ADM predicted dataset to plot best fit curve
+load("data/ancestry_data/adm_predict.Rda")
+
+# Load in full back-calculated data for NB
+load("data/ancestry_data/full_bc_data_nb.Rda")
+
+# Load in full back-calculated data for ADM
+load("data/ancestry_data/full_bc_data_adm.Rda")
+
+# Plot von Bertalanffy model
+pdf("figures/nb_adm_ancestry.pdf", width = 5, height = 4)
+
+ggplot() + 
+  geom_ribbon(data = nb_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_ribbon(data = adm_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_hline(yintercept = 487.23225, linetype = "dashed", size = 0.5) +
+  geom_hline(yintercept = 403.55265, linetype = "solid", size = 0.5) +
+  geom_point(data = full_bc_data_nb, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.4)) + 
+  geom_point(data = full_bc_data_adm, aes(x = annulus, y = bc_tl, fill = ancestry_group, group = ancestry_group, shape = ancestry_group), show.legend = F, size = 3, pch = 22, position = position_jitter(width = 0.2)) + 
+  geom_line(data = nb_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
+  geom_line(data = adm_predict, aes(x = annulus, y = fit, linetype = ancestry_group), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("mediumpurple","deepskyblue")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+This figure is the basis for Figure 2d in the final manuscript.
+
+##### 2d.9. Plot von Bertlanffy growth for SMB ancestry group to be included as an inset in Figure 2d (see Step 2d.7 above); run the Rmd chunk below.
+In this step, we plot growth data for Smallmouth Bass only, including real data points, best fit line, and confidence ribbon and include it as in an inset in Figure 2d.
+
+##### Plot the von Bertalanffy model for ancestry group: `figures/vb_plots/smb_ancestry.pdf`
+```{r}
+# Load in SMB predicted dataset to plot best fit curve
+load("data/ancestry_data/smb_predict.Rda")
+
+# Load in full back-calculated data for SMB
+load("data/ancestry_data/full_bc_data_smb.Rda")
+
+# Plot von Bertalanffy model
+pdf("figures/smb_ancestry.pdf", width = 8, height = 7)
+
+ggplot() + 
+  geom_ribbon(data = smb_predict, aes(x = annulus, ymin = lci, ymax = uci, fill = ancestry_group, alpha = 0.2), show.legend = F) +
+  geom_hline(yintercept = 542.33111, linetype = "solid", size = 0.8) +
+  geom_point(data = full_bc_data_smb, aes(x = annulus, y = bc_tl, fill = ancestry_group), show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_line(data = smb_predict, aes(x = annulus, y = fit), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("deeppink2")) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,800), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 25)) + 
+  theme(axis.text = element_text(size = 25)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size=1)) +
+  theme(plot.margin = margin(15,15,15,15))
+
+dev.off()
+```
+
+This figure is the basis for Figure S4 in the final manuscript.
