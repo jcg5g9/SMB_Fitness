@@ -6,7 +6,7 @@ output: html_document
 ---
 
 # Project: Effects of admixture on fitness in Neosho Bass populations 
-<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
+<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
 
 ## Specific Aim: Heterozygosity fitness correlation analysis
 For this aim, we assessed the linear relationship (correlation) between standardized multi-locus heterozygosity (a proxy measure of genome-wide heterozygosity, which is related to interspecific ancestry) and individual body condition (a proxy of individual fitness) to determine the magnitude and direction of heterozygosity-fitness correlation related to admixture in Big Sugar Creek and Elk River. Heterozygosity-fitness correlation (HFC) may be positive (fitness increases with heterozygosity; heterosis by relief from inbreeding depression or hybrid vigor), negative (fitness decreases with heterozygosity; outbreeding depression by breakdown of coadapted gene complexes), or neutral (no effect of heterozygosity on fitness). 
@@ -286,24 +286,28 @@ In this step, I use the condition data and standardized multi-locus heterozygosi
 ```{r}
 load("data/hfc_data.Rda")
 
+load("data/condition_data.Rda")
+
 hfc_data %>%
   arrange(condition)
 
 hfc_data <- hfc_data %>%
   mutate(condition_alive = 1000*(mass_dead/(tl_alive^3)))
-
-hfc_4 <- hfc_data %>%
-  filter(consensus_age != "8") %>%
-  filter(consensus_age != "7") %>%
-  filter(consensus_age != "6") %>%
-  filter(consensus_age != "5") %>%
-  filter(ancestry_group == "Admixed")
   
+ggplot(hfc_data, aes(x = h, y = condition)) +
+  geom_point(position = position_jitter()) +
+  geom_smooth(method = "lm")
+
 ggplot(hfc_data, aes(x = smb, y = condition, color = ancestry_group)) +
   geom_point(position = position_jitter()) +
   geom_smooth(method = "lm")
 
-mod <- lm(condition ~ smb, data = hfc_data)
+ggplot(hfc_data, aes(x = ancestry_group, y = condition, color = ancestry_group)) +
+  geom_boxplot() +
+  geom_point(position = position_jitter(width = 0.3))
+
+
+mod <- lm(condition ~ ancestry_group, data = hfc_data)
 
 summary(mod)
 
