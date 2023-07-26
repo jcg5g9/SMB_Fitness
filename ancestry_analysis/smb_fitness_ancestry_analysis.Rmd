@@ -597,6 +597,12 @@ In this step, we count sample sizes for each ancestry group and present them in 
 # Load ancestry group data
 load("data/processed_ancestry_data/full_ancestry_data.Rda")
 
+# Calculate mean ancestry proportions by species (NB and SMB) within the NB native range
+full_ancestry_data %>%
+  filter(population == "sample") %>%
+  summarize(mean_smb = mean(smb),
+            mean_nb = mean(nb))
+
 # Convert ancestry group variable to factor
 full_ancestry_data <- full_ancestry_data %>%
   mutate(ancestry_group = factor(ancestry_group))
@@ -628,6 +634,10 @@ full_ancestry_data %>%
 ```
 
 ### Data summary:
+
+## Mean ancestry proportions
+<b>NB</sub> = 0.6176129 </b><br>
+<b>SMB</sub> = 0.3823871 </b><br>
 
 ## Totals by ancestry group 
 <b><i>N</i><sub>Neosho_Bass</sub> = 46 </b><br>

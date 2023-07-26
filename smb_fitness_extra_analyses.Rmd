@@ -1419,3 +1419,108 @@ dev.off()
 ```
 
 This figure is the basis for Figure S4 in the final manuscript.
+
+### STEP 2: Calculate standardized multi-locus heterozygosity
+In this step, I read in the fully filtered raw genotype data and calculate standardized multi-locus heterozygosity, which is individual heterozygosity divided by the global average heterozygosity of the entire dataset. I check for identity disequilibrium among loci by checking for correlation between heterozygous genotypes, which provides support for whether there is sufficient power in the data to detect a heterozygosity-fitness correlation.
+
+#### 2a: Filter the raw data to obtain only genotype data and convert to csv format; run the Rmd chunk below.
+In this step, I read in the fully filtered raw data, filter to only the genotype data, and clean for use in the inbreedR package. 
+
+##### Read in full raw data filter genotype data: 
+```{r}
+# Load in full ancestry data curated in Analysis 3 
+load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# Filter out only sample id and genotype columns
+genotype_data <- full_ancestry_data %>%
+  filter(population == "sample") %>%
+  select(1,11:38)
+
+# Convert first column to rownames
+genotype_data <- column_to_rownames(genotype_data, "sample_id")
+
+# Convert all instances of missing genotype data ("OOO") to "NA" 
+genotype_data[genotype_data == "000"] <- "NA"
+
+# Rename all columns
+colnames(genotype_data) <- c("mdo9","NA","mdo5","NA","mdo7","NA","mdo10","NA","mdo6","NA","mdo3","NA","mdo2","NA","lma21","NA","msaf29","NA","msaf05","NA","msaf14","NA","msaf17","NA","msaf09","NA","msaf06","NA")
+
+# Save genotype data for downstream analyses
+save(genotype_data, file = "data/genotype_data.Rda")
+```
+
+#### 2b: Convert genotype data to inbreedR compatible format; run the Rmd chunk below.
+In this step, I read in the formatted file generated in Step 2a above and convert it to the appropriate format for the inbreedR package using the built-in "convert_raw()" function.
+
+##### Convert genotype data to inbreedR format and calculate g2 statistics: 
+```{r}
+# Load genotype data 
+load("data/genotype_data.Rda")
+
+# Convert genotype data to inbreedR format
+i_data <- convert_raw(genotype_data)
+
+# Use the built-in "check_data()" function in inbreedR to ensure the data are in the correct format
+check_data(i_data) ## data are in correct format
+
+# Save inbreedR data for downstream analyses
+save(i_data, file = "data/i_data.Rda")
+```
+
+
+#### 2c: Calculate g2 statistic; run the Rmd chunk below.
+In this step, I calculate the g2 identity disequilibrium statistic for the full dataset to determine whether the data have sufficient power for detecting a heterozygosity-fitness correlation.
+
+Parameters for g2 statistic calculation:
+
+<b>Permutations</b>= 1,000 <br>
+<b>Bootstrap replicates</b>= 1,000
+<b>95% Confidence Intervals</b>
+
+##### Calculate g2 identity disequilibrium statistic for microsatellite loci
+```{r}
+# Load inbreedR formatted data
+load("data/i_data.Rda")
+
+# Calculate g2 statistic for microsatellite data
+g2 <- g2_microsats(i_data, 
+                   nperm = 1000, 
+                   nboot = 1000, 
+                   CI = 0.95)
+```
+
+<b>Summary of g2 statistical test</b>: <br>
+
+<b><i>g2</i></b>= 0.01014848 <br>
+<b><i>se</i></b>= 0.005280294 <br>
+<b><i>p(g2 > 0)</i></b>= 0.017 <br>
+
+There is significant power for detecting heterozygosity-fitness correlation if one exists for these data.
+
+#### 2d: Calculate standardized multi-locus heterozygosity; run the Rmd chunk below.
+In this step, we use the genotype data formatted in step 2a above to calculate standardized multi-locus heterozygosity for each fish, defined as the individual multi-locus heterozygosity divided by the average heterozygosity of the full dataset.
+
+##### Calculate standardized multi-locus heterozygosity and bind to the condition dataset: 
+```{r}
+# Calculate standardized multi-locus heterozygosity using the "sMLH()" function
+h <- data.frame(sMLH(i_data))
+
+# Modify first column to have a column name
+h <- rownames_to_column(h)
+
+# Modify column names for data merging
+colnames(h) <- c("sample_id", "h")
+
+## Join h data with full condition data
+
+# Load condition data
+load("data/condition_data.Rda")
+
+# Bind condition data with h data for downstream analyses
+hfc_data <- merge(condition_data, 
+                  h, 
+                  by = "sample_id")
+
+# Save hfc data for downstream analyses
+save(hfc_data, file = "data/hfc_data.Rda")
+```
