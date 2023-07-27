@@ -597,6 +597,11 @@ In this step, we count sample sizes for each ancestry group and present them in 
 # Load ancestry group data
 load("data/processed_ancestry_data/full_ancestry_data.Rda")
 
+# Calculate mean ancestry proportion in the SMB reference samples
+full_ancestry_data %>%
+  filter(population == "reference") %>%
+  summarize(mean_smb = mean(smb))
+
 # Calculate mean ancestry proportions by species (NB and SMB) within the NB native range
 full_ancestry_data %>%
   filter(population == "sample") %>%
