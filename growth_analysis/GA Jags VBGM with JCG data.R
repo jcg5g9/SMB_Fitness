@@ -91,7 +91,7 @@ params = c("mu.Linf", "mu.k", "mu.t0", "Linf.group", "k.group", "t0.group","Linf
 
 ##### Assign data to list ##### 
 # Real data
-load('G:\\My Drive\\other_peoples_projects\\joe bass fitness\\full_bc_data.rda')
+load('growth_analysis/data/bc_data/full_bc_data.rda')
 unique(as.factor(full_bc_data$ancestry_group))
 # [1] Admixed         Neosho_Bass     Smallmouth_Bass
 # Levels: Admixed Neosho_Bass Smallmouth_Bass
@@ -114,9 +114,9 @@ dat = list(age = age, length = length, sex = sex, river = river, sample.id = sam
 ##### MCMC DIMENSIONS #####
 ni = 500000 # this was how many it took to sort of converge with simulated data (and runJags)
 #ni=5000
-nb = 50000
-na = 50000
-nt = 5
+nb = 100000
+na = 100000
+nt = 1000
 nc = 3
 n.iter = ni + nb
 

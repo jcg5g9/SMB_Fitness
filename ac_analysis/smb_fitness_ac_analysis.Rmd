@@ -176,22 +176,6 @@ In this step, I use the condition data and proportion of non-native SMB ancestry
 ```{r}
 # Load condition data generated in Phase 1 above
 load("data/condition_data.Rda")
-
-condition_data %>%
-  arrange(condition)
-
-condition_data <- condition_data %>%
-  mutate(condition_adj = 1000*(mass_dead/(tl_alive^3)))
-
-ggplot(condition_data, aes(x = smb, y = condition, color = sex)) +
-  geom_point(position = position_jitter()) +
-  geom_smooth(method = "lm")
-
-
-mod <- lm(condition_adj ~ smb + smb*river, data = condition_data)
-
-summary(mod)
-
 ```
 
 
