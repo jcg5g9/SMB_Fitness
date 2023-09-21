@@ -5,9 +5,8 @@ data {
   real age[Nobs];                       // length
   
   int<lower=0> Nind;                    // number of individuals
-  int<lower=1, upper=Nind> group[Nind]; // Group of sample ID X
   int<lower=0> Ncoef;                   // Number of predictors
-  matrix[Nind, Ncoef] X;                  // Predictor matrix
+  matrix[Nind, Ncoef] X;                // Predictor matrix
   real q[Nind];                         // Proportion SMB
   
   int<lower=1, upper=Nind> id[Nobs];    // Sample ID
@@ -63,7 +62,10 @@ transformed parameters {
   }
 }
 model {
-  vector[3] mu_mvn = 0;
+  vector[3] mu_mvn;
+  for(i in 1:3){
+    mu_mvn[i] = 0;
+  }
   
   // Group and individual variation priors
   tau_ind ~ cauchy(0, 2.5);
@@ -72,8 +74,12 @@ model {
   tau_group ~ cauchy(0, 2.5);
   Omega_group ~ lkj_corr(2);
   
-  eta_ind ~ multi_normal(mu_mvn, quad_form_diag(Omega_ind, tau_ind));
-  eta_group ~ multi_normal(mu_mvn, quad_form_diag(Omega_group, tau_group));
+  for(i in 1:Nind){
+    eta_ind[i,] ~ multi_normal(mu_mvn, quad_form_diag(Omega_ind, tau_ind));
+  }
+  for(i in 1:2){
+    eta_group[i,] ~ multi_normal(mu_mvn, quad_form_diag(Omega_group, tau_group));
+  }
   
   // Regessor priors
   beta_linf ~ normal(0, 1);

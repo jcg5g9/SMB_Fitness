@@ -1,55 +1,49 @@
-# TODO
-
-# write model to a text file
-writeLines(jags.mod, "jags_model.txt")
-
-##### PARAMETERS TO MONITOR #####
-params = c("mu.Linf", "mu.k", "mu.t0", "Linf.group", "k.group", "t0.group","Linf.i", "k.i", "t0.i", 
-           "ind.cov.mat","group.cov.mat","sigma", 
-           "log.linf.beta.river", "log.k.beta.river", "t0.beta.river", "log.linf.beta.sex", "log.k.beta.sex", "t0.beta.sex" )
-
+library(rstan)
+library(dplyr)
 
 ##### Assign data to list ##### 
 # Real data
 load('growth_analysis/data/bc_data/full_bc_data.rda')
-unique(as.factor(full_bc_data$ancestry_group))
-# [1] Admixed         Neosho_Bass     Smallmouth_Bass
-# Levels: Admixed Neosho_Bass Smallmouth_Bass
 
+# - Define data
 age <- full_bc_data$annulus
 length <- full_bc_data$bc_tl
 group <- as.numeric(as.factor(full_bc_data$ancestry_group)) 
-river <- as.numeric(as.factor(full_bc_data$river)) #[1] big sugar [2] elk river
-sex <- as.numeric(as.factor(full_bc_data$sex)) #[1] female [2] male
 sample.id <- as.numeric(as.factor(full_bc_data$sample_id))
-river[river==3] <- 2
 Nind <- length(unique(full_bc_data$sample_id))
 
+# - Set up model matrix (sex/river) where nrow = number of ind
+model_mat <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  select(sample_id, smb, river_code, sex) %>%
+  mutate(river_code = ifelse(river_code == 3, 2, river_code),
+         river_code = factor(river_code),
+         sex = factor(sex)) %>%
+  arrange(sample_id)
 
-dat = list(age = age, length = length, sex = sex, river = river, sample.id = sample.id, 
-           N = Nind, G = 3, Nind = Nind, group = group, z.group.mat = diag(x=1,nrow=3), 
-           z.ind.mat = diag(x=1,nrow=3), mu.re = rep(0, 3))
+# - Assign to list
+dat = list(
+  Nobs = length(length),
+  length = length,
+  age = age,
+  
+  Nind = Nind,
+  Ncoef = 2,
+  X = model.matrix(~-1 + river_code + sex, model_mat),
+  q = model_mat$smb,
+  
+  id = sample.id
+)
 
 
-##### MCMC DIMENSIONS #####
-ni = 500000 # this was how many it took to sort of converge with simulated data (and runJags)
-#ni=5000
-nb = 100000
-na = 100000
-nt = 1000
-nc = 3
-n.iter = ni + nb
-
-
-
-##### RUN THE MODEL IN JAGS #####
-runJagsOut <- jags( model.file="jags_model.txt" ,
-                    parameters.to.save =params ,
-                    data=dat ,
-                    n.chains=nc ,
-                    n.adapt=na ,
-                    n.burnin=nb ,
-                    n.iter=n.iter ,
-                    n.thin=nt ,
-                    parallel=T)
-print(runJagsOut)
+##### RUN THE MODEL IN STAN #####
+fit1 <- stan(
+  file = "growth_analysis/vbgf.stan",  # Stan program
+  data = dat,    # named list of data
+  chains = 4,             # number of Markov chains
+  warmup = 1000,          # number of warmup iterations per chain
+  iter = 2000,            # total number of iterations per chain
+  cores = 1,              # number of cores (could use one per chain)
+  refresh = 0             # no progress shown
+)
