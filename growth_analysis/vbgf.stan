@@ -1,6 +1,7 @@
 // saved as vbgf.stan
 data {
   int<lower=0> Nobs;                    // number of observations 
+  int<lower=0> Nages;                    // number of observations 
   real length[Nobs];                    // length
   real age[Nobs];                       // length
   
@@ -88,4 +89,16 @@ model {
   
   // Likelihood
   length ~ normal(length_hat, sigma);
+} 
+generated quantities{
+  // Predicted length
+  matrix[Nages, 7] length_pred;
+  
+  for(i in 1:Nages){
+    length_pred[i,1] = mu_linf * (1 - exp(-mu_k * (i - mu_t0))); # Global
+    length_pred[i,2] = linf_group[1] * (1 - exp(-k_group[1] * (i - t0_group[1]))); # SMB - females
+    length_pred[i,3] = linf_group[2] * (1 - exp(-k_group[2] * (i - t0_group[2]))); # Neosho - females
+    length_pred[i,4] = linf_group[1] * exp(beta_linf[1]) * (1 - exp(-k_group[1] * exp(beta_k[1]) * (i - t0_group[1] - beta_t0[1]))); # SMB - males
+    length_pred[i,5] = linf_group[2] * exp(beta_linf[1]) * (1 - exp(-k_group[2] * exp(beta_k[1]) * (i - t0_group[2] - beta_t0[1]))); # Neosho - males
+  }
 }
