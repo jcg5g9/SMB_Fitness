@@ -1,4 +1,4 @@
-//  VBGF with sex/river effects saved as vbgf3.stan
+//  VBGF with sex/river effects saved as vbgf4.stan
 //  Includes ancestry level random effects
 data {
   // Length-at-age data

@@ -61,7 +61,7 @@ fit1 <- stan(
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
 
-saveRDS(fit1, file = "growth_analysis/Models/vbgf_fit1.rds")
+saveRDS(fit1, file = "growth_analysis/Models/Fits/vbgf_fit1.rds")
 
 # - Print and plot MCMC
 print(fit1, pars=c("mu_linf", "mu_k", "mu_t0"), probs=c(.1,.5,.9))
@@ -94,7 +94,7 @@ fit2 <- stan(
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
 
-saveRDS(fit2, file = "growth_analysis/Models/vbgf_fit2.rds")
+saveRDS(fit2, file = "growth_analysis/Models/Fits/vbgf_fit2.rds")
 
 # - Print and plot MCMC
 print(fit2, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0"), probs=c(.1,.5,.9)) # None of the betas are sig
@@ -138,10 +138,10 @@ fit3 <- stan(
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
 
-saveRDS(fit3, file = "growth_analysis/Models/vbgf_fit3.rds")
+saveRDS(fit3, file = "growth_analysis/Models/Fits/vbgf_fit3.rds")
 
 # - Print and plot MCMC
-print(fit3, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0"), probs=c(.1,.5,.9)) # None of the betas are sig
+print(fit3, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
 traceplot(fit3, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
 pairs(fit3, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
 
@@ -183,16 +183,16 @@ fit4 <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
+  warmup = 4000,          # number of warmup iterations per chain
+  iter = 7000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
 
-saveRDS(fit4, file = "growth_analysis/Models/vbgf_fit4.rds")
+saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 
 # - Print and plot MCMC
-print(fit4, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0"), probs=c(.1,.5,.9)) # None of the betas are sig
+print(fit4, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
 traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
 pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
 
@@ -228,8 +228,112 @@ lines(1:max(age), apply(draws[,grepl("length_pred\\[9,",colnames(draws))], 2, me
 legend("bottomright", c("SMB Females", "Neosho Females","SMB Males", "Neosho Males", "River 1", "River 2"), col = c(cols,1,1), lty = c(1,1,1,1,1,2), bty = "n", lwd = 2)
 
 
-##### Test Lineage Parameters #####
+# * Test Lineage Parameters #####
 # - No sig difference
-hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`)
-hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`)
-hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`)
+par(mfrow = c(1,3))
+hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main = NA)
+hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 4")
+hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
+par(mfrow = c(1,1))
+
+
+
+##### Model 5 #####
+# -  VBGF model with  ancestry and individual level random effects
+# - No river/sex effects
+fit5 <- stan(
+  file = "growth_analysis/Models/vbgf5.stan",  # Stan program
+  data = dat,    # named list of data
+  chains = 4,             # number of Markov chains
+  warmup = 3000,          # number of warmup iterations per chain
+  iter = 5000,            # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  control = list(max_treedepth = 12, adapt_delta = 0.9)
+)
+
+saveRDS(fit5, file = "growth_analysis/Models/Fits/vbgf_fit5.rds")
+
+# - Print and plot MCMC
+print(fit5, pars=c("mu_linf", "mu_k", "mu_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
+traceplot(fit5, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
+pairs(fit5, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
+
+# - Sampler issues for all chains combined
+sampler_params <- get_sampler_params(fit5, inc_warmup = TRUE)
+summary(do.call(rbind, sampler_params), digits = 2)
+
+# - Plot fitted model
+cols <- c("#86BBD8", "#F6AE2D", "#F26419", "#2F4858") # Colors for the VBGF lines (Females/Males)
+plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
+     col = cols[as.factor(round(dat$q, 0))], pch = 16, main = "Model 5")
+draws <- as.data.frame(fit5)
+
+# - Plot median curve
+lines(1:max(age), apply(draws[,grepl("length_pred\\[1",colnames(draws))], 2, median), col = 1, lty = 1, lwd = 4) # Global
+
+# - SMB
+lines(1:max(age), apply(draws[,grepl("length_pred\\[2,",colnames(draws))], 2, median), col = cols[1], lty = 1, lwd = 2)
+
+# - Neosho 
+lines(1:max(age), apply(draws[,grepl("length_pred\\[3,",colnames(draws))], 2, median), col = cols[2], lty = 1, lwd = 2)
+
+legend("bottomright", c("Global", "SMB", "Neosho"), col = c(1, cols[1:2]), lty = c(1,1,1), bty = "n", lwd = 2)
+
+
+#* Test Lineage Parameters #####
+# - No sig difference
+par(mfrow = c(1,3))
+hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main = NA)
+hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 5")
+hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
+par(mfrow = c(1,1))
+
+
+
+##### Model 6 #####
+# -  VBGF model with  ancestry FIXED and individual level random effects
+# - No river/sex effects
+fit6 <- stan(
+  file = "growth_analysis/Models/vbgf6.stan",  # Stan program
+  data = dat,    # named list of data
+  chains = 4,             # number of Markov chains
+  warmup = 3000,          # number of warmup iterations per chain
+  iter = 5000,            # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  control = list(max_treedepth = 12, adapt_delta = 0.9)
+)
+
+saveRDS(fit6, file = "growth_analysis/Models/Fits/vbgf_fit6.rds")
+
+# - Print and plot MCMC
+print(fit6, pars=c("linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
+traceplot(fit6, pars = c("linf_lineage", "k_lineage", "t0_lineage"), inc_warmup = FALSE, nrow = 2)
+pairs(fit6, pars = c("linf_lineage", "k_lineage", "t0_lineage"), las = 1)
+
+# - Sampler issues for all chains combined
+sampler_params <- get_sampler_params(fit6, inc_warmup = TRUE)
+summary(do.call(rbind, sampler_params), digits = 2)
+
+# - Plot fitted model
+cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
+plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
+     col = cols[as.factor(round(dat$q, 0))], pch = 16, main = "Model 6")
+draws <- as.data.frame(fit6)
+
+# - SMB
+lines(1:max(age), apply(draws[,grepl("length_pred\\[1,",colnames(draws))], 2, median), col = cols[1], lty = 1, lwd = 2)
+
+# - Neosho 
+lines(1:max(age), apply(draws[,grepl("length_pred\\[2,",colnames(draws))], 2, median), col = cols[2], lty = 1, lwd = 2)
+
+legend("bottomright", c("SMB", "Neosho"), col = c(cols[1:2]), lty = c(1,1), bty = "n", lwd = 2)
+
+
+# * Test Lineage Parameters #####
+# - No sig difference
+par(mfrow = c(1,3))
+hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main = NA)
+hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 6")
+hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
+par(mfrow = c(1,1))
+
