@@ -203,7 +203,7 @@ summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[as.factor(round(dat$q, 0))], pch = 16, main = "Model 5")
+     col = cols[dat$group], pch = 16, main = "Model 5")
 draws <- as.data.frame(fit_group5)
 
 # - Plot median curve
@@ -266,7 +266,7 @@ summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[as.factor(round(dat$q, 0))], pch = 16, main = "Model 6")
+     col = cols[dat$group], pch = 16, main = "Model 6")
 draws <- as.data.frame(fit_group6)
 
 

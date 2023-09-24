@@ -97,17 +97,7 @@ legend("bottomright", c("Admixed", "Neosho","SMB", "Females River 1", "Males Riv
 ##### Model 4 #####
 # * Final Model ----
 # -  VBGF model with sex/river effects and ancestry group and individual level random effects
-fit_group4 <- stan(
-  file = "growth_analysis/Models/vbgf4_group.stan",  # Stan program
-  data = dat,    # named list of data
-  chains = 4,             # number of Markov chains
-  warmup = 4000,          # number of warmup iterations per chain
-  iter = 7000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
-)
-
-readRDS(fit_group4, file = "growth_analysis/Models/Fits/vbgf_fit_group4.rds")
+fit_group4 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_fit_group4.rds")
 
 # - Print and plot MCMC
 print(fit_group4, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig

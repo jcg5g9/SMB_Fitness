@@ -80,7 +80,7 @@ summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 3 (Sensitivity)")
+     col = cols[dat$group], pch = c(17, 19)[full_bc_data$sex], main = "Model 3 (Sensitivity)")
 draws <- as.data.frame(fit_group3)
 
 # - Plot median curve
@@ -151,7 +151,7 @@ summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 7 (Sensitivity)")
+     col = cols[dat$group], pch = c(17, 19)[full_bc_data$sex], main = "Model 7 (Sensitivity)")
 draws <- as.data.frame(fit_group7)
 
 # - Plot median curve
@@ -213,7 +213,7 @@ summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 8 (Sensitivity)")
+     col = cols[dat$group], pch = c(17, 19)[full_bc_data$sex], main = "Model 8 (Sensitivity)")
 draws <- as.data.frame(fit_group8)
 
 
