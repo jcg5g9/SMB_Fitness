@@ -6,6 +6,7 @@ library(dplyr)
 rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
+cols <- c("#86BBD8", "#F6AE2D", "#F26419","#2F4858") # Colors for the VBGF lines (Females/Males)
 
 ##### Assign data to list ##### 
 # Real data
@@ -53,17 +54,7 @@ dat = list(
 
 ##### Model 1 #####
 # - Single parameter model
-fit1 <- stan(
-  file = "growth_analysis/Models/vbgf1.stan",  # Stan program
-  data = dat,    # named list of data
-  chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
-)
-
-saveRDS(fit1, file = "growth_analysis/Models/Fits/vbgf_sen_fit1.rds")
+fit1 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_sen_fit1.rds")
 
 # - Print and plot MCMC
 print(fit1, pars=c("mu_linf", "mu_k", "mu_t0"), probs=c(.1,.5,.9))
@@ -86,17 +77,7 @@ lines(1:max(age), median.lengths, col = 1, lty = 1, lwd = 2)
 
 ##### Model 2 #####
 # - Single parameter model with sex/river effects
-fit2 <- stan(
-  file = "growth_analysis/Models/vbgf2.stan",  # Stan program
-  data = dat,    # named list of data
-  chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
-)
-
-saveRDS(fit2, file = "growth_analysis/Models/Fits/vbgf_sen_fit2.rds")
+fit2 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_sen_fit2.rds")
 
 # - Print and plot MCMC
 print(fit2, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0"), probs=c(.1,.5,.9)) # None of the betas are sig
@@ -108,7 +89,6 @@ sampler_params <- get_sampler_params(fit2, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#007FFF","#FF7F00") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[full_bc_data$sex], pch = c(17, 19)[full_bc_data$river_code], main = "Model 2 (Sensitivity)")
 draws <- as.data.frame(fit2)
@@ -129,18 +109,9 @@ legend("bottomright", c("Females river 1", "Females river 2","Males river 1", "M
 
 
 ##### Model 3 #####
+# * Final model ----
 # -  VBGF model with sex/river effects and ancestry level random effects
-fit3 <- stan(
-  file = "growth_analysis/Models/vbgf3.stan",  # Stan program
-  data = dat,    # named list of data
-  chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
-)
-
-saveRDS(fit3, file = "growth_analysis/Models/Fits/vbgf_sen_fit3.rds")
+fit3 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_sen_fit3.rds")
 
 # - Print and plot MCMC
 print(fit3, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
@@ -152,7 +123,6 @@ sampler_params <- get_sampler_params(fit3, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 3 (Sensitivity)")
 draws <- as.data.frame(fit3)
@@ -179,7 +149,7 @@ lines(1:max(age), apply(draws[,grepl("length_pred\\[9,",colnames(draws))], 2, me
 legend("bottomright", c("SMB Females", "Neosho Females","SMB Males", "Neosho Males", "River 1", "River 2"), col = c(cols,1,1), lty = c(1,1,1,1,1,2), bty = "n", lwd = 2)
 
 
-##### Test Lineage Parameters #####
+# * Test Lineage Parameters #####
 # - No sig difference
 par(mfrow = c(1,3))
 hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main = NA)
@@ -190,17 +160,7 @@ par(mfrow = c(1,1))
 
 ##### Model 7 #####
 # -  VBGF model with ancestry level random effects
-fit7 <- stan(
-  file = "growth_analysis/Models/vbgf7.stan",  # Stan program
-  data = dat,    # named list of data
-  chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
-)
-
-saveRDS(fit7, file = "growth_analysis/Models/Fits/vbgf_sen_fit7.rds")
+fit7 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_sen_fit7.rds")
 
 # - Print and plot MCMC
 print(fit7, pars=c("mu_linf", "mu_k", "mu_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
@@ -212,10 +172,9 @@ sampler_params <- get_sampler_params(fit7, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 6 (Sensitivity)")
-draws <- as.data.frame(fit5)
+     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 7 (Sensitivity)")
+draws <- as.data.frame(fit7)
 
 # - Plot median curve
 lines(1:max(age), apply(draws[,grepl("length_pred\\[1",colnames(draws))], 2, median), col = 1, lty = 1, lwd = 4) # Global
@@ -240,17 +199,7 @@ par(mfrow = c(1,1))
 
 ##### Model 8 #####
 # -  VBGF model with ancestry level FIXED effects
-fit8 <- stan(
-  file = "growth_analysis/Models/vbgf8.stan",  # Stan program
-  data = dat,    # named list of data
-  chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
-)
-
-saveRDS(fit8, file = "growth_analysis/Models/Fits/vbgf_sen_fit8.rds")
+fit8 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_sen_fit8.rds")
 
 # - Print and plot MCMC
 print(fit8, pars=c("linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
@@ -262,9 +211,8 @@ sampler_params <- get_sampler_params(fit8, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
-     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 6 (Sensitivity)")
+     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 8 (Sensitivity)")
 draws <- as.data.frame(fit8)
 
 # - SMB

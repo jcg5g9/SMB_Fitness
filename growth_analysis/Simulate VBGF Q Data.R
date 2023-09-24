@@ -1,4 +1,4 @@
-# This code simulates length-at-age data for individuals from a population where there are multiple sub-groups and there are sex and location (two rivers) specific differences in growth. Multiple length-at-age samples are "simulated/sampled" from each individual, representing capture-recapture data.
+# This code simulates length-at-age data for individuals from a population where there are 2 sub-groups and there are sex and location (two rivers) specific differences in growth. Multiple length-at-age samples are "simulated/sampled" from each individual, representing capture-recapture data. Growth is related to the proportion of genetic material in each of the sub-groups.
 
 # The data are then fit to a hierarchical von bertalanfy growth curve with the following structure:
 
@@ -44,7 +44,7 @@ sigma = 10 # Observation error
 
 # River and sex effects (e.g. difference for sex 1 and river 1 from sex 0 and river 0, respectively)
 loglinf.beta.sex <- 0.05
-loglinf.beta.river <- 0.1
+loglinf.beta.river <- 0.01
 
 logk.beta.sex <- 0.01
 logk.beta.river <- 0.1
@@ -54,16 +54,16 @@ t0.beta.river <- 0.1
 
 
 ## Group level random effects
-sigma.group = c(0.01, 0.05, 0.2)
-rho = 0.3 # Correlation between group level parameters
+sigma.group = c(.03, 0.05, 0.2) #NOTE: Sigma is important
+rho = -0.3 # Correlation between group level parameters
 cor.group.mat = matrix(rho, 3, 3)
 diag(cor.group.mat) <- 2
 cov.group.mat <- diag(sigma.group) %*% cor.group.mat %*% diag(sigma.group) # Get covariance
 
 
 ## Individual level random effects
-sigma.ind = c(0.1, 0.10, 0.1)
-rho = 0.3 # Correlation between group level parameters
+sigma.ind = c(0.05, 0.1, 0.1)
+rho = -0.2 # Correlation between individual level parameters
 cor.ind.mat = matrix(rho, 3, 3)
 diag(cor.ind.mat) <- 1
 cov.ind.mat <- diag(sigma.ind) %*% cor.ind.mat %*% diag(sigma.ind) # Get covariance
@@ -130,3 +130,4 @@ dat = list(
   id = sample.id
 )
 
+print(group.param.mat)

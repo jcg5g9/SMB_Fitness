@@ -6,6 +6,7 @@ library(dplyr)
 rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
+cols <- c("#86BBD8", "#F6AE2D", "#F26419","#2F4858") # Colors for the VBGF lines (Females/Males)
 
 ##### Assign data to list ##### 
 # Real data
@@ -106,7 +107,6 @@ sampler_params <- get_sampler_params(fit2, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#007FFF","#FF7F00") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[full_bc_data$sex], pch = c(17, 19)[full_bc_data$river_code], main = "Model 2")
 draws <- as.data.frame(fit2)
@@ -150,7 +150,6 @@ sampler_params <- get_sampler_params(fit3, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 3")
 draws <- as.data.frame(fit3)
@@ -178,6 +177,7 @@ legend("bottomright", c("SMB Females", "Neosho Females","SMB Males", "Neosho Mal
 
 
 ##### Model 4 #####
+# * Final Model ----
 # -  VBGF model with sex/river effects and ancestry and individual level random effects
 fit4 <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
@@ -201,7 +201,6 @@ sampler_params <- get_sampler_params(fit4, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 4")
 draws <- as.data.frame(fit4)
@@ -263,7 +262,6 @@ sampler_params <- get_sampler_params(fit5, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8", "#F6AE2D", "#F26419", "#2F4858") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[as.factor(round(dat$q, 0))], pch = 16, main = "Model 5")
 draws <- as.data.frame(fit5)
@@ -315,7 +313,6 @@ sampler_params <- get_sampler_params(fit6, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
 # - Plot fitted model
-cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
      col = cols[as.factor(round(dat$q, 0))], pch = 16, main = "Model 6")
 draws <- as.data.frame(fit6)
