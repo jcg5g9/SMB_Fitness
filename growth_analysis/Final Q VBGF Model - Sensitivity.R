@@ -1,0 +1,112 @@
+# Sensitivity analysis fitting hierarchical growth models  using length-at-age (not back-calculated)
+
+##### Setup #####
+library(rstan)
+library(dplyr)
+rstan_options(threads_per_chain = 1)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores()-1)
+
+##### Assign data to list ##### 
+# Real data
+load('growth_analysis/data/bc_data/full_bc_data.rda')
+full_bc_data <- full_bc_data %>%
+  mutate(river_code = factor(river_code),
+         river_code = ifelse(river_code == 3, 2, river_code),
+         sex = as.numeric(factor(sex)))
+
+# - Set up model matrix (sex/river) and data
+model_mat <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  select(sample_id, smb, river_code, sex, consensus_age, tl_dead, ancestry_group) %>%
+  mutate(
+    river_code = factor(river_code),
+    sex = factor(sex)) %>%
+  arrange(sample_id)
+
+# - Define data
+age <- model_mat$consensus_age
+length <- model_mat$tl_dead
+group <- as.numeric(as.factor(model_mat$ancestry_group)) 
+sample.id <- as.numeric(as.factor(as.character(model_mat$sample_id)))
+Nind <- length(unique(sample.id))
+
+
+# - Assign to list
+dat = list(
+  Nobs = length(length),
+  Nages = round(max(age)),
+  length = length,
+  age = age,
+  Zero = rep(0, 3),
+  
+  Nind = Nind,
+  Ncoef = 2,
+  X = model.matrix(~ sex + river_code, model_mat)[,2:3], # No intercept
+  Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE), # Matrix for prediction
+  q = model_mat$smb,
+  
+  id = sample.id
+)
+
+
+##### Model 3 #####
+# * Final model ----
+# -  VBGF model with sex/river effects and ancestry level random effects
+fit3 <- stan(
+  file = "growth_analysis/Models/vbgf3.stan",  # Stan program
+  data = dat,    # named list of data
+  chains = 4,             # number of Markov chains
+  warmup = 2000,          # number of warmup iterations per chain
+  iter = 4000,            # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  control = list(max_treedepth = 12, adapt_delta = 0.9)
+)
+
+saveRDS(fit3, file = "growth_analysis/Models/Fits/vbgf_sen_fit3.rds")
+
+# - Print and plot MCMC
+print(fit3, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
+traceplot(fit3, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
+pairs(fit3, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
+
+# - Sampler issues for all chains combined
+sampler_params <- get_sampler_params(fit3, inc_warmup = TRUE)
+summary(do.call(rbind, sampler_params), digits = 2)
+
+# - Plot fitted model
+cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
+plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25, 
+     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 3 (Sensitivity)")
+draws <- as.data.frame(fit3)
+
+# - Plot median curve
+lines(1:max(age), apply(draws[,grepl("length_pred\\[1,",colnames(draws))], 2, median), col = 1, lty = 1, lwd = 4) # Global
+
+# - SMB Females
+lines(1:max(age), apply(draws[,grepl("length_pred\\[2,",colnames(draws))], 2, median), col = cols[1], lty = 1, lwd = 2) # Females river 1
+lines(1:max(age), apply(draws[,grepl("length_pred\\[4,",colnames(draws))], 2, median), col = cols[31], lty = 2, lwd = 2) # Females river 2
+
+# - Neosho Females
+lines(1:max(age), apply(draws[,grepl("length_pred\\[6,",colnames(draws))], 2, median), col = cols[2], lty = 1, lwd = 2) # Females river 1
+lines(1:max(age), apply(draws[,grepl("length_pred\\[8,",colnames(draws))], 2, median), col = cols[2], lty = 2, lwd = 2) # Females river 2
+
+# - SMB males
+lines(1:max(age), apply(draws[,grepl("length_pred\\[3,",colnames(draws))], 2, median), col = cols[3], lty = 1, lwd = 2) # Males river 1
+lines(1:max(age), apply(draws[,grepl("length_pred\\[5,",colnames(draws))], 2, median), col = cols[3], lty = 2, lwd = 2) # Males river 2
+
+# - Neosho Males
+lines(1:max(age), apply(draws[,grepl("length_pred\\[7,",colnames(draws))], 2, median), col = cols[4], lty = 1, lwd = 2) # Males river 1
+lines(1:max(age), apply(draws[,grepl("length_pred\\[9,",colnames(draws))], 2, median), col = cols[4], lty = 2, lwd = 2) # Males river 2
+
+legend("bottomright", c("SMB Females", "Neosho Females","SMB Males", "Neosho Males", "River 1", "River 2"), col = c(cols,1,1), lty = c(1,1,1,1,1,2), bty = "n", lwd = 2)
+
+
+# * Test Lineage Parameters #####
+# - No sig difference
+par(mfrow = c(1,3))
+hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main = NA)
+hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 3 (Sensitivity)")
+hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
+par(mfrow = c(1,1))

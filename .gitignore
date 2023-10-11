@@ -9,3 +9,4 @@ smb_fitness_project_notes.Rmd
 project_info/
 figures/
 raw_data/
+*.rds
