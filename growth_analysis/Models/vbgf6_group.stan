@@ -45,10 +45,10 @@ transformed parameters {
 model {
   // Priors
   // - Global parameters
-  // - Jackson, Z. J., Quist, M. C., & Larscheid, J. G. (2008). Growth standards for nine North American fish species. Fisheries Management and Ecology, 15(2), 107-118.
-  linf_lineage ~ lognormal(log(498.6), 0.4);
-  k_lineage ~ lognormal(log(0.229), 0.5);
-  t0_lineage ~ normal(0.141, 1);
+  // - Starks, T. A., & Rodger, A. W. (2020). Otolith and scale‐based growth standards for lotic Smallmouth Bass. North American Journal of Fisheries Management, 40(4), 986-994.
+  linf_lineage ~ lognormal(log(578), 0.02432599);
+  k_lineage ~ lognormal(log(0.125), 0.04580929);
+  t0_lineage ~ normal(-1.79, 0.0625);
   
   // - Individual variation priors
   sigma_ind ~ cauchy(0, 0.5);

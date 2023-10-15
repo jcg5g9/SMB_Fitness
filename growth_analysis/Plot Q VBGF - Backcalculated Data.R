@@ -153,7 +153,7 @@ fit4 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 
 # - Print and plot MCMC
 print(fit4, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
-traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), inc_warmup = FALSE, nrow = 2)
 pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
 
 # - Sampler issues for all chains combined
@@ -195,6 +195,8 @@ hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 4
 hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
 par(mfrow = c(1,1))
 
+
+quantile(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, p = c(0.025, 0.05, 0.5, 0.95, 0.975))
 
 
 ##### Model 5 #####
