@@ -12,6 +12,7 @@ output: html_document
 For this aim, paramaterized the von Bertlanffy individual growth model for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by using the Dahl-Lea linear back-calculation model We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
 
 ## Phases of Analysis
+### Phase 1: Intra- and inter-observer error analysis for otolith annuli estimates
 ### Phase 1: Linear back-calculation
 ### Phase 2: von Bertlanffy growth analysis
 
@@ -29,7 +30,151 @@ library(nlme)
 library(jagsUI)
 ```
 
-## PHASE 1: LINEAR BACK CALCULATION
+## PHASE 1: INTRA- AND INTER-OBSERVER ERROR ANALYSIS FOR OTOLITH ANNULI ESTIMATES
+In this phase of analysis, we conduct an analysis of intra- and inter-observer bias in estimating the number of otolith annuli on raw otolith microscope images. Three independent observers estimated the number annuli on each otolith image, and counts were compared among observers. If all observers agreed on annuli count for a given image, that count was used as the "consensus age". If there were discrepancies among two or three observers, a consensus age was determined by discussion.
+
+### STEP 1: Select sets of otolith images consisting of a random 10% of the full dataset, to be re-counted by each observer (3 total observers); run the Rmd chunk below.
+In this step, we selected sets of images at random, each including 10% of the original dataset (10% of 116 ~ 12 images per observer).
+
+##### Select random sets of images:
+```{r}
+# Get vector of image names
+otos <- c("FBS01.PNG","FBS02.PNG","FBS03.PNG","FBS04.PNG","FBS05.PNG","FBS06.PNG","FBS07.PNG","FBS08.PNG","FBS09.PNG","FBS10.PNG","FBS11.PNG","FBS12.PNG","FBS13.PNG","FBS14.PNG","FBS15.PNG","FBS16.PNG","FBS17.PNG","FBS18.PNG","FBS19.PNG","FBS20.PNG","FBS21.PNG","FBS22.PNG","FBS23.PNG","FBS24.PNG","FBS25.PNG","FBS26.PNG","FBS27.PNG","FBS28.PNG","FBS29.PNG","FBS30.PNG","FBS31.PNG","FBS32.PNG","FBS33.PNG","FBS34.PNG","FBS35.PNG","FBS36.PNG","FBS37.PNG","FBS38.PNG","FBS39.PNG","FBS40.PNG","FBS41.PNG","FBS42.PNG","FBS43.PNG","FBS44.PNG","FBS45.PNG","FBS46.PNG","FER01.PNG","FER02.PNG","FER03.PNG","FER04.PNG","FER05.PNG","FER06.PNG","FER07.PNG","FER08.PNG","FER09.PNG","FER10.PNG","FER11.PNG","FER12.PNG","FER13.PNG","FER14.PNG","FER15.PNG","FER16.PNG","FER17.PNG","FER18.PNG","FER19.PNG","FER20.PNG","FER21.PNG","FER22.PNG","FER23.PNG","FER24.PNG","FER25.PNG","FER26.PNG","FER27.PNG","FER28.PNG","FER29.PNG","FER30.PNG","FER31.PNG","FER32.PNG","FER33.PNG","FER34.PNG","FER35.PNG","FER36.PNG","FER37.PNG","FER38.PNG","FER39.PNG","FER40.PNG","FER41.PNG","FER42.PNG","FER43.PNG","FER44.PNG","FER45.PNG","FER46.PNG","FER48.PNG","FER49.PNG","FER50.PNG","FER51.PNG","FER52.PNG","FER53.PNG","FER54.PNG","FER55.PNG","FER56.PNG","FER57.PNG","FER58.PNG","FER59.PNG","FER60.PNG","FER61.PNG","FER62.PNG","FER63.PNG","FER64.PNG","FER65.PNG","FER66.PNG","FER68.PNG","FER69.PNG","FER70.PNG","FER71.PNG")
+
+# Select 12 random images for recount by each observer
+sample(otos, size = 12, replace = FALSE)
+```
+
+<b>Summary of sample sets for observers</b>:
+
+<b>Joe</b>: FBS07.PNG, FER03.PNG, FBS40.PNG, FER39.PNG, FBS15.PNG, FER31.PNG, FBS17.PNG, FBS44.PNG, FER41.PNG, FBS37.PNG, FER65.PNG, FER11.PNG
+
+<b>Eddie</b>: FBS07.PNG, FER06.PNG, FER19.PNG, FER07.PNG, FER20.PNG, FER35.PNG, FER43.PNG, FBS38.PNG, FER37.PNG, FBS06.PNG, FER55.PNG, FER16.PNG
+
+<b>Michael</b>: FER54.PNG, FER48.PNG, FER33.PNG, FER34.PNG, FBS09.PNG, FBS03.PNG, FER62.PNG, FER60.PNG, FBS25.PNG, FBS24.PNG, FER70.PNG, FBS15.PNG
+
+### STEP 2: Calculate intra-observer error; run the Rmd chunk below.
+We calculated intra-observer error for each observer individually. We opted to calculate error as the number of discrepancies (number of individual samples for which there was a difference between the original annulus count on the sagittal otolith and the recount (which was conducted after 2 years)) divided by the total number of comparisons. 
+
+Each observer recounted 12 randomly assigned samples (see STEP 1 above), so error was calculated as: error = discrepancies/12
+
+We then calculated the mean of intra-observer error values across observers and reported this error in the final manuscript.
+
+##### Calculate intra-observer error:
+```{r}
+# Read in recount data for each observer
+eddie_recount <- read_excel("data/otolith_recounts/eddie_recount.xlsx")
+joe_recount <- read_excel("data/otolith_recounts/joe_recount.xlsx")
+michael_recount <- read_excel("data/otolith_recounts/michael_recount.xlsx")
+
+# Load in full ancestry data curated in Analysis 3 
+load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# format recount data
+eddie_recount <- eddie_recount %>%
+  mutate(sample_id = factor(sample_id))
+
+joe_recount <- joe_recount %>%
+  mutate(sample_id = factor(sample_id))
+
+michael_recount <- michael_recount %>%
+  mutate(sample_id = factor(sample_id))
+
+# Get original count data from each observer
+eddie_original <- full_ancestry_data %>%
+  select(sample_id, eddie_age)
+
+joe_original <- full_ancestry_data %>%
+  select(sample_id, joe_age)
+
+michael_original <- full_ancestry_data %>%
+  select(sample_id, michael_age)
+
+# merge original and recount data
+eddie <- merge(eddie_original, 
+               eddie_recount, 
+               by = "sample_id")
+
+# rename second column
+colnames(eddie)[2] <- c("age")
+
+joe <- merge(joe_original, 
+               joe_recount, 
+               by = "sample_id")
+
+# rename second column
+colnames(joe)[2] <- c("age")
+
+michael <- merge(michael_original, 
+               michael_recount, 
+               by = "sample_id")
+
+# rename second column
+colnames(michael)[2] <- c("age")
+
+
+# Create column in recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference)
+michael$diff <- as.numeric(with(michael, ifelse(age==recount, "0", "1")))
+joe$diff <- as.numeric(with(joe, ifelse(age==recount, "0", "1")))
+eddie$diff <- as.numeric(with(eddie, ifelse(age==recount, "0", "1")))
+
+
+# Calcualte intra-observer error by dividing the number of count discrepancies divided by the total number of observations
+michael_error <- sum(michael$diff)/(nrow(michael))
+joe_error <- sum(joe$diff)/(nrow(joe))
+eddie_error <- sum(eddie$diff)/(nrow(eddie))
+
+# Calculate average error
+average_error <- (michael_error + joe_error + eddie_error)/3
+```
+
+We calculated an average intra-observer error of 0.05555556.
+
+### STEP 2: Calculate inter-observer error; run the Rmd chunk below.
+We calculated inter-observer error between each pair of observers (eddie and joe, eddie and michael, and michael and joe. We opted to calculate error as the number of discrepancies (number of individual samples for which there was a difference between the original observer annulus estimates) divided by the total number of comparisons. 
+
+Each observer originally counted 116 samples (the full sample set), so error was calculated as: error = discrepancies/116
+
+We then calculated the mean of inter-observer error values across inter-observer comparisons and reported this average error in the final manuscript.
+
+##### Calculate intra-observer error:
+```{r}
+# Get original count data for each observer
+eddie_original <- full_ancestry_data %>%
+  select(sample_id, eddie_age)
+
+joe_original <- full_ancestry_data %>%
+  select(sample_id, joe_age)
+
+michael_original <- full_ancestry_data %>%
+  select(sample_id, michael_age)
+
+# bind columns of counts from each observer
+originals <- data.frame(cbind("eddie" = eddie_original[,-1],
+                   "joe" = joe_original[,-1], 
+                   "michael" = michael_original[,-1]))
+
+# Drop NAs from data (SMB samples without age estimates)
+originals <- originals %>%
+  drop_na()
+
+# Create column in recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference)
+originals$eddie_joe_diff <- as.numeric(with(originals, ifelse(eddie==joe, "0", "1")))
+originals$eddie_michael_diff <- as.numeric(with(originals, ifelse(eddie==michael, "0", "1")))
+originals$joe_michael_diff <- as.numeric(with(originals, ifelse(joe==michael, "0", "1")))
+
+# Calcualte intra-observer error by dividing the number of count discrepancies divided by the total number of observations
+eddie_joe_error <- sum(originals$eddie_joe_diff)/(nrow(originals))
+eddie_michael_error <- sum(originals$eddie_michael_diff)/(nrow(originals))
+joe_michael_error <- sum(originals$joe_michael_diff)/(nrow(originals))
+
+# Calculate average error
+average_error <- (eddie_joe_error + eddie_michael_error + joe_michael_error)/3
+```
+
+We calculated an average inter-observer error of 0.1494253
+
+## PHASE 2: LINEAR BACK CALCULATION
 In this phase of analysis, we conduct linear back-calculation on a subset of relatively high-age fish in our dataset to generate estimates of total length for fish at earlier ages. These estimates are not to be considered independent measurements of age and length, because they are calculated based on the assumption of a direct, one-to-one proportional relationship between an individual's total length and the radii of each annulus in the individual's otolith. Each back-calculated length is therefore an estimate of that individual's length at an earlier age. However, given a large sample size, these estimates can be used to approximate or represent lower age estimates within a population.
 
 ### STEP 1: Set "device type" in the package RFishBC (Ogle, 2022) so that the GUI will be readible by MAC OS; run the Rmd chunk below.
@@ -1008,7 +1153,7 @@ save(mod_river, file = 'data/jags_results/river/mod_river.rda')
 ```{r}
 # Load full bc data
 load('data/bc_data/full_bc_data.rda')
-
+full_bc_data
 # Load model data for river data
 load('data/jags_results/river/mod_river.rda')
 
