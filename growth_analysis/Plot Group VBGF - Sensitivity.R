@@ -61,7 +61,7 @@ fit_group3 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_sen_fit_group3.rd
 
 # - Print and plot MCMC
 print(fit_group3, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
-traceplot(fit_group3, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit_group3, pars = c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), inc_warmup = FALSE, nrow = 2)
 pairs(fit_group3, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
 
 # - Sampler issues for all chains combined

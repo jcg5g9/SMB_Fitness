@@ -35,7 +35,7 @@ Nind <- length(unique(sample.id))
 
 
 # - Assign to list
-dat = list(
+dat_sen = list(
   Nobs = length(length),
   Nages = round(max(age)),
   length = length,
@@ -56,10 +56,10 @@ dat = list(
 # - Single parameter model
 fit1 <- stan(
   file = "growth_analysis/Models/vbgf1.stan",  # Stan program
-  data = dat,    # named list of data
+  data = dat_sen,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
+  iter = 5000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
@@ -89,10 +89,10 @@ lines(1:max(age), median.lengths, col = 1, lty = 1, lwd = 2)
 # - Single parameter model with sex/river effects
 fit2 <- stan(
   file = "growth_analysis/Models/vbgf2.stan",  # Stan program
-  data = dat,    # named list of data
+  data = dat_sen,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
+  iter = 5000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
@@ -133,10 +133,10 @@ legend("bottomright", c("Females river 1", "Females river 2","Males river 1", "M
 # -  VBGF model with sex/river effects and ancestry level random effects
 fit3 <- stan(
   file = "growth_analysis/Models/vbgf3.stan",  # Stan program
-  data = dat,    # named list of data
+  data = dat_sen,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
+  warmup = 3000,          # number of warmup iterations per chain
+  iter = 6000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
@@ -192,10 +192,10 @@ par(mfrow = c(1,1))
 # -  VBGF model with ancestry level random effects
 fit7 <- stan(
   file = "growth_analysis/Models/vbgf7.stan",  # Stan program
-  data = dat,    # named list of data
+  data = dat_sen,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
+  iter = 5000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
@@ -241,10 +241,10 @@ par(mfrow = c(1,1))
 # -  VBGF model with ancestry level FIXED effects
 fit8 <- stan(
   file = "growth_analysis/Models/vbgf8.stan",  # Stan program
-  data = dat,    # named list of data
+  data = dat_sen,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 2000,          # number of warmup iterations per chain
-  iter = 4000,            # total number of iterations per chain
+  iter = 5000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
