@@ -3,6 +3,7 @@
 ##### Setup #####
 library(rstan)
 library(dplyr)
+library(bayesplot)
 rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
@@ -56,17 +57,49 @@ fit4 <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 4000,          # number of warmup iterations per chain
-  iter = 7000,            # total number of iterations per chain
+  warmup = 5000,          # number of warmup iterations per chain
+  iter = 8000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
+  control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
 
 saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 
-# - Print and plot MCMC
+
+# * Convergence diagnostics ----
+# https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
+posterior_cp <- as.array(fit4)
+
+# - Rhat for chain convergence
+rhats <- rhat(fit4)
+print(rhats)
+color_scheme_set("brightblue") # see help("color_scheme_set")
+mcmc_rhat(rhats)
+
+# # - Posterior ll
+# lp_cp <- log_posterior(fit4)
+# head(lp_cp)
+# 
+# # - Accepted prob
+# np_cp <- nuts_params(fit4)
+# head(np_cp)
+# 
+# # - Look at par vs divergence
+# color_scheme_set("darkgray")
+# mcmc_parcoord(posterior_cp, np = np_cp)
+# 
+# # - Look at ll vs acceptance
+# color_scheme_set("red")
+# mcmc_nuts_divergence(np_cp, lp_cp)
+
+# * Print and plot MCMC ----
 print(fit4, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
-traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("Lcorr_group", "sigma_group"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
+
+
 pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
 
 # - Sampler issues for all chains combined

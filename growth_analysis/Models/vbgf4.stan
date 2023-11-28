@@ -76,7 +76,7 @@ model {
   
   // - Ancestry level variation priors
   sigma_group ~ cauchy(0, 0.5);
-  Lcorr_group ~ lkj_corr_cholesky(1);
+  Lcorr_group ~ lkj_corr_cholesky(3); // Centered around 0 https://mjskay.github.io/ggdist/reference/lkjcorr_marginal.html
 
   for(i in 1:2){
     eta_lineage[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_group, Lcorr_group));
@@ -84,7 +84,7 @@ model {
   
   // - Individual variation priors
   sigma_ind ~ cauchy(0, 0.5);
-  Lcorr_ind ~ lkj_corr_cholesky(2);
+  Lcorr_ind ~ lkj_corr_cholesky(3); // Centered around 0 https://mjskay.github.io/ggdist/reference/lkjcorr_marginal.html
 
   for(i in 1:Nind){
     eta_ind[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_ind, Lcorr_ind));
@@ -102,6 +102,11 @@ model {
 generated quantities{
   // Predicted length
   matrix[9, Nages] length_pred;
+  
+  // Correlation matrices
+  matrix[3, 3] Omega_group;
+  matrix[3, 3] Omega_ind;
+  
   
   // Parameters for prediction
   vector[4] linf_pred = exp(Xhat * beta_linf) * mu_linf; 
@@ -125,4 +130,8 @@ generated quantities{
     length_pred[8,i] = linf_pred[3] * exp(eta_n_linf) * (1 - exp(-k_pred[3] * exp(eta_n_k) * (i - t0_pred[3] - eta_n_t0))); // Females river 2
     length_pred[9,i] = linf_pred[4] * exp(eta_n_linf) * (1 - exp(-k_pred[4] * exp(eta_n_k) * (i - t0_pred[4] - eta_n_t0))); // Males river 2
   }
+  
+  // Correlation matrices
+  Omega_group = Lcorr_group * Lcorr_group ; // Correlation matrix of ancestry distribution
+  Omega_ind = Lcorr_ind * Lcorr_ind ; // Correlation matrix of ind re distribution
 }

@@ -29,3 +29,6 @@ cvk <- sdk/muk
 # CV = sqrt(exp(logSD^2)-1)
 logSDlinf <- sqrt(log((cvlinf^2)+1))
 logSDk <- sqrt(log((cvk^2)+1))
+
+
+curve(dcauchy(x, 0, 0.5), from = 0, to = 1)
