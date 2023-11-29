@@ -141,3 +141,64 @@ hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main =
 hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 4")
 hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
 par(mfrow = c(1,1))
+
+
+
+# Sex only (no river) ----
+# - Assign to list
+dat_sex = list(
+  Nobs = length(length),
+  Nages = round(max(age)),
+  length = length,
+  age = age,
+  Zero = rep(0, 3),
+  
+  Nind = Nind,
+  Ncoef = 1,
+  X = as.matrix(model.matrix(~ sex, model_mat)[,2]), # No intercept
+  Xhat = matrix(c(0,0,1,1), nrow = 4, ncol = 1, byrow = TRUE), # Matrix for prediction
+  q = model_mat$smb,
+  
+  id = sample.id
+)
+
+# -  VBGF model with sex/river effects and ancestry and individual level random effects
+fit4_sex <- stan(
+  file = "growth_analysis/Models/vbgf4.stan",  # Stan program
+  data = dat_sex,    # named list of data
+  chains = 4,             # number of Markov chains
+  warmup = 5000,          # number of warmup iterations per chain
+  iter = 8000,            # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  control = list(adapt_delta=0.99, stepsize=0.01, max_treedepth=18)
+)
+
+
+# River only (no sex) ----
+# - Assign to list
+dat_river = list(
+  Nobs = length(length),
+  Nages = round(max(age)),
+  length = length,
+  age = age,
+  Zero = rep(0, 3),
+  
+  Nind = Nind,
+  Ncoef = 1,
+  X = as.matrix(model.matrix(~ sex, model_mat)[,2]), # No intercept
+  Xhat = matrix(c(0,0,1,1), nrow = 4, ncol = 1, byrow = TRUE), # Matrix for prediction
+  q = model_mat$smb,
+  
+  id = sample.id
+)
+
+# -  VBGF model with river effects and ancestry and individual level random effects
+fit4_river <- stan(
+  file = "growth_analysis/Models/vbgf4.stan",  # Stan program
+  data = dat_river,    # named list of data
+  chains = 4,             # number of Markov chains
+  warmup = 5000,          # number of warmup iterations per chain
+  iter = 8000,            # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  control = list(adapt_delta=0.99, stepsize=0.01, max_treedepth=18)
+)

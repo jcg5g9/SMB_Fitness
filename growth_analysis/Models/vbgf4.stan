@@ -11,7 +11,7 @@ data {
   int<lower=0> Nind;                    // number of individuals
   int<lower=0> Ncoef;                   // Number of predictors
   matrix[Nind, Ncoef] X;                // Design matrix
-  matrix[4,2] Xhat;                     // Prediction matrix
+  matrix[4,Ncoef] Xhat;                     // Prediction matrix
   vector[Nind] q;                       // Proportion SMB
   
   int<lower=1, upper=Nind> id[Nobs];    // Sample ID
