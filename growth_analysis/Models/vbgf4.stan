@@ -19,8 +19,8 @@ data {
 }
 parameters {
   // VBGF Params ----
-  real mu_linf;                         // asymptotic length
-  real mu_k;                            // growth coef
+  real<lower=0> mu_linf;                // asymptotic length
+  real<lower=0> mu_k;                   // growth coef
   real mu_t0;                           // age at length 0
   matrix[2, 3] eta_lineage;             // Ancestry level deviation
   matrix[Nind, 3] eta_ind;              // Individual deviation from VBGF parameters
