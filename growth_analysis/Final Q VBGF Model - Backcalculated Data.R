@@ -57,11 +57,22 @@ fit4 <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 8000,          # number of warmup iterations per chain
-  iter = 12000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(adapt_delta = 0.999, stepsize = 0.01, max_treedepth = 15)
+  warmup = 5000,          # number of warmup iterations per chain
+  iter = 10000,            # total number of iterations per chain
+  cores = 4              # number of cores (could use one per chain)
+  # control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
+
+summ <- summary(fit4, probs=c(.1,.5,.9))$summary
+
+traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("Lcorr_group", "sigma_group"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
+
+rhats <- rhat(fit4)
+rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
+print(rhats)
 
 # saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 # 
@@ -167,11 +178,23 @@ fit4_sex <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat_sex,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 8000,          # number of warmup iterations per chain
-  iter = 12000,            # total number of iterations per chain
-  cores = 4,              # number of cores (could use one per chain)
-  control = list(adapt_delta = 0.999, stepsize = 0.01, max_treedepth = 15)
+  warmup = 5000,          # number of warmup iterations per chain
+  iter = 10000,            # total number of iterations per chain
+  cores = 4              # number of cores (could use one per chain)
+  # control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
+
+summ <- summary(fit4_sex, probs=c(.1,.5,.9))$summary
+
+traceplot(fit4_sex, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4_sex, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4_sex, pars = c("Lcorr_group", "sigma_group"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4_sex, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
+
+rhats <- rhat(fit4_sex)
+rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
+print(rhats)
+
 
 
 # River only (no sex) ----
@@ -197,8 +220,22 @@ fit4_river <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat_river,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 8000,          # number of warmup iterations per chain
-  iter = 12000,            # total number of iterations per chain
-  cores = 4,             # number of cores (could use one per chain)
-  control = list(adapt_delta = 0.999, stepsize = 0.01, max_treedepth = 15)
+  warmup = 5000,          # number of warmup iterations per chain
+  iter = 10000,            # total number of iterations per chain
+  cores = 4             # number of cores (could use one per chain)
+  # control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
+
+
+summ <- summary(fit4_river, probs=c(.1,.5,.9))$summary
+
+traceplot(fit4_river, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4_river, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4_river, pars = c("Lcorr_group", "sigma_group"), inc_warmup = FALSE, nrow = 2)
+traceplot(fit4_river, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
+
+rhats <- rhat(fit4_river)
+rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
+print(rhats)
+
+
