@@ -60,7 +60,7 @@ fit4 <- stan(
   warmup = 5000,          # number of warmup iterations per chain
   iter = 10000,            # total number of iterations per chain
   cores = 4              # number of cores (could use one per chain)
-  # control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
+  ,control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
 
 summ <- summary(fit4, probs=c(.1,.5,.9))$summary
@@ -72,9 +72,8 @@ traceplot(fit4, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2
 
 rhats <- rhat(fit4)
 rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
-print(rhats)
 
-# saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
+saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 # 
 # 
 # # * Convergence diagnostics ----
@@ -181,8 +180,10 @@ fit4_sex <- stan(
   warmup = 5000,          # number of warmup iterations per chain
   iter = 10000,            # total number of iterations per chain
   cores = 4              # number of cores (could use one per chain)
-  # control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
+  ,control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
+
+saveRDS(fit4_sex, file = "growth_analysis/Models/Fits/vbgf_fit4_sex.rds")
 
 summ <- summary(fit4_sex, probs=c(.1,.5,.9))$summary
 
@@ -193,7 +194,6 @@ traceplot(fit4_sex, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow
 
 rhats <- rhat(fit4_sex)
 rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
-print(rhats)
 
 
 
@@ -221,11 +221,12 @@ fit4_river <- stan(
   data = dat_river,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 5000,          # number of warmup iterations per chain
-  iter = 10000,            # total number of iterations per chain
-  cores = 4             # number of cores (could use one per chain)
-  # control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
+  iter = 15000,            # total number of iterations per chain
+  cores = 4,             # number of cores (could use one per chain)
+  control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
 
+saveRDS(fit4_river, file = "growth_analysis/Models/Fits/vbgf_fit4_river.rds")
 
 summ <- summary(fit4_river, probs=c(.1,.5,.9))$summary
 
@@ -236,6 +237,5 @@ traceplot(fit4_river, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nr
 
 rhats <- rhat(fit4_river)
 rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
-print(rhats)
 
 
