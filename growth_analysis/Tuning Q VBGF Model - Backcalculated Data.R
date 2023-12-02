@@ -69,7 +69,7 @@ fit4 <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = warmump,       # number of warmup iterations per chain
+  warmup = warmup,       # number of warmup iterations per chain
   thin = thin,
   iter = iter * thin + warmup,     # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
@@ -102,7 +102,7 @@ fit4_sex <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat_sex,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = warmump,       # number of warmup iterations per chain
+  warmup = warmup,       # number of warmup iterations per chain
   thin = thin,
   iter = iter * thin + warmup,     # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
@@ -136,7 +136,7 @@ fit4_river <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat_river,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = warmump,       # number of warmup iterations per chain
+  warmup = warmup,       # number of warmup iterations per chain
   thin = thin,
   iter = iter * thin + warmup,     # total number of iterations per chain
   cores = 4,             # number of cores (could use one per chain)
@@ -164,7 +164,7 @@ fit5 <- stan(
   file = "growth_analysis/Models/vbgf5.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = warmump,       # number of warmup iterations per chain
+  warmup = warmup,       # number of warmup iterations per chain
   thin = thin,
   iter = iter * thin + warmup,     # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
