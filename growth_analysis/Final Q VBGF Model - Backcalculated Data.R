@@ -8,6 +8,14 @@ rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
 
+control = list(adapt_delta=0.90, stepsize=0.01, max_treedepth=14)
+# control = list()
+
+
+warmup = 5000       # number of warmup iterations per chain
+thin = 5
+iter = 5000        # final number of iterations per chain
+
 ##### Assign data to list ##### 
 # Real data
 load('growth_analysis/data/bc_data/full_bc_data.rda')
@@ -40,6 +48,10 @@ dat = list(
   age = age,
   Zero = rep(0, 3),
   
+  cauchy_scale = 0.1, 
+  cholesky_prior = 3,
+  beta_scale = 1, 
+  
   Nind = Nind,
   Ncoef = 2,
   X = model.matrix(~ sex + river_code, model_mat)[,2:3], # No intercept
@@ -57,13 +69,18 @@ fit4 <- stan(
   file = "growth_analysis/Models/vbgf4.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 5000,          # number of warmup iterations per chain
-  iter = 10000,            # total number of iterations per chain
-  cores = 4              # number of cores (could use one per chain)
-  ,control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
+  warmup = warmup,       # number of warmup iterations per chain
+  thin = thin,
+  iter = iter * thin + warmup,     # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  control = control
 )
 
 summ <- summary(fit4, probs=c(.1,.5,.9))$summary
+
+pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
+pairs(fit4, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
+pairs(fit4, pars = c("sigma_group", "sigma_ind", "lp__"), las = 1)
 
 traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
 traceplot(fit4, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)

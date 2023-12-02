@@ -50,7 +50,7 @@ dat = list(
   
   cauchy_scale = 0.5, 
   cholesky_prior = 3,
-  beta_scale = 0.25, 
+  beta_scale = 1, 
   
   Nind = Nind,
   Ncoef = 2,
@@ -77,6 +77,10 @@ fit4 <- stan(
 )
 
 summ <- summary(fit4, probs=c(.1,.5,.9))$summary
+
+pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
+pairs(fit4, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
+pairs(fit4, pars = c("sigma_group", "sigma_ind", "lp__"), las = 1)
 
 traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
 traceplot(fit4, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
