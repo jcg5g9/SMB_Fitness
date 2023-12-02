@@ -43,8 +43,8 @@ dat = list(
   age = age,
   Zero = rep(0, 3),
   
-  cauchy_scale = 0.5, 
-  cholesky_prior = 1,
+  cauchy_scale = 1, 
+  cholesky_prior = 3,
   beta_scale = 1, 
   
   Nind = Nind,
@@ -172,7 +172,6 @@ traceplot(fit5, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2
 
 rhats <- rhat(fit5)
 rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
-print(rhats)
 
 
 
