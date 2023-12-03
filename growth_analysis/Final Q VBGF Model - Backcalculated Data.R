@@ -1,19 +1,16 @@
 # Fitting hierarchical growth models using back-calculated length-at-age
 
 ##### Setup #####
-library(rstan)
-library(dplyr)
-library(bayesplot)
+pacman::p_load(GGally, rstan, dplyr, bayesplot)
 rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
 
+# - MCMC specifications
 control = list(adapt_delta=0.90, stepsize=0.01, max_treedepth=14)
 # control = list()
-
-
 warmup = 5000       # number of warmup iterations per chain
-thin = 5
+thin = 1
 iter = 5000        # final number of iterations per chain
 
 ##### Assign data to list ##### 
@@ -48,8 +45,8 @@ dat = list(
   age = age,
   Zero = rep(0, 3),
   
-  cauchy_scale = 0.1, 
-  cholesky_prior = 3,
+  cauchy_scale = 0.5, 
+  cholesky_prior = 2,
   beta_scale = 1, 
   
   Nind = Nind,
@@ -77,29 +74,18 @@ fit4 <- stan(
 )
 
 summ <- summary(fit4, probs=c(.1,.5,.9))$summary
-
-pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
-pairs(fit4, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
-pairs(fit4, pars = c("sigma_group", "sigma_ind", "lp__"), las = 1)
-
-traceplot(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
-traceplot(fit4, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
-traceplot(fit4, pars = c("Lcorr_group", "sigma_group"), inc_warmup = FALSE, nrow = 2)
-traceplot(fit4, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
-
-rhats <- rhat(fit4)
-rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
-
 saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
+
+fit4 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 
 
 # * Convergence diagnostics ----
 # https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
-posterior_cp <- as.array(fit4)
+
 
 # - Rhat for chain convergence
 rhats <- rhat(fit4)
-print(rhats)
+rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
 color_scheme_set("brightblue") # see help("color_scheme_set")
 mcmc_rhat(rhats)
 
@@ -113,6 +99,7 @@ mcmc_rhat(rhats)
 #
 # # - Look at par vs divergence
 # color_scheme_set("darkgray")
+# posterior_cp <- as.array(fit4)
 # mcmc_parcoord(posterior_cp, np = np_cp)
 #
 # # - Look at ll vs acceptance
@@ -126,14 +113,37 @@ traceplot(fit4, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, 
 traceplot(fit4, pars = c("Lcorr_group", "sigma_group"), inc_warmup = FALSE, nrow = 2)
 traceplot(fit4, pars = c("Lcorr_ind", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
 
-
-pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0"), las = 1)
+pairs(fit4, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
+pairs(fit4, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"), las = 1)
+pairs(fit4, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
+pairs(fit4, pars = c("sigma_group", "Lcorr_group", "lp__"), las = 1)
+pairs(fit4, pars = c("sigma_ind", "Lcorr_ind", "lp__"), las = 1)
 
 # - Sampler issues for all chains combined
 sampler_params <- get_sampler_params(fit4, inc_warmup = FALSE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
-# - Plot fitted model
+# BFMI low
+pairs_stan <- function(chain, stan_model, pars) {
+  energy <- as.matrix(sapply(get_sampler_params(stan_model, inc_warmup = F), 
+                             function(x) x[,"energy__"]))
+  pars <- extract(stan_model, pars = pars, permuted = F)
+  df <- data.frame(energy[,chain], pars[,chain,])
+  names(df)[1] <- "energy"
+  GGally::ggpairs(df, title = paste0("Chain", chain), 
+                  lower = list(continuous = GGally::wrap("points", alpha = 0.2)))                    
+}
+
+pairs_stan(1, fit4, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"))
+pairs_stan(1, fit4, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"))
+pairs_stan(1, fit4, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"))
+pairs_stan(1, fit4, pars = c("Lcorr_ind", "lp__"))
+pairs_stan(1, fit4, pars = c("Lcorr_group", "lp__"))
+
+check_energy(fit4)
+
+
+# * Plot fitted model ----
 cols <- c("#86BBD8","#2F4858", "#F6AE2D", "#F26419") # Colors for the VBGF lines (Females/Males)
 plot(y = length , x = age, ylab = "Total length (mm)", xlab = "Age (yr)", cex = 2, cex.lab = 1.25,
      col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex], main = "Model 4")
@@ -168,4 +178,63 @@ hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main =
 hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 4")
 hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
 par(mfrow = c(1,1))
+
+## Notes:
+# -Run 1:
+# # 1 div and BFMI low
+# cauchy_scale = 0.5, 
+# cholesky_prior = 4,
+# beta_scale = 1, 
+
+# - Run 2
+# 2 div and BFMI low
+# cauchy_scale = 0.1, 
+# cholesky_prior = 3,
+# beta_scale = 1, 
+
+# - Run 3
+# Normal sig dist
+# 2 div and BFMI low
+# cauchy_scale = 0.1, 
+# cholesky_prior = 3,
+# beta_scale = 0.1, 
+
+# - Run 3
+# Normal sig dist
+# 5 div and BFMI low
+# cauchy_scale = 0.2, 
+# cholesky_prior = 3,
+# beta_scale = 0.5, 
+
+# - Run 4
+# Normal sig dist
+# BFMI low
+# cauchy_scale = 0.5, 
+# cholesky_prior = 3,
+# beta_scale = 1, 
+
+# - Run 4
+# Normal sig dist
+# BFMI low
+# cauchy_scale = 0.5, 
+# cholesky_prior = 5,
+# beta_scale = 1, 
+
+# - Run 5
+# BFMI low
+# cauchy_scale = 0.5, 
+# cholesky_prior = 3,
+# beta_scale = 1, 
+
+# - Run 5
+# BFMI low
+# cauchy_scale = 0.5, 
+# cholesky_prior = 5,
+# beta_scale = 1, 
+
+# - Run 7
+# BFMI low 26 divergent transitions
+# cauchy_scale = 0.5, 
+# cholesky_prior = 1,
+# beta_scale = 1, 
 
