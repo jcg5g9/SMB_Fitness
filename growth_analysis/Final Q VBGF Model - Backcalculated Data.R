@@ -48,7 +48,7 @@ dat = list(
   Zero = rep(0, 3),
   
   cauchy_scale = 0.5, 
-  cholesky_prior = 3,
+  cholesky_prior = 2,
   beta_scale = 1, 
   
   Nind = Nind,
