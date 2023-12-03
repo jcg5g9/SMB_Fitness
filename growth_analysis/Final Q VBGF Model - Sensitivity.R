@@ -7,6 +7,13 @@ rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
 
+# - MCMC specifications
+control = list(adapt_delta=0.99, stepsize=0.001, max_treedepth=18)
+# control = list()
+warmup = 5000       # number of warmup iterations per chain
+thin = 1
+iter = 5000        # final number of iterations per chain
+
 ##### Assign data to list ##### 
 # Real data
 load('growth_analysis/data/bc_data/full_bc_data.rda')
@@ -62,10 +69,11 @@ fit3 <- stan(
   file = "growth_analysis/Models/vbgf3.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 5000,          # number of warmup iterations per chain
-  iter = 10000,            # total number of iterations per chain
+  warmup = warmup,       # number of warmup iterations per chain
+  thin = thin,
+  iter = iter * thin + warmup,     # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
-  control = list(adapt_delta=0.9, stepsize=0.01, max_treedepth=14)
+  control = control
 )
 
 saveRDS(fit3, file = "growth_analysis/Models/Fits/vbgf_sen_fit3.rds")

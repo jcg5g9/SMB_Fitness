@@ -76,7 +76,7 @@ model {
   mu_t0 ~ normal(-1.79, 0.0625);
   
   // - Ancestry level variation priors
-  sigma_group ~ cauchy(0, cauchy_scale);
+  sigma_group ~ normal(0, cauchy_scale);
   Lcorr_group ~ lkj_corr_cholesky(cholesky_prior); // Centered around 0 https://mjskay.github.io/ggdist/reference/lkjcorr_marginal.html
   
   for(i in 1:2){
