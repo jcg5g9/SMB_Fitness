@@ -41,6 +41,10 @@ dat = list(
   age = age,
   Zero = rep(0, 3),
   
+  cauchy_scale = 0.5, 
+  cholesky_prior = 3,
+  beta_scale = 1, 
+  
   Nind = Nind,
   Ncoef = 2,
   X = model.matrix(~ sex + river_code, model_mat)[,2:3], # No intercept
@@ -59,9 +63,9 @@ fit3 <- stan(
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 5000,          # number of warmup iterations per chain
-  iter = 8000,            # total number of iterations per chain
+  iter = 10000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
-  control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
+  control = list(adapt_delta=0.9, stepsize=0.01, max_treedepth=14)
 )
 
 saveRDS(fit3, file = "growth_analysis/Models/Fits/vbgf_sen_fit3.rds")

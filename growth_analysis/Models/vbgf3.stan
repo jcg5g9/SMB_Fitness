@@ -8,6 +8,11 @@ data {
   real age[Nobs];                       // length
   vector[3] Zero;
   
+  // Priors
+  real cauchy_scale;                    // scale cauchy prior
+  real cholesky_prior;                  // prior for lkj 
+  real beta_scale;                      // scale beta sigma
+  
   // Individual level data
   int<lower=0> Nind;                    // number of individuals
   int<lower=0> Ncoef;                   // Number of predictors
@@ -71,17 +76,17 @@ model {
   mu_t0 ~ normal(-1.79, 0.0625);
   
   // - Ancestry level variation priors
-  sigma_group ~ cauchy(0, 0.5);
-  Lcorr_group ~ lkj_corr_cholesky(1);
+  sigma_group ~ cauchy(0, cauchy_scale);
+  Lcorr_group ~ lkj_corr_cholesky(cholesky_prior); // Centered around 0 https://mjskay.github.io/ggdist/reference/lkjcorr_marginal.html
   
   for(i in 1:2){
     eta_lineage[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_group, Lcorr_group));
   }
   
   // - Regessor priors
-  beta_linf ~ normal(0, 1);
-  beta_k ~ normal(0, 1);
-  beta_t0 ~ normal(0, 1);
+  beta_linf ~ normal(0, beta_scale);
+  beta_k ~ normal(0, beta_scale);
+  beta_t0 ~ normal(0, beta_scale);
   
   
   // Likelihood
