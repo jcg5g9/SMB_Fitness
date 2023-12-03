@@ -1,7 +1,9 @@
 # Fitting hierarchical growth models using back-calculated length-at-age
 
 ##### Setup #####
-pacman::p_load(GGally, rstan, dplyr, bayesplot)
+library(rstan)
+library(dplyr) 
+library(bayesplot)
 rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
@@ -76,7 +78,7 @@ fit4 <- stan(
 summ <- summary(fit4, probs=c(.1,.5,.9))$summary
 saveRDS(fit4, file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 
-fit4 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
+# fit4 <- readRDS(file = "growth_analysis/Models/Fits/vbgf_fit4.rds")
 
 
 # * Convergence diagnostics ----
