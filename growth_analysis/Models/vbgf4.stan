@@ -36,7 +36,7 @@ parameters {
   vector[Ncoef] beta_t0;
   
   // Variance ----
-  cholesky_factor_corr[3] Lcorr_ind;          // Prior correlation for individual-level variation
+  //cholesky_factor_corr[3] Lcorr_ind;          // Prior correlation for individual-level variation
   vector<lower=0>[3] sigma_ind;        // Prior scale for individual-level variation
   
   cholesky_factor_corr[3] Lcorr_group;           // Prior correlation for group-level variation
@@ -47,7 +47,7 @@ parameters {
 transformed parameters {
   // Correlation matrices
   matrix[3, 3] Omega_group;
-  matrix[3, 3] Omega_ind;
+  // matrix[3, 3] Omega_ind;
   
   // Predicted length
   vector[Nobs] length_hat;
@@ -77,7 +77,7 @@ transformed parameters {
   
     // Correlation matrices
   Omega_group = Lcorr_group * Lcorr_group ; // Correlation matrix of ancestry distribution
-  Omega_ind = Lcorr_ind * Lcorr_ind ; // Correlation matrix of ind re distribution
+  // Omega_ind = Lcorr_ind * Lcorr_ind ; // Correlation matrix of ind re distribution
 }
 model {
   // Priors
@@ -97,10 +97,10 @@ model {
   
   // - Individual variation priors
   sigma_ind ~ normal(0, cauchy_scale);
-  Lcorr_ind ~ lkj_corr_cholesky(cholesky_prior); // Centered around 0 https://mjskay.github.io/ggdist/reference/lkjcorr_marginal.html
+  // Lcorr_ind ~ lkj_corr_cholesky(cholesky_prior); // Centered around 0 https://mjskay.github.io/ggdist/reference/lkjcorr_marginal.html
 
   for(i in 1:Nind){
-    eta_ind[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_ind, Lcorr_ind));
+    eta_ind[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_ind, Lcorr_group));
   }
 
   // - Regessor priors
