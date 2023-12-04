@@ -161,9 +161,9 @@ generated quantities{
   vector[4] pred_k = exp(Xhat * beta_k) * mu_k;
   vector[4] pred_t0 = Xhat * beta_t0 + mu_t0;
   
-  vector[4] prior_linf = exp(Xhat * prior_beta_linf) * prior_mu_linf; 
-  vector[4] prior_k = exp(Xhat * prior_beta_k) * prior_mu_k;
-  vector[4] prior_t0 = Xhat * prior_beta_t0 + prior_mu_t0;
+  vector[4] prior_linf;
+  vector[4] prior_k;
+  vector[4] prior_t0; 
   
   
   // * Simulate prior ----
@@ -197,6 +197,10 @@ generated quantities{
   prior_eta_n_linf = prior_eta_lineage[2,1];
   prior_eta_n_k = prior_eta_lineage[2,2];
   prior_eta_n_t0 = prior_eta_lineage[2,3];
+  
+  prior_linf = exp(Xhat * prior_beta_linf) * prior_mu_linf; 
+  prior_k = exp(Xhat * prior_beta_k) * prior_mu_k;
+  prior_t0 = Xhat * prior_beta_t0 + prior_mu_t0;
   
   
   // * Predict length (posterior and prior) ----
