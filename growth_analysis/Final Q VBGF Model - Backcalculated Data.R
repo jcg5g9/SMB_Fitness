@@ -13,7 +13,7 @@ control = list(adapt_delta=0.90, stepsize=0.01, max_treedepth=14)
 # control = list()
 warmup = 5000       # number of warmup iterations per chain
 thin = 2
-iter = 5000        # final number of iterations per chain
+iter = 6000        # final number of iterations per chain
 
 ##### Assign data to list ##### 
 # Real data
@@ -110,8 +110,8 @@ traceplot(fit_backcalculated, pars = c("Lcorr", "sigma_ind"), inc_warmup = FALSE
 pairs(fit_backcalculated, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
 pairs(fit_backcalculated, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"), las = 1)
 pairs(fit_backcalculated, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
-pairs(fit_backcalculated, pars = c("sigma_group", "Lcorr", "lp__"), las = 1)
-pairs(fit_backcalculated, pars = c("sigma_ind", "Lcorr", "lp__"), las = 1)
+# pairs(fit_backcalculated, pars = c("sigma_group", "Lcorr", "lp__"), las = 1)
+# pairs(fit_backcalculated, pars = c("sigma_ind", "Lcorr", "lp__"), las = 1)
 
 # - Sampler issues for all chains combined
 sampler_params <- get_sampler_params(fit_backcalculated, inc_warmup = FALSE)
