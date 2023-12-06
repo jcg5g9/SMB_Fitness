@@ -5,6 +5,8 @@
 
 library(rstan)
 
+load("~/GitHub/SMB_Fitness/ac_analysis/data/condition_data.Rda")
+
 # check data
 # load condition data
 head(condition_data)
@@ -15,9 +17,9 @@ cd <- condition_data
 
 con <- cd$condition *100
 smb <- as.numeric(scale(cd$smb))
-n <- length(c)
+n <- length(con)
 riv <- as.numeric(as.factor(cd$river))
-riv[which(riv==3)] <- 2 # recode bc 1 and 3 was causing issues with jags
+riv[which(riv==3)] <- 2 # recode to 1 and 2 instead of 1 and 3
 sex <- as.numeric(as.factor(cd$sex))
 # make riv and sex 0 or 1 for stan
 riv1 <- riv-1
