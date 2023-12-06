@@ -244,10 +244,10 @@ fit5 <- stan(
   file = "growth_analysis/Models/vbgf5.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
-  warmup = 3000,          # number of warmup iterations per chain
-  iter = 5000,            # total number of iterations per chain
+  warmup = 6000,          # number of warmup iterations per chain
+  iter = 9000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
-  control = list(max_treedepth = 12, adapt_delta = 0.9)
+  control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 )
 
 saveRDS(fit5, file = "growth_analysis/Models/Fits/vbgf_fit5.rds")

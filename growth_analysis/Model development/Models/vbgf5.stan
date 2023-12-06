@@ -6,6 +6,10 @@ data {
   real length[Nobs];                    // length
   real age[Nobs];                       // length
   
+  // Priors
+  real cauchy_scale;                    // scale cauchy prior
+  real cholesky_prior;                  // prior for lkj 
+  
   // Individual level data
   int<lower=0> Nind;                    // number of individuals
   int<lower=0> Ncoef;                   // Number of predictors
@@ -18,8 +22,8 @@ data {
 }
 parameters {
   // VBGF Params ----
-  real mu_linf;                         // asymptotic length
-  real mu_k;                            // growth coef
+  real<lower=0> mu_linf;                // asymptotic length
+  real<lower=0> mu_k;                   // growth coef
   real mu_t0;                           // age at length 0
   matrix[2, 3] eta_lineage;             // Ancestry level deviation
   matrix[Nind, 3] eta_ind;              // Individual deviation from VBGF parameters
@@ -69,16 +73,16 @@ model {
   mu_t0 ~ normal(-1.79, 0.0625);
   
   // - Ancestry level variation priors
-  sigma_group ~ cauchy(0, 0.5);
-  Lcorr_group ~ lkj_corr_cholesky(1);
+  sigma_group ~ cauchy(0, cauchy_scale);
+  Lcorr_group ~ lkj_corr_cholesky(3);
 
   for(i in 1:2){
     eta_lineage[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_group, Lcorr_group));
   }
   
   // - Individual variation priors
-  sigma_ind ~ cauchy(0, 0.5);
-  Lcorr_ind ~ lkj_corr_cholesky(2);
+  sigma_ind ~ cauchy(0, cauchy_scale);
+  Lcorr_ind ~ lkj_corr_cholesky(3);
 
   for(i in 1:Nind){
     eta_ind[i,] ~ multi_normal_cholesky(Zero, diag_pre_multiply(sigma_ind, Lcorr_ind));
