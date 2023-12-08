@@ -40,6 +40,9 @@ dat = list(
   age = age,
   Zero = rep(0, 3),
   
+  amin = min(age),
+  amax = max(age),
+  
   Nind = Nind,
   Ncoef = 2,
   X = model.matrix(~ sex + river_code, model_mat)[,2:3], # No intercept
@@ -53,7 +56,7 @@ dat = list(
 ##### Model 1 #####
 # - Single parameter model
 fit1 <- stan(
-  file = "growth_analysis/Models/vbgf1.stan",  # Stan program
+  file = "growth_analysis/Models/vbgf1_reparam.stan",  # Stan program
   data = dat,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 2000,          # number of warmup iterations per chain
@@ -62,7 +65,7 @@ fit1 <- stan(
   control = list(max_treedepth = 12, adapt_delta = 0.9)
 )
 
-saveRDS(fit1, file = "growth_analysis/Models/Fits/vbgf_fit1.rds")
+saveRDS(fit1, file = "growth_analysis/Models/Fits/vbgf_fit1_reparam.rds")
 
 # - Print and plot MCMC
 print(fit1, pars=c("mu_linf", "mu_k", "mu_t0"), probs=c(.1,.5,.9))

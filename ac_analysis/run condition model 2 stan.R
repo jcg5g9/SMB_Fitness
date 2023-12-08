@@ -5,6 +5,8 @@
 
 library(rstan)
 
+load("~/GitHub/SMB_Fitness/ac_analysis/data/condition_data.Rda")
+
 # check data
 # load condition data
 head(condition_data)
@@ -15,9 +17,9 @@ cd <- condition_data
 
 con <- cd$condition *100
 smb <- as.numeric(scale(cd$smb))
-n <- length(c)
+n <- length(con)
 riv <- as.numeric(as.factor(cd$river))
-riv[which(riv==3)] <- 2 # recode bc 1 and 3 was causing issues with jags
+riv[which(riv==3)] <- 2 # recode to 1 and 2 instead of 1 and 3
 sex <- as.numeric(as.factor(cd$sex))
 # make riv and sex 0 or 1 for stan
 riv1 <- riv-1
@@ -35,12 +37,14 @@ fit2 <- stan(
   cores = 4,              
 )
 
-print(fit2,digits=3)
+
 
 rstan::traceplot(fit2)
 #save (fit2, file='ac_analysis/condition_model_2_out.rds')
 load('ac_analysis/condition_model_2_out.rds')
-#
+
+print(fit2,digits=3)
+
 sampler_params <- get_sampler_params(fit2, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
@@ -88,4 +92,9 @@ polygon(x=c(x_us,rev(x_us)), y=c(lowerb1,rev(upperb1)), col=blue1, border=NA) # 
 lines(meanb1 ~ x_us, type='l', col='deepskyblue4', lty='solid', pch=16, cex=2, lwd=2.5) # line for mean
 mtext("Body Condition Index", side=2, line=2.5, cex=1.4)
 mtext("% SMB", side=1, line=2.5, cex=1.4)
+
+# proportion of posterior above or below 0 (F)
+length(which(b1<0))/length(b1) #99.9 % - SMB
+length(which(b2>0))/length(b2) #98.6 % - Riv
+length(which(b3<0))/length(b3) # 74.4 % - Sex
 
