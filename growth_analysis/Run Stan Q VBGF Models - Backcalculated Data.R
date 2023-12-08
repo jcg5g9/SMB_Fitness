@@ -333,4 +333,3 @@ hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main =
 hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Model 6")
 hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
 par(mfrow = c(1,1))
-

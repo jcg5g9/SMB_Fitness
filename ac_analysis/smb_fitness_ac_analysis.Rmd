@@ -177,8 +177,6 @@ In this step, I use the condition data and proportion of non-native SMB ancestry
 # Load condition data generated in Phase 1 above
 load("data/condition_data.Rda")
 
-condition_data
-
 ggplot(condition_data, aes(x = smb, y = condition, color = ancestry_group)) +
   geom_point() +
   geom_smooth(method = "lm")
