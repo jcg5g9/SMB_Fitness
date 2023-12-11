@@ -1,6 +1,6 @@
 //
 data {
-  int<lower=0> N; // Number of individuals
+  int<lower = 0> N; // Number of individuals
   vector[N] smb; // proportion of smb 
   vector[N] con; // body condition index
   vector[N] riv; // river

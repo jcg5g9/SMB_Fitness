@@ -1,12 +1,12 @@
 ---
-title: "Analysis 5: Heterozygosity fitness correlation analysis"
+title: "Analysis 5: Ancestry condition correlation analysis"
 author: "Joe Gunn"
 date: "2023-04-28"
 output: html_document
 ---
 
 # Project: Effects of admixture on fitness in Neosho Bass populations 
-<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used body condition as a proxy of fitness and generated ancestry-fitness correlations of body condition across the global dataset. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
+<font size="+1">We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard paramaterization of the von Bertalanffy growth model, comparing average theoretical maximum length among groups. Finally, we used body condition as a proxy of fitness and generated ancestry-fitness correlations of body condition across the global dataset. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.</font>
 
 ## Specific Aim: Ancestry fitness correlation analysis
 For this aim, we assessed the linear relationship (correlation) between interspecific ancestry (as measured by proportion of non-native SMB ancestry due to introgression) and individual physiological condition (a proxy of individual fitness) to determine the effect of admixture on fitness in fish in Big Sugar Creek and Elk River in the NB native range. Ancestry-fitness correlation may be positive (fitness increases with ancestry; heterosis by relief from inbreeding depression, hybrid vigor, or adaptive introgression), negative (fitness decreases with ancestry; outbreeding depression by breakdown of coadapted gene complexes, or introduction of deleterious recessive alleles from a large population), or neutral (no effect of ancestry on fitness; formation of a stable hybrid zone). 
@@ -22,17 +22,18 @@ library(tidyverse)
 library(cowplot)
 library(boot)
 library(jagsUI)
-library(emmeans) #v.1.8.6
+library(rstan)
+library(emmeans)
 ```
 
 
-## PHASE 1: PHYSIOLOGICAL CONDITION CALCULATION AND ANALYSIS
+## PHASE 1: PHYSIOLOGICAL (BODY) CONDITION CALCULATION
 In this phase of analysis, we calculate physiological condition for each fish using the raw total length observation data (not including the back-calculated length-at-age data points ascertained in Analysis 4). To calculate condition, we use the Fulton Condition Index (FCI): F(W,TL) = W/(TL)^3; where F(W,TL) is the FCI at mass (g) W and total length (mm) TL. We measured mass (g) and TL (mm) at the time of sample processing, after fish had died and been preserved on ice. We therefore used measures of mass and TL after some loss of weight due to freeze-thawing. 
 
-### STEP 1: Calculate the Fulton Index of physiological condition (FCI).
+### STEP 1: Calculate the Fulton Index of physiological (body) condition (FCI).
 
 #### 1a: Read in full raw data and calculate the log of mass and total length; run the Rmd chunk below.
-In this step, I read in the fully filtered raw data (without back-calculated length-at-age data points as estimated in Analysis 4) and calculate the log10 of mass (mass_dead) and total length (tl_dead).
+In this step, I read in the fully filtered raw data (without back-calculated length-at-age data points as estimated in Analysis 4), calculate the log10 of mass (mass_dead) and total length (tl_dead), and calculate the differences between total length at capture (tl_alive) and total length at processing (tl_dead). I then test for normal distribution of differences between tl_alive and tl_dead by examining the frequency distribution of difference values.
 
 ##### Read in full raw data and calculate log-values: 
 ```{r}
@@ -81,10 +82,10 @@ test(em_mod,
 
 The slope of the log-linear relationship between log(W) and log(TL) is not significantly different from null of 3. There is support that the relationship between W and TL is isometric.
 
-#### 1c: Calculate the Fulton Condition Index and determine whether condition data conform to a normal distribution; run the Rmd code below:
-In this step, I calculate the FCI for each fish using mass at processing (mass_dead) and total length at processing (tl_dead). I then ensure that condition values across samples conform to a normal distribution (to meet the assumption of normality for linear modeling).
+#### 1c: Calculate FCI; run the Rmd code below:
+In this step, I calculate the FCI for each fish using mass at processing (mass_dead) and total length at processing (tl_dead).
 
-##### Calculate FCI and verify conformity to normal distribution: generate the plot: `figures/condition_normality.pdf`
+##### Calculate FCI:
 ```{r}
 # Calculate condition index and drop NA values. Condition is multiplied by 1000 to reduce unit confusion and to make plotting more aesthetic
 condition_data <- full_ancestry_data %>%
@@ -92,6 +93,113 @@ condition_data <- full_ancestry_data %>%
 
 # Save condition data for downstream analyses
 save(condition_data, file = "data/condition_data.Rda")
+```
+
+### PHASE 2: LINEAR REGRESSION OF ANCESTRY AND CONDITION
+In this step, we use a generalized linear model in a Bayesian hierarchical framework to assess the correlation between non-native SMB ancestry and body condition in the NB native range. 
+
+#### STEP 1: Load and prepare data for analysis; run the Rmd chunk below.
+In this step, we load the raw condition data calculated in Phase 1, Step 1c above and prepare for the Bayesian generalized linear model analysis.
+
+##### Assess ancestry-fitness correlation:
+```{r}
+# Load condition data generated in Phase 1 above
+load("data/condition_data.Rda")
+
+# Generate variables and match names to model 
+con <- condition_data$condition*100
+smb <- as.numeric(scale(condition_data$smb))
+n <- length(con)
+riv <- as.numeric(as.factor(condition_data$river))
+riv[which(riv == 3)] <- 2 # recode to 1 and 2 instead of 1 and 3
+sex <- as.numeric(as.factor(condition_data$sex))
+
+# make riv and sex 0 or 1 for stan
+riv_1 <- riv - 1
+sex_1 <- sex - 1
+
+# Define data for model
+data <- list(con = con, 
+             smb = smb, 
+             N = n, 
+             riv = riv_1, 
+             sex = sex_1)
+```
+
+### STEP 1: Load and prepare data for analysis; run the Rmd chunk below.
+In this step, we use a Bayesian hierarchical framework and fit a generalized linear model of the form: condition ~ smb + river + sex. We
+
+```{r}
+fit <- stan(
+  file = "code/condition_model_2.stan",  
+  data = data,    
+  chains = 4,             
+  warmup = 2000,          
+  iter = 4000,            
+  cores = 4,              
+)
+
+
+
+rstan::traceplot(fit2)
+#save (fit2, file='ac_analysis/condition_model_2_out.rds')
+load('ac_analysis/condition_model_2_out.rds')
+
+print(fit2,digits=3)
+
+sampler_params <- get_sampler_params(fit2, inc_warmup = TRUE)
+summary(do.call(rbind, sampler_params), digits = 2)
+
+draws <- as.data.frame(fit2)
+
+# boxplot of effect sizes
+# really just to look at (keeping in mind smb is scaled, and river and sex were binary)
+boxplot(draws$beta1, draws$beta2, draws$beta3, xaxt='n', cex.axis=1.5)
+mtext('% SMB', side=1, at=1, line=1, cex=1.5)
+mtext('River\n (Elk)', side=1, at=2, line=2, cex=1.5)
+mtext('Sex\n (Male)', side=1, at=3, line=2, cex=1.5)
+abline(h=0, lty='dashed', lwd=2, col='red')
+
+
+# prediction plot - smb
+par(mar=c(4,4,1,1))
+
+b1 <- draws$beta1
+b2 <- draws$beta2
+b3 <- draws$beta3
+alpha <- draws$alpha
+min(smb)
+max(smb)
+x <- seq(-1.3, 2.3, 0.1)
+x_us <- ((x*sd(smb))+mean(smb))
+
+pred <- matrix(NA, length(b1), length(x)) # empty matrix for prediction plot data
+for (i in 1:length(x)){ # fill empty matrix with predicted values using the model
+  pred[,i] <- alpha + b1*x[i] + b2*1 + b3*1
+}
+
+meanb1 <- upperb1 <- lowerb1 <- numeric()
+for (i in 1:length(x)){
+  meanb1[i] <- mean(pred[,i]) # mean at each x
+  upperb1[i] <- quantile(pred[,i], probs=0.975) # 97.5% quantile (top of 95% CRI) at each x
+  lowerb1[i] <- quantile(pred[,i], probs=0.025)
+}
+
+blue1 <- rgb(10,40,100,85,maxColorValue=255)
+
+plot(x=smb, y=con, type='p',xlab='', ylab='', col='gray80',
+     pch=20, cex.axis=1.3, main="", yaxt='n')
+axis(side=2, at=seq(0.8, 1.8, 0.1), las=2, cex.axis=1.3)
+polygon(x=c(x_us,rev(x_us)), y=c(lowerb1,rev(upperb1)), col=blue1, border=NA) # polygon for 95% CRI 
+lines(meanb1 ~ x_us, type='l', col='deepskyblue4', lty='solid', pch=16, cex=2, lwd=2.5) # line for mean
+mtext("Body Condition Index", side=2, line=2.5, cex=1.4)
+mtext("% SMB", side=1, line=2.5, cex=1.4)
+
+# proportion of posterior above or below 0 (F)
+length(which(b1<0))/length(b1) #99.9 % - SMB
+length(which(b2>0))/length(b2) #98.6 % - Riv
+length(which(b3<0))/length(b3) # 74.4 % - Sex
+```
 
 # Plot frequency histogram of body condition values to test for conformity to normal distribution
 pdf("figures/condition_normality.pdf", width = 6, height = 4)
@@ -112,79 +220,6 @@ dev.off()
 
 # Test body condition for conformity to normal distribution
 shapiro.test(condition_data$condition)
-```
-
-This figure is the basis for Figure S8 in the final manuscript.
-
-<b>Summary of Shapiro Wilk test for conformity to normal distribution</b>: <br>
-
-<b><i>p</i></b>= 0.7832 <br>
-The distribution of condition values is not significantly different from normal.
-
-#### 1d: Assess whether there is a correlation between age and condition to determine whether to control for age in heterozygosity-fitness correlation analysis; run the Rmd code below.
-In this step, I test for a correlation between age and condition to see if it is necessary to control for age across fish for the analysis.
-
-##### Assess the correlation between age and condition; generate the plot: `figures/condition_age.pdf`
-```{r}
-# Load in condition data
-load("data/condition_data.Rda")
-
-# Plot frequency histogram of body condition values to test for conformity to normal distribution
-pdf("figures/condition_age.pdf", width = 5, height = 4)
-
-ggplot(condition_data, aes(x = consensus_age, y = condition)) +
-  geom_point(fill = "grey", pch = 21, color = "black", show.legend = F, position = position_jitter(width = 0.2)) +
-  geom_smooth(method = "lm", color = "black") +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "Consensus age (years)", y = "Condition (g/cm^3)") +
-  ylab(expression(Condition~(g/cm^{"3"}))) + 
-  scale_fill_manual(values = c("grey")) +
-  theme(axis.title = element_text(size = 15)) +
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
-  theme(plot.margin = margin(10,10,10,10)) + 
-  scale_x_continuous(expand = c(0,0)) + 
-  scale_y_continuous(expand = c(0,0))
-
-dev.off()
-
-# Run linear model of condition predicted by age
-ac_mod <- lm(condition ~ consensus_age, 
-             data = condition_data)
-
-# Extract model coefficients
-summary(ac_mod)
-```
-
-This figure is the basis for Figure S9 in the final manuscript.
-
-<b>Coefficients of linear model for condition and age</b>: <br>
-
-<b>slope</b>= 0.0001705 <br>
-<b>intercept</b>= 0.0117717 <br>
-<b><i>r</i>-squared</b>= 0.01612 <br>
-<b><i>p</i></b>= 0.09216 <br>
-
-The slope of the log-linear relationship between log(W) and log(TL) is not significantly different from null of 0. There is no support for a correlation between age and condition. 
-
-### PHASE 2: LINEAR REGRESSION OF ANCESTRY AND CONDITION
-In this step, I use the condition data and proportion of non-native SMB ancestry to determine if there is a correlation between admixture due to non-native introgression and fitness.
-
-#### STEP 1: 
-
-##### Assess heterozygosity fitness correlation:
-```{r}
-# Load condition data generated in Phase 1 above
-load("data/condition_data.Rda")
-
-ggplot(condition_data, aes(x = smb, y = condition, color = ancestry_group)) +
-  geom_point() +
-  geom_smooth(method = "lm")
-```
-
-
-
-
 
 
 

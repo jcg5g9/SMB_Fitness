@@ -2,16 +2,16 @@
 <font size="+1">Follow the steps listed below in the <b><i>Analyses</i></b> section to reproduce analyses for Gunn et al. (DATE). Each step below gives a summary of the analysis and directs you to a general code file which then works through the analysis step-by-step. This general file will usually point you to other Rmd code, bash shell scripts, or python scripts. Each analysis is contained within subdirectories of the same name in the main R project directory.</font>
 
 ## Project: Effects of admixture on fitness in Neosho Bass populations 
-We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to identify fish as "Pure Neosho Bass", "Pure Smallmouth Bass", or "Admixed". For each group, we measured age and total length and projected individual growth using the standard parameterization of the von Berlanffy growth model, comparing average theoretical maximum length among groups. Finally, we used calculated a body condition as a proxy of fitness and generated heterozygosity-fitness correlations of body condition across the global dataset, within stream populations, and within ancestry groups. We ultimately sought to understand the short-term genetic consequences of admixture for Neosho Bass populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.
+We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>; NB) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>; SMB). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to estimate the proportion of ancestry derived from SMB and NB. For each individual, we measured age and total length and projected individual growth using the standard parameterization of the von Bertalanffy growth model. Finally, we used body condition as a proxy for fitness and generated an ancestry-condition correlation across the global dataset. We ultimately sought to understand the short-term genetic consequences of admixture for NB populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.
 
 ## General information on repository structure
 This is a publicly visible GitHub repository storing code (and a small amount of data, although we have done our best to avoid uploading large amounts of data due to the limited storage ing GitHub) for Gunn et al. (DATE). In the home directory of the repository (SMB_Fitness), you will find a README.md file (the source script for this information), the R Project file (SMB_Fitness.Rproj), a project info folder (project_info, which includes all important information on data procurement for this project), a .gitignore file, and "analysis" directories, each of which corresponds with a specific analysis conducted in our study:
 
-1) map_analysis
-2) filtering_analysis
-3) ancestry_analysis
-4) growth_analysis
-5) hfc_analysis
+1) map_analysis (generation of map images)
+2) filtering_analysis (raw data manipulation, cleaning, and filtering)
+3) ancestry_analysis (estimation of genetic ancestry proportions)
+4) growth_analysis (von Bertalanffy growth models)
+5) ac_analysis (correlation of body condition and ancestry)
 
 Within each analysis directory, you will find an R markdown script (.Rmd) with the name of the analysis, which contains all of the code needed to run the full analysis. Additionally, you will find:
 
@@ -62,11 +62,11 @@ For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see 
 #### Run the code: `ancestry_analysis/smb_fitness_ancestry_analysis.Rmd`
 
 ### Analysis 4: von Bertalanffy individual growth modeling
-For this aim, we paramaterized the von Bertlanffy individual growth model (von Bertlanffy 1983) for Neosho Bass in Big Sugar Creek and Elk River based on total length (tl_alive) and consensus age data to assess growth rates in inferred groups of interest. We started by quantifying overall growth rate and maximum theoretical total length for all fish collected across both streams. Next, we quantified potential differences in growth by (1) individual sex (male or female) and (2) by stream (Big Sugar Creek or Elk River) to account for variation which may bias results in other groups. Finally, we assessed differences in growth based on ancestry group membership as inferred by STRUCTURE analysis in Analysis 3 (Neosho Bass, Smallmouth Bass, Admixed). For all growth assessments, we included linear back-calculated length-at-age estimates for large, older fish to increase sample size.
+In this phase of the analysis, we use a Bayesian hierarchical framework to paramaterize the von Bertalanffy growth model using back-calculated total length and consensus age of samples in the Elk River and Big Sugar Creek to assess the contribution of non-native SMB ancestry to growth. We estimate the linear relationship between population-level growth parameters of the von Bertalanffy model (maximum theoretical total length-at-age, the Brody growth coefficient, and theoretical age at length-0) and ancestry proportion by quantifying average deviations from the global parameters due to SMB vs. NB ancestry, and we account for any potential differences in growth due to sex (male or female) or stream of origin (Big Sugar Creek or Elk River). For all growth models, we include individual ID as a random effect to account for individual variation in linear back-calculation estimates.
 
 #### Run the code: `growth_analysis/smb_fitness_growth_analysis.Rmd`
 
-### Analysis 5: Ancestry fitness correlation analysis
+### Analysis 5: Ancestry condition correlation analysis
 For this aim, we assessed the linear relationship (correlation) between interspecific ancestry (as measured by proportion of non-native SMB ancestry due to introgression) and individual physiological condition (a proxy of individual fitness) to determine the effect of admixture on fitness in fish in Big Sugar Creek and Elk River in the NB native range. Ancestry-fitness correlation may be positive (fitness increases with ancestry; heterosis by relief from inbreeding depression, hybrid vigor, or adaptive introgression), negative (fitness decreases with ancestry; outbreeding depression by breakdown of coadapted gene complexes, or introduction of deleterious recessive alleles from a large population), or neutral (no effect of ancestry on fitness; formation of a stable hybrid zone). 
 
 #### Run the code: `hfc_analysis/smb_fitness_ac_analysis.Rmd`

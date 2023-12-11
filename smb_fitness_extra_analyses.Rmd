@@ -1524,3 +1524,1451 @@ hfc_data <- merge(condition_data,
 # Save hfc data for downstream analyses
 save(hfc_data, file = "data/hfc_data.Rda")
 ```
+
+
+##### Prepare full back-calculated length-at-age data:
+```{r}
+# Load full bc data
+load('data/bc_data/full_bc_data.rda')
+
+# Get annulus number for each back-calculated total length
+age <- full_bc_data$annulus
+
+# Get back-calculated total length
+length <- full_bc_data$bc_tl
+
+# Get numeric for the global data (all in one "group")
+global <- rep(1, length(age))
+
+# Get numeric for river names
+river <- as.numeric(as.factor(full_bc_data$river))
+
+# Convert "3" to "2" in river data
+river[river==3] <- 2
+
+# Get numeric for sex names
+sex <- as.numeric(as.factor(full_bc_data$sex))
+
+# Get numeric for ancestry group names 
+group <- as.numeric(as.factor(full_bc_data$ancestry_group))
+
+# Get numeric for individual sample IDs
+id <- as.numeric(as.factor(full_bc_data$sample_id))
+
+# Get numeric for smb ancestry coefficients
+smb <- as.numeric(full_bc_data$smb)
+
+# Get input dataset for JAGS models in list format
+bc_jags <-  list(age = age, 
+                 length = length, 
+                 global = global,
+                 group = group, 
+                 river = river, 
+                 sex = sex, 
+                 id = id,
+                 N = length(age), 
+                 G = length(unique(group)))
+
+# Save JAGS input data
+save(bc_jags, file = "data/jags_data/bc_jags.Rda")
+```
+
+### STEP 2: Run Bayeisan hierarchical analyses.
+In this step, we construct Bayesian hierarchical models to infer posterior distributions around each of two parameters from the von Bertalanffy growth equation to assess growth patterns in these fish. We specifically construct four distinct models: 1) a global model, including all back-calculated length at age data, to infer mean length-at-age for all fish; 2) a river model, to compare growth between Big Sugar Creek and the Elk River; 3) a sex model, to compare growth between males and females; and 4) an ancestry group model, to compare growth among ancestry groups (Neosho Bass, NB; Smallmouth Bass, SMB; and Admixed, ADM). In each analysis, we include individual ID as a random effect to account for individual variation and non-independence of back-calculated data.
+
+#### 2a. Construct model for the global dataset. 
+
+##### 2a.1. Set up and run JAGS model for the global dataset; run the Rmd chunk below.
+
+##### Set up and run JAGS model for global dataset:
+```{r}
+# Load bc jags input data
+load("data/jags_data/bc_jags.Rda")
+
+# MCMC settings
+ni = 50000
+nb = 20000
+na = 20000
+nt = 5
+nc = 3
+
+# Build JAGS model
+sink('code/vb_global.jags')
+cat(
+  "model{
+for(i in 1:N){
+length[i] ~ dnorm(y.hat[i], tau.y)
+y.hat[i] = Linf[group[i]] * (1-exp(-k[group[i]] * (age[i] - t0))) + betaSMB*smb[i] + idr[id[i]]
+}
+ 
+# SD
+tau.y = pow(sigma, -2)
+sigma ~ dunif(0,100)
+ 
+# Level-2 parameters
+for(j in 1:G){ 
+Linf[j] ~ dnorm(mu.Linf, tau.Linf)
+k[j] ~ dnorm(mu.k, tau.k)
+}
+t0 ~ dnorm(mu.t0, tau.t0)
+
+for (q in 1:N){
+idr[q] ~ dnorm(0,tau.idr)
+}
+
+
+# Priors for level-2 parameters
+log.mu.Linf ~ dnorm(0,0.0001)
+log.mu.k ~ dunif(0,1)
+mu.t0 ~ dnorm(0,0.0001)
+
+betaSMB ~ dnorm(0,0.0001)
+ 
+# Get hyperparameters on untransformed scale
+mu.Linf = exp(log.mu.Linf)
+mu.k = exp(log.mu.k)
+ 
+# Precision
+tau.Linf = pow(sig.Linf,-2)
+tau.k = pow(sig.k,-2)
+tau.t0 = pow(sig.t0,-2)
+ 
+# SD of parameters
+sig.Linf ~ dunif(0,10)
+sig.k ~ dunif(0,10)
+sig.t0 ~ dunif(0,10)
+
+tau.idr <- pow(sig.idr, -2) # tau and sig for random effect
+sig.idr ~ dunif(0, 10)
+
+}"
+)
+sink()
+
+# changed log.mu.k to ~dunif(0,1) following Schofeld et al. 2013 https://onlinelibrary.wiley.com/doi/abs/10.1111/biom.12069
+
+# Parameters to monitor
+params = c("betaSMB",
+           "Linf", 
+           "k", 
+           "t0", 
+           "mu.Linf", 
+           "mu.k", 
+           "mu.t0", 
+           "mu.Linf", 
+           "mu.k", 
+           "mu.t0", 
+           "sig.Linf",
+           "sig.k",
+           "sig.t0",
+           "sig.idr",
+           "sigma")
+
+# Get initial values
+inits = function(){list()}
+
+# Run JAGS model
+mod_global <- jagsUI::jags(data = bc_data, 
+                           inits = inits, 
+                           parameters.to.save = params, 
+                           model.file = "code/vb_global.jags", 
+                           n.chains = nc,
+                           n.thin = nt,
+                           n.iter = ni,
+                           n.burnin = nb,
+                           n.adapt = na,
+                           parallel=T)
+
+# Print table of results
+print(mod_global, digits = 3)
+
+# Print trace plot for supplementary material
+jagsUI::traceplot(mod_global)
+
+# Save data output from model
+save(mod_global, file = 'data/jags_results/global/mod_global.rda')
+```
+
+##### 2a.2. Run JAGS model for the global dataset; run the Rmd chunk below.
+
+##### Run JAGS model for global dataset:
+```{r}
+# Load full bc data
+load('data/bc_data/full_bc_data.rda')
+
+# Load model data for global data
+load('data/jags_results/global/mod_global.rda')
+
+# Extract posterior samples (using capital letters for model generated data) for each parameter of the model
+
+# Extract t0 values for the global data
+t0 <- c(vbc$samples[[1]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[2]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[3]][,which(row.names(vbc$summary)=='t0')])
+
+# Extract Linf values for the global data
+linf <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf')],
+           vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf')],
+           vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf')])
+
+# Extract k values for the global data
+k <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k')],
+        vbc$samples[[2]][,which(row.names(vbc$summary)=='k')], 
+        vbc$samples[[3]][,which(row.names(vbc$summary)=='k')])
+
+# Get t0 data in data frame
+t0_data <- data.frame(t0 = t0)
+
+# Get summary statistics for t0
+t0_data %>%
+  summarize(mean_t0 = mean(t0),
+            lci = quantile(t0, probs = 0.025),
+            hci = quantile(t0, probs = 0.975))
+
+# Get data table for Linf
+linf_data <- data.frame(linf = linf)
+
+# Get summary statistics for Linf
+linf_data %>%
+  summarize(mean_linf = mean(linf), 
+            lci = quantile(linf, probs = 0.025),
+            hci = quantile(linf, probs = 0.975))
+  
+# Get data table for K
+k_data <- data.frame(k = k)
+
+# Get summary statistics for K
+k_data %>%
+  summarize(mean_k = mean(k), 
+            lci = quantile(k, probs = 0.025),
+            hci = quantile(k, probs = 0.975))
+
+# Save t0 data for plotting
+save(t0_data, file = "data/jags_results/global/t0_global.Rda")
+
+# Save Linf data for plotting
+save(linf_data, file = "data/jags_results/global/linf_global.Rda")
+
+# Save K data for plotting
+save(k_data, file = "data/jags_results/global/k_global.Rda")
+
+
+# Get data frame of Linf values
+linf <- data.frame(linf = linf)
+
+# Get data frame of K values
+k <- data.frame(k = k)
+
+# Get annulus number for each back-calculated total length
+age <- full_bc_data$annulus
+
+# Get data frame of Linf values
+age_seq <- seq(0, 16, by = 1)
+
+# Create data frame to hold mean values and lower and upper confidence intervals for predicted values of each parameter
+global  <- data.frame(mean = rep(NA, length(age_seq)), 
+                  lci = rep(NA, length(age_seq)), 
+                  hci = rep(NA, length(age_seq)))
+
+# Create ataframe for each curve
+curve <- global
+
+# Generate curves
+for (i in 1:1){
+  
+  for (j in 1:length(age_seq)){
+    
+    curve$mean[j] <- mean(linf[,i]) * (1-exp(-(mean(k[,i])) * (age_seq[j] - mean(t0))))
+    
+    curve$lci[j] <- quantile(linf[,i],probs=0.025) * (1-exp(-(quantile(k[,i], probs=0.025)) * (age_seq[j] - quantile(t0, probs=0.025))))
+    
+    curve$hci[j] <- quantile(linf[,i],probs=0.975) * (1-exp(-(quantile(k[,i], probs=0.975)) * (age_seq[j] - quantile(t0, probs=0.975))))
+    
+  }
+  
+} 
+
+# Save curves data for downstream plotting 
+save(curve, file = "data/jags_results/global/curve_global.Rda")
+```
+
+<b>Summary of von Bertalanffy model output (mean [95% credible intervals]) for global data</b>:
+
+<b><i>t</i><sub>0</sub>: -0.3101959	(-0.4616921, -0.1737216)
+
+<b><i>L</i><sub>∞</sub>: 437.0822	(406.6597, 472.742)
+
+<b><i>K</i></b>: 0.2872459 (0.2405039, 0.3372768)
+
+These summary metrics are the basis for Table 2a.
+
+##### 2a.3. Plot parameter (Linf and K) estimate results from JAGS model for global data; run the Rmd chunk below.
+
+##### Plot parameter estimate results from JAGS model for global data: 1) `figures/parameter_plots/global_linf.pdf` and 2) `figures/parameter_plots/global_k.pdf`
+```{r}
+# Load Linf data for global data
+load("data/jags_results/global/linf_global.Rda")
+
+# Load K data for global data 
+load("data/jags_results/global/k_global.Rda")
+
+# Plot Linf parameter estimate results
+pdf("figures/parameter_plots/global_linf.pdf", width = 3, height = 3)
+
+ggplot(linf_data) +
+  aes(y = linf, fill = "grey") +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) +
+  scale_fill_manual(values = c("grey")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.ticks.x = element_blank()) +
+  labs(x = "Global (all data)", y = "L∞") +
+  ylab(expression(italic(L[infinity]))) + 
+  scale_y_continuous(limits = c(300,500), expand = c(0,0)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+
+# Plot K parameter estimate results
+pdf("figures/parameter_plots/global_k.pdf", width = 3, height = 3)
+
+ggplot(k_data)+
+  aes(y = k, fill = "grey") +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) + 
+  scale_fill_manual(values = c("grey")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.ticks.x = element_blank()) +
+  labs(x = "Global (all data)", y = "K") + 
+  ylab(expression(italic(K[B]))) + 
+  scale_y_continuous(limits = c(0.2,0.4), expand = c(0,0)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+##### 2a.4. Plot von Bertalannfy curves from JAGS model for global data; run the Rmd chunk below.
+
+##### Plot results from JAGS model for global data: `figures/vb_plots/global_predict.pdf`
+```{r}
+# Load von Bertalannfy curve data
+load("data/jags_results/global/curve_global.Rda")
+
+# Get numeric for sequence of ages, 1 to 16 (we included higher ages than observed in our dataset for prediction)
+age_seq <- seq(0, 16, by = 1)
+
+# Get global curve data from curves list
+global_data <- as.data.frame(curve)
+
+# Create column for age
+global_data$age <- age_seq
+
+# Get dataset for all curves
+global_curve <- global_data
+
+# Plot von Bertalanffy curve for global data
+pdf("figures/vb_plots/global_predict.pdf", width = 6, height = 5)
+
+ggplot() + 
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl), fill = "grey", alpha = 0.5, show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_ribbon(data = global_curve, aes(x = age, ymin = lci, ymax = hci, fill = "grey", alpha = 0.1), show.legend = F) +
+  geom_line(data = global_curve, aes(x = age, y = mean, color = "black"), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey")) +
+  scale_color_manual(values = c("black")) +
+  scale_y_continuous(name = "Mean back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+#### 2b. Construct model for the river dataset. 
+
+##### 2b.1. Set up and run JAGS model for the river dataset; run the Rmd chunk below.
+
+##### Set up and run JAGS model for river dataset:
+```{r}
+# Load bc jags input data
+load("data/jags_data/bc_jags.Rda")
+
+# MCMC settings
+ni = 50000
+nb = 20000
+na = 20000
+nt = 5
+nc = 3
+
+# Build JAGS model
+sink('code/vb_river.jags')
+cat(
+  "model{
+for(i in 1:N){
+length[i] ~ dnorm(y.hat[i], tau.y)
+y.hat[i] = Linf[river[i]] * (1-exp(-k[river[i]] * (age[i] - t0))) + idr[id[i]]
+}
+ 
+# SD
+tau.y = pow(sigma, -2)
+sigma ~ dunif(0,100)
+ 
+# Level-2 parameters
+for(j in 1:G){ 
+Linf[j] ~ dnorm(mu.Linf, tau.Linf)
+k[j] ~ dnorm(mu.k, tau.k)
+}
+t0 ~ dnorm(mu.t0, tau.t0)
+
+for (q in 1:N){
+idr[q] ~ dnorm(0,tau.idr)
+}
+
+
+# Priors for level-2 parameters
+log.mu.Linf ~ dnorm(0,0.0001)
+log.mu.k ~ dunif(0,1)
+mu.t0 ~ dnorm(0,0.0001)
+
+ 
+# Get hyperparameters on untransformed scale
+mu.Linf = exp(log.mu.Linf)
+mu.k = exp(log.mu.k)
+ 
+# Precision
+tau.Linf = pow(sig.Linf,-2)
+tau.k = pow(sig.k,-2)
+tau.t0 = pow(sig.t0,-2)
+ 
+# SD of parameters
+sig.Linf ~ dunif(0,10)
+sig.k ~ dunif(0,10)
+sig.t0 ~ dunif(0,10)
+
+tau.idr <- pow(sig.idr, -2) # tau and sig for random effect
+sig.idr ~ dunif(0, 10)
+
+}"
+)
+sink()
+
+# changed log.mu.k to ~dunif(0,1) following Schofeld et al. 2013 https://onlinelibrary.wiley.com/doi/abs/10.1111/biom.12069
+
+# Parameters to monitor
+params = c("Linf", 
+           "k",
+           "t0",
+           "mu.Linf",
+           "mu.k",
+           "mu.t0",
+           "mu.Linf", 
+           "mu.k",
+           "mu.t0", 
+           "sig.Linf",
+           "sig.k",
+           "sig.t0",
+           "sig.idr",
+           "sigma")
+
+# Get initial values
+inits = function(){list()}
+
+
+# Run JAGS model
+mod_river <- jagsUI::jags(data = bc_data, 
+                          inits = inits, 
+                          parameters.to.save = params, 
+                          model.file = "code/vb_river.jags", 
+                          n.chains = nc,
+                          n.thin = nt, 
+                          n.iter = ni, 
+                          n.burnin = nb,
+                          n.adapt = na,
+                          parallel = T)
+# # Print table of results
+print(mod_river, digits=3)
+
+# Print traceplot for supplementary material
+jagsUI::traceplot(mod_river)
+
+# Save JAGS output for downstream analysis
+save(mod_river, file = 'data/jags_results/river/mod_river.rda')
+```
+
+##### 2b.2. Run JAGS model for the river dataset; run the Rmd chunk below.
+
+##### Run JAGS model for river dataset:
+```{r}
+# Load full bc data
+load('data/bc_data/full_bc_data.rda')
+full_bc_data
+# Load model data for river data
+load('data/jags_results/river/mod_river.rda')
+
+# Extract posterior samples (using capital letters for model generated data) for each parameter of the model
+
+# Extract t0 values for the river data
+t0 <- c(vbc$samples[[1]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[2]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[3]][,which(row.names(vbc$summary)=='t0')])
+
+# Extract Linf values for Big Sugar Creek data
+linf_bs <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[1]')], 
+              vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[1]')], 
+              vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[1]')])
+
+# Extract Linf values for Elk River data
+linf_elk <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[2]')], 
+               vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[2]')], 
+               vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[2]')])
+
+# Extract K values for Big Sugar Creek data
+k_bs <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[1]')], 
+           vbc$samples[[2]][,which(row.names(vbc$summary)=='k[1]')], 
+           vbc$samples[[3]][,which(row.names(vbc$summary)=='k[1]')])
+
+# Extract K values for Elk River data
+k_elk <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[2]')], 
+            vbc$samples[[2]][,which(row.names(vbc$summary)=='k[2]')], 
+            vbc$samples[[3]][,which(row.names(vbc$summary)=='k[2]')])
+
+# Get t0 data in data frame
+t0_data <- data.frame(t0 = t0)
+
+# Get summary statistics for t0
+t0_data %>%
+  summarize(mean_t0 = mean(t0),
+            lci = quantile(t0, probs = 0.025),
+            hci = quantile(t0, probs = 0.975))
+
+# Get Linf data in data frame
+linf_data <- data.frame(linf = c(linf_bs, linf_elk), 
+                        river = c(rep("Big_Sugar", length(linf_bs)), 
+                                  rep("Elk_River", length(linf_elk))))
+
+# Get summary statistics for Linf
+linf_data %>%
+  group_by(river) %>%
+  summarize(mean_linf = mean(linf), 
+            lci = quantile(linf, probs = 0.025),
+            hci = quantile(linf, probs = 0.975))
+  
+# Get k data in data frame
+k_data <- data.frame(k = c(k_bs, k_elk), 
+                     river = c(rep("Big_Sugar", length(k)), 
+                             rep("Elk_River", length(k))))
+
+# Get summary statistics for K
+k_data %>%
+  group_by(river) %>%
+  summarize(mean_k = mean(k), 
+            lci = quantile(k, probs = 0.025),
+            hci = quantile(k, probs = 0.975))
+
+# Save t0 data for plotting
+save(t0_data, file = "data/jags_results/river/t0_river.Rda")
+
+# Save Linf data for plotting
+save(linf_data, file = "data/jags_results/river/linf_river.Rda")
+
+# Save K data for plotting
+save(k_data, file = "data/jags_results/river/k_river.Rda")
+
+
+## Prepare data for plotting predictive von Bertalanffy growth curves
+
+# Get data frame of Linf values
+linf <- data.frame(linf_bs = linf_bs, 
+                   linf_elk = linf_elk)
+
+# Get data frame of Linf values
+k <- data.frame(k_elk = k_elk, 
+                k_elk = k_elk)
+
+# Get annulus number for each back-calculated total length
+age <- full_bc_data$annulus
+
+# Get numeric for sequence of ages
+age_seq <- seq(0, 16, by = 1)
+
+# Create data frame to hold mean values and lower and upper confidence intervals for predicted values of each parameter
+bs <- elk <- data.frame(mean = rep(NA, length(age_seq)),
+                        lci = rep(NA, length(age_seq)), 
+                        hci = rep(NA, length(age_seq)))
+
+# Create list to hold dataframes for each curve
+curves <- list(bs, elk)
+
+# Generate curves
+for (i in 1:2) {
+  
+  for (j in 1:length(age_seq)) {
+    curves[[i]]$mean[j] <- mean(linf[,i]) * (1-exp(-(mean(k[,i])) * (age_seq[j] - mean(t0))))
+    
+    curves[[i]]$lci[j] <- quantile(linf[,i],probs=0.025) * (1-exp(-(quantile(k[,i], probs=0.025)) * (age_seq[j] - quantile(t0, probs=0.025))))
+    
+    curves[[i]]$hci[j] <- quantile(linf[,i],probs=0.975) * (1-exp(-(quantile(k[,i], probs=0.975)) * (age_seq[j] - quantile(t0, probs=0.975))))
+    
+  }
+  
+} 
+
+# Save curves data for downstream plotting 
+save(curves, file = "data/jags_results/river/curves_river.Rda")
+```
+
+<b>Summary of von Bertalanffy model output (mean [95% credible intervals]) for rivers</b>:
+
+Overall <i>t</i>0:
+<b><i>t</i><sub>0</sub>: -0.2873411 (-0.436365, -0.1538607)
+
+<i>L</i><sub>∞</sub> by river:
+<b><i>L</i><sub>∞, Big Sugar</sub>: 436.5445 (406.0028, 472.7270)
+<b><i>L</i><sub>∞, Elk River</sub>: 432.4917 (403.2239, 467.7662)
+
+<i>K</i> by river:
+<b><i>K</i><sub>Big Sugar</sub>: 0.2918416 (0.2400016, 0.3477253)
+<b><i>K</i><sub>Elk River</sub>: 0.2919312 (0.2404546,	0.3476918) 
+
+These summary metrics are the basis for Table 2b. 
+
+##### 2b.3. Plot parameter (Linf and K) estimate results from JAGS model for rivers; run the Rmd chunk below.
+
+##### Plot parameter estimate results from JAGS model for rivers: 1) `figures/parameter_plots/river_linf.pdf` and 2) `figures/parameter_plots/river_k.pdf`
+```{r}
+# Load Linf data for rivers
+load("data/jags_results/river/linf_river.Rda")
+
+# Load K data for rivers
+load("data/jags_results/river/k_river.Rda")
+
+# Plot Linf parameter estimate results
+pdf("figures/parameter_plots/river_linf.pdf", width = 5, height = 3)
+
+ggplot(linf_data) +
+  aes(x = river, y = linf, fill = river) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) +
+  scale_fill_manual("",values = c("grey30", "grey80"), labels = c('Big Sugar Creek', "Elk River")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Stream", y = "L∞") +
+  scale_x_discrete(labels = c('Big Sugar Creek', "Elk River")) +
+  ylab(expression(italic(L[infinity]))) + 
+  scale_y_continuous(limits = c(350, 500)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+
+# Plot K parameter estimate results
+pdf("figures/parameter_plots/river_k.pdf", width = 5, height = 3)
+
+ggplot(k_data)+
+  aes(x = river, y = k, fill = river) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) + 
+  scale_fill_manual("",values = c("grey30", "grey80"), labels = c('Big Sugar Creek', "Elk River")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Stream", y = "K") + 
+  scale_x_discrete(labels = c('Big Sugar Creek', "Elk River")) +
+  ylab(expression(italic(K[B]))) +
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+##### 2b.4. Plot von Bertalannfy curves from JAGS model for rivers; run the Rmd chunk below.
+
+##### Plot results from JAGS model for rivers: `figures/vb_plots/river_predict.pdf`
+```{r}
+# Load von Bertalannfy curve data
+load("data/jags_results/river/curves_river.Rda")
+
+# Get numeric for sequence of ages, 1 to 16 (we included higher ages than observed in our dataset for prediction)
+age_seq <- seq(0, 16, by = 1)
+
+# Get Big Sugar curve data from curves list
+bs_data <- as.data.frame(curves[[1]])
+
+# Create column for age
+bs_data$age <- age_seq
+
+# Create column for river
+bs_data$river<- rep("Big_Sugar", times = 17)
+
+# Get Elk River curve data from curves list
+elk_data <- as.data.frame(curves[[2]])
+
+# Create column for age
+elk_data$age <- age_seq
+
+# Create column for river
+elk_data$river <- rep("Elk_River", times = 17)
+
+# Get dataset for all curves
+river_curves <- rbind(bs_data, 
+                      elk_data)
+
+# Plot von Bertalanffy curves for river data
+pdf("figures/vb_plots/river_predict.pdf", width = 6, height = 5)
+
+ggplot() + 
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl), fill = "grey", alpha = 0.5, show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_ribbon(data = river_curves, aes(x = age, ymin = lci, ymax = hci, fill = river, alpha = 0.1), show.legend = F) +
+  geom_line(data = river_curves, aes(x = age, y = mean, linetype = river, color = river), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey30", "grey80")) +
+  scale_color_manual(values = c("grey30", "grey80")) +
+  scale_y_continuous(name = "Mean back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+#### 2c. Construct and run hierarchical models by sexp. 
+
+##### 2c.1. Set up and run JAGS model for the sex data; run the Rmd chunk below.
+
+##### Construct and run JAGS model for sex:
+```{r}
+# Load bc jags input data
+load("data/jags_data/bc_jags.Rda")
+
+# MCMC settings
+ni = 50000
+nb = 20000
+na = 20000
+nt = 5
+nc = 3
+
+# Build JAGS model
+sink('code/vb_sex.jags')
+cat(
+  "model{
+for(i in 1:N){
+length[i] ~ dnorm(y.hat[i], tau.y)
+y.hat[i] = Linf[sex[i]] * (1-exp(-k[sex[i]] * (age[i] - t0))) + idr[id[i]]
+}
+ 
+# SD
+tau.y = pow(sigma, -2)
+sigma ~ dunif(0,100)
+ 
+# Level-2 parameters
+for(j in 1:G){ 
+Linf[j] ~ dnorm(mu.Linf, tau.Linf)
+k[j] ~ dnorm(mu.k, tau.k)
+}
+t0 ~ dnorm(mu.t0, tau.t0)
+
+for (q in 1:N){
+idr[q] ~ dnorm(0,tau.idr)
+}
+
+
+# Priors for level-2 parameters
+log.mu.Linf ~ dnorm(0,0.0001)
+log.mu.k ~ dunif(0,1)
+mu.t0 ~ dnorm(0,0.0001)
+
+ 
+# Get hyperparameters on untransformed scale
+mu.Linf = exp(log.mu.Linf)
+mu.k = exp(log.mu.k)
+ 
+# Precision
+tau.Linf = pow(sig.Linf,-2)
+tau.k = pow(sig.k,-2)
+tau.t0 = pow(sig.t0,-2)
+ 
+# SD of parameters
+sig.Linf ~ dunif(0,10)
+sig.k ~ dunif(0,10)
+sig.t0 ~ dunif(0,10)
+
+tau.idr <- pow(sig.idr, -2) # tau and sig for random effect
+sig.idr ~ dunif(0, 10)
+
+}"
+)
+sink()
+
+# changed log.mu.k to ~dunif(0,1) following Schofeld et al. 2013 https://onlinelibrary.wiley.com/doi/abs/10.1111/biom.12069
+
+# Parameters to monitor
+params = c("Linf", 
+           "k", "t0", 
+           "mu.Linf", 
+           "mu.k", 
+           "mu.t0",
+           "mu.Linf", 
+           "mu.k",
+           "mu.t0", 
+           "sig.Linf",
+           "sig.k",
+           "sig.t0",
+           "sig.idr",
+           "sigma")
+
+# Get initial parameters
+inits = function(){list()}
+
+
+# Run JAGS model
+mod_sex <- jagsUI::jags(data = bc_data, 
+                        inits = inits, 
+                        parameters.to.save = params, 
+                        model.file = "code/vb_sex.jags", 
+                        n.chains = nc, 
+                        n.thin = nt, 
+                        n.iter = ni, 
+                        n.burnin = nb,
+                        n.adapt = na, 
+                        parallel = T)
+
+# Print table of results
+print(mod_sex, digits = 3)
+
+# Print traceplot for supplementary material
+jagsUI::traceplot(mod_sex)
+
+# Save JAGS model for downstream analyses
+save(mod_sex, file = 'data/jags_results/sex/mod_sex.rda')
+```
+
+##### 2c.2. Run JAGS model for the sex dataset; run the Rmd chunk below.
+
+##### Run JAGS model for sex dataset:
+```{r}
+# Load full bc data
+load('data/bc_data/full_bc_data.rda')
+
+# Load model data for sex data
+load('data/jags_results/sex/mod_sex.rda')
+
+# Extract posterior samples (using capital letters for model generated data) for each parameter of the model
+
+# Extract t0 values for the river data
+t0 <- c(vbc$samples[[1]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[2]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[3]][,which(row.names(vbc$summary)=='t0')])
+
+# Extract Linf values for the female data
+linf_f <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[1]')], 
+             vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[1]')], 
+             vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[1]')])
+
+# Extract Linf values for the male data
+linf_m <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[2]')], 
+             vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[2]')], 
+             vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[2]')])
+
+# Extract K values for the female data
+k_f <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[1]')], 
+         vbc$samples[[2]][,which(row.names(vbc$summary)=='k[1]')], 
+         vbc$samples[[3]][,which(row.names(vbc$summary)=='k[1]')])
+
+# Extract K values for the male data
+k_m <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[2]')], 
+          vbc$samples[[2]][,which(row.names(vbc$summary)=='k[2]')], 
+          vbc$samples[[3]][,which(row.names(vbc$summary)=='k[2]')])
+
+# Get t0 data in data frame
+t0_data <- data.frame(t0 = t0)
+
+# Get summary statistics for t0
+t0_data %>%
+  summarize(mean_t0 = mean(t0),
+            lci = quantile(t0, probs = 0.025),
+            hci = quantile(t0, probs = 0.975))
+
+# Get Linf data in data frame
+linf_data <- data.frame(linf = c(linf_f, linf_m), 
+                        sex=c(rep("Female", length(linf_f)), 
+                              rep("Male", length(linf_m))))
+
+# Get summary statistics for Linf
+linf_data %>%
+  group_by(sex) %>%
+  summarize(mean_linf = mean(linf), 
+            lci = quantile(linf, probs = 0.025),
+            hci = quantile(linf, probs = 0.975))
+
+# Get K data in data frame
+k_data <- data.frame(k = c(k_f, k_m), 
+                     sex=c(rep("Female", length(k_f)), 
+                           rep("Male", length(k_m))))
+
+# Get summary statistics for Linf
+k_data %>%
+  group_by(sex) %>%
+  summarize(mean_k = mean(k), 
+            lci = quantile(k, probs = 0.025),
+            hci = quantile(k, probs = 0.975))
+
+# Save t0 data for plotting
+save(t0_data, file = "data/jags_results/sex/t0_sex.Rda")
+
+# Save Linf data for plotting
+save(linf_data, file = "data/jags_results/sex/linf_sex.Rda")
+
+# Save K data for plotting
+save(k_data, file = "data/jags_results/sex/k_sex.Rda")
+
+
+## Prepare data for plotting predictive von Bertalanffy growth curves
+
+# Get data frame of Linf values
+linf <- data.frame(linf_f = linf_f, 
+                   linf_m = linf_m)
+
+# Get data frame of Linf values
+k <- data.frame(k_f = k_f, 
+                k_m = k_m)
+
+# Get annulus number for each back-calculated total length
+age <- full_bc_data$annulus
+
+# Get numeric for sequence of ages
+age_seq <- seq(0, 16, by = 1)
+
+# Create data frame to hold mean values and lower and upper confidence intervals for predicted values of each parameter
+f <- m <- data.frame(mean = rep(NA, length(age_seq)),
+                     lci = rep(NA, length(age_seq)), 
+                     hci = rep(NA, length(age_seq)))
+
+# Create list to hold dataframes for each curve
+curves <- list(f, m)
+
+# Generate curves
+for (i in 1:2) {
+  
+  for (j in 1:length(age_seq)) {
+    curves[[i]]$mean[j] <- mean(linf[,i]) * (1-exp(-(mean(k[,i])) * (age_seq[j] - mean(t0))))
+    
+    curves[[i]]$lci[j] <- quantile(linf[,i],probs=0.025) * (1-exp(-(quantile(k[,i], probs=0.025)) * (age_seq[j] - quantile(t0, probs=0.025))))
+    
+    curves[[i]]$hci[j] <- quantile(linf[,i],probs=0.975) * (1-exp(-(quantile(k[,i], probs=0.975)) * (age_seq[j] - quantile(t0, probs=0.975))))
+  }
+  
+} 
+
+# Save curves data for downstream plotting 
+save(curves, file = "data/jags_results/sex/curves_sex.Rda")
+```
+
+
+<b>Summary of von Bertalanffy model output (mean [95% credible intervals]) for sex</b>:
+
+Overall <i>t</i>0:
+<b><i>t</i><sub>0</sub>: -0.3042273	(-0.4549257, -0.1635992)
+
+<i>L</i><sub>∞</sub> by sex:
+<b><i>L</i><sub>∞, Female</sub>: 437.0387	(405.6292, 473.5217)
+<b><i>L</i><sub>∞, Male</sub>: 438.0554	(405.9678,	474.8153)
+
+<i>K</i> by sex:
+<b><i>K</i><sub>Female</sub>: 0.2810852	(0.2344326, 0.3318127)
+<b><i>K</i><sub>Male</sub>: 0.2954205	(0.2457146, 0.3504899)
+
+These summary metrics are the basis for Table 2c. 
+
+##### 2c.3. Plot parameter (Linf and K) estimate results from JAGS model for sex; run the Rmd chunk below.
+
+##### Plot parameter estimate results from JAGS model for sex: 1) `figures/parameter_plots/sex_linf.pdf` and 2) `figures/parameter_plots/sex_k.pdf`
+```{r}
+# Load Linf data for sex
+load("data/jags_results/sex/linf_sex.Rda")
+
+# Load K data for rivers
+load("data/jags_results/sex/k_sex.Rda")
+
+# Plot Linf parameter estimate results
+pdf("figures/parameter_plots/sex_linf.pdf", width = 5, height = 3)
+
+ggplot(linf_data) +
+  aes(x = sex, y = linf, fill = sex) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) +
+  scale_fill_manual("",values = c("grey30", "grey80"), labels = c('Female', "Male")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Sex", y = "L∞") +
+  scale_x_discrete(labels = c('Female', "Male")) +
+  ylab(expression(italic(L[infinity]))) + 
+  scale_y_continuous(limits = c(350, 500)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+
+# Plot K parameter estimate results
+pdf("figures/parameter_plots/sex_k.pdf", width = 5, height = 3)
+
+ggplot(k_data)+
+  aes(x = sex, y = k, fill = sex) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) + 
+  scale_fill_manual("",values = c("grey30", "grey80"), labels = c('Female', "Male")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Sex", y = "K") + 
+  scale_x_discrete(labels = c('Female', "Male")) +
+  ylab(expression(italic(K[B]))) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+##### 2c.4. Plot von Bertalannfy curves from JAGS model for sex; run the Rmd chunk below.
+
+##### Plot results from JAGS model for sex: `figures/vb_plots/sex_predict.pdf`
+```{r}
+# Load von Bertalannfy curve data
+load("data/jags_results/sex/curves_sex.Rda")
+
+# Get numeric for sequence of ages, 1 to 16 (we included higher ages than observed in our dataset for prediction)
+age_seq <- seq(0, 16, by = 1)
+
+# Get female curve data from curves list
+f_data <- as.data.frame(curves[[1]])
+
+# Create column for age
+f_data$age <- age_seq
+
+# Create column for female
+f_data$sex<- rep("Female", times = 17)
+
+# Get male curve data from curves list
+m_data <- as.data.frame(curves[[2]])
+
+# Create column for age
+m_data$age <- age_seq
+
+# Create column for sex
+m_data$sex <- rep("Male", times = 17)
+
+# Get dataset for all curves
+sex_curves <- rbind(f_data, 
+                      m_data)
+
+# Plot von Bertalanffy curves for river data
+pdf("figures/vb_plots/sex_predict.pdf", width = 6, height = 5)
+
+ggplot() + 
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl), fill = "grey", alpha = 0.5, show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_ribbon(data = sex_curves, aes(x = age, ymin = lci, ymax = hci, fill = sex, alpha = 0.1), show.legend = F) +
+  geom_line(data = sex_curves, aes(x = age, y = mean, linetype = sex, color = sex), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("grey30", "grey80")) +
+  scale_color_manual(values = c("grey30", "grey80")) +
+  scale_y_continuous(name = "Mean back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+#### 2d. Construct and run hierarchical models by ancestry group. 
+
+##### 2d.1. Set up and run JAGS model for the ancestry group data; run the Rmd chunk below.
+
+##### Construct and run JAGS model for ancestry groups:
+```{r}
+# Load bc jags input data
+load("data/jags_data/bc_jags.Rda")
+
+# MCMC settings
+ni = 50000
+nb = 20000
+na = 20000
+nt = 5
+nc = 3
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#  01 Stardard model, 3 genetic groups (3 curves) random individual effect
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# JAGS VBGM modified from G Adams Github 
+# This converges with groups
+# changed prior for mu.k and removed group-specific t0
+# added random group effect
+
+sink('code/vb_group.jags')
+
+cat(
+  "model{
+for(i in 1:N){
+length[i] ~ dnorm(y.hat[i], tau.y)
+y.hat[i] = Linf[group[i]] * (1-exp(-k[group[i]] * (age[i] - t0))) + idr[id[i]]
+}
+ 
+# SD
+tau.y = pow(sigma, -2)
+sigma ~ dunif(0,100)
+ 
+# Level-2 parameters
+for(j in 1:G){ 
+Linf[j] ~ dnorm(mu.Linf, tau.Linf)
+k[j] ~ dnorm(mu.k, tau.k)
+}
+t0 ~ dnorm(mu.t0, tau.t0)
+
+for (q in 1:N){
+idr[q] ~ dnorm(0,tau.idr)
+}
+
+
+# Priors for level-2 parameters
+log.mu.Linf ~ dnorm(0,0.0001)
+log.mu.k ~ dunif(0,1)
+mu.t0 ~ dnorm(0,0.0001)
+
+ 
+# Get hyperparameters on untransformed scale
+mu.Linf = exp(log.mu.Linf)
+mu.k = exp(log.mu.k)
+ 
+# Precision
+tau.Linf = pow(sig.Linf,-2)
+tau.k = pow(sig.k,-2)
+tau.t0 = pow(sig.t0,-2)
+ 
+# SD of parameters
+sig.Linf ~ dunif(0,10)
+sig.k ~ dunif(0,10)
+sig.t0 ~ dunif(0,10)
+
+tau.idr <- pow(sig.idr, -2) # tau and sig for random effect
+sig.idr ~ dunif(0, 10)
+
+}"
+)
+sink()
+
+# changed log.mu.k to ~dunif(0,1) following Schofeld et al. 2013 https://onlinelibrary.wiley.com/doi/abs/10.1111/biom.12069
+
+# Parameters to monitor
+params = c("Linf", 
+           "k", 
+           "t0", 
+           "mu.Linf", 
+           "mu.k", 
+           "mu.t0", 
+           "mu.Linf", 
+           "mu.k", 
+           "mu.t0",
+           "sig.Linf",
+           "sig.k",
+           "sig.t0",
+           "sig.idr",
+           "sigma",
+           'idr')
+
+# Get initial values
+inits = function(){list()}
+
+# Run JAGS model
+mod_group <- jagsUI::jags(data = bc_jags, 
+                          inits = inits, 
+                          parameters.to.save = params, 
+                          model.file = "code/vb_group.jags", 
+                          n.chains = nc, 
+                          n.thin = nt, 
+                          n.iter = ni, 
+                          n.burnin = nb, 
+                          n.adapt = na, 
+                          parallel = T)
+
+# Print table of results
+print(mod_group, digits = 3)
+
+# a lot of credible interval overlap in both parameters among the 3 groups
+jagsUI::traceplot(mod_group)
+
+# Save data output from model
+save(mod_group, file = 'data/jags_results/ancestry/mod_group.rda')
+```
+
+##### 2d.2. Extract resulting data from JAGS model for ancestry groups and summarize parameter means; run the Rmd chunk below.
+
+##### Extract data from JAGS model for ancestry groups: 
+```{r}
+# Load full bc data
+load('data/bc_data/full_bc_data.rda')
+
+# Load model data for ancestry groups
+load('data/jags_results/ancestry/mod_group.rda')
+
+# Extract posterior samples (using capital letters for model generated data) for each parameter of the model
+
+# Extract t0 values for the global data
+t0 <- c(vbc$samples[[1]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[2]][,which(row.names(vbc$summary)=='t0')], 
+        vbc$samples[[3]][,which(row.names(vbc$summary)=='t0')])
+
+# Extract Linf values for ADM 
+linf_adm <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[1]')],
+               vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[1]')], 
+               vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[1]')])
+
+# Extract Linf values for NB
+linf_nb <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[2]')],
+               vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[2]')],
+               vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[2]')])
+
+# Extract Linf values for SMB
+linf_smb <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='Linf[3]')],
+               vbc$samples[[2]][,which(row.names(vbc$summary)=='Linf[3]')],
+               vbc$samples[[3]][,which(row.names(vbc$summary)=='Linf[3]')])
+
+# Extract K values for ADM
+k_adm <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[1]')],
+            vbc$samples[[2]][,which(row.names(vbc$summary)=='k[1]')],
+            vbc$samples[[3]][,which(row.names(vbc$summary)=='k[1]')])
+
+# Extract K values for NB
+k_nb <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[2]')],
+           vbc$samples[[2]][,which(row.names(vbc$summary)=='k[2]')],
+           vbc$samples[[3]][,which(row.names(vbc$summary)=='k[2]')])
+
+# Extract K values for SMB
+k_smb <-  c(vbc$samples[[1]][,which(row.names(vbc$summary)=='k[3]')],
+            vbc$samples[[2]][,which(row.names(vbc$summary)=='k[3]')],
+            vbc$samples[[3]][,which(row.names(vbc$summary)=='k[3]')])
+
+# Get t0 data in data frame
+t0_data <- data.frame(t0 = t0)
+
+# Get summary statistics for t0
+t0_data %>%
+  summarize(mean_t0 = mean(t0),
+            lci = quantile(t0, probs = 0.025),
+            hci = quantile(t0, probs = 0.975))
+
+# Get data table for Linf
+linf_data <- data.frame(linf = c(linf_adm, linf_nb, linf_smb),
+                        group = c(rep("ADM", length(linf_adm)), 
+                                  rep("NB", length(linf_nb)), 
+                                  rep("SMB", length(linf_smb))))
+
+# Get summary statistics for Linf
+linf_data %>%
+  group_by(group) %>%
+  summarize(mean_linf = mean(linf), 
+            lci = quantile(linf, probs = 0.025),
+            hci = quantile(linf, probs = 0.975))
+  
+# Get data table for K
+k_data <- data.frame(k = c(k_adm, k_nb, k_smb), 
+                     group = c(rep("ADM", length(k_adm)), 
+                             rep("NB", length(k_nb)), 
+                             rep("SMB", length(k_smb))))
+
+# Get summary statistics for K
+k_data %>%
+  group_by(group) %>%
+  summarize(mean_k = mean(k), 
+            lci = quantile(k, probs = 0.025),
+            hci = quantile(k, probs = 0.975))
+
+# Save t0 data for plotting
+save(t0_data, file = "data/jags_results/ancestry/t0_group.Rda")
+
+# Save Linf data for plotting
+save(linf_data, file = "data/jags_results/ancestry/linf_group.Rda")
+
+# Save K data for plotting
+save(k_data, file = "data/jags_results/ancestry/k_group.Rda")
+
+
+## Prepare data for plotting predictive von Bertalanffy growth curves
+
+# Get data frame of Linf values
+linf <- data.frame(linf_adm = linf_adm, 
+                   linf_nb = linf_nb, 
+                   linf_smb = linf_smb)
+
+# Get data frame of Linf values
+k <- data.frame(k_adm = k_adm, 
+                k_nb = k_nb, 
+                k_smb = k_smb)
+
+# Get annulus number for each back-calculated total length
+age <- full_bc_data$annulus
+
+# Get numeric for sequence of ages
+age_seq <- seq(0, 16, by = 1)
+
+# Create data frame to hold mean values and lower and upper confidence intervals for predicted values of each parameter
+adm <- nb <- smb <- data.frame(mean = rep(NA, length(age_seq)), 
+                               lci = rep(NA, length(age_seq)), 
+                               hci = rep(NA, length(age_seq)))
+
+# Create list to hold dataframes for each curve
+curves <- list(adm, nb, smb)
+
+# Generate curves
+for (i in 1:3) {
+  
+  for (j in 1:length(age_seq)) {
+    
+    curves[[i]]$mean[j] <- mean(linf[,i]) * (1-exp(-(mean(k[,i])) * (age_seq[j] - mean(t0))))
+    
+    curves[[i]]$lci[j] <- quantile(linf[,i],probs=0.025) * (1-exp(-(quantile(k[,i], probs=0.025)) * (age_seq[j] - quantile(t0, probs=0.025))))
+    
+    curves[[i]]$hci[j] <- quantile(linf[,i],probs=0.975) * (1-exp(-(quantile(k[,i], probs=0.975)) * (age_seq[j] - quantile(t0, probs=0.975))))
+    
+  }
+  
+} 
+
+# Save curves data for downstream plotting 
+save(curves, file = "data/jags_results/ancestry/curves_group.Rda")
+```
+
+<b>Summary of von Bertalanffy model output (mean [95% credible intervals]) for ancestry groups</b>:
+
+Overall <i>t</i>0:
+<b><i>t</i><sub>0</sub>: -0.2976748	(-0.4593703,	-0.1518358)	
+
+<i>L</i><sub>∞</sub> by ancestry group:
+<b><i>L</i><sub>∞, ADM</sub>: 431.2573	(397.0903, 471.8679)
+<b><i>L</i><sub>∞, NB</sub>:  435.6187	(401.9609, 475.6032)	
+<b><i>L</i><sub>∞, SMB</sub>:	434.3609	(398.6323, 476.0172)
+
+<i>K</i> by ancestry group:
+<b><i>K</i><sub>ADM</sub>: 0.2989725 (0.2430774, 0.3600014)
+<b><i>K</i><sub>NB</sub>:  0.2928903 (0.2398147, 0.3496055)	
+<b><i>K</i><sub>SMB</sub>: 0.2743092 (0.2237648, 0.3307300)
+
+These summary metrics are the basis for Table 2d. 
+
+##### 2d.3. Plot parameter (Linf and K) estimate results from JAGS model for ancestry groups; run the Rmd chunk below.
+
+##### Plot parameter estimate results from JAGS model for ancestry groups: 1) `figures/parameter_plots/ancestry_linf.pdf` and 2) `figures/parameter_plots/ancestry_k.pdf`
+```{r}
+# Load Linf data for ancestry groups
+load("data/jags_results/ancestry/linf_group.Rda")
+
+# Load K data for ancestry groups 
+load("data/jags_results/ancestry/k_group.Rda")
+
+# Plot Linf parameter estimate results
+pdf("figures/parameter_plots/ancestry_linf.pdf", width = 6, height = 3)
+
+ggplot(linf_data) +
+  aes(x = group, y = linf, fill = group) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) +
+  scale_fill_manual("",values = c("mediumpurple","deepskyblue", "deeppink2"), labels=c('ADM', "NB", "SMB")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Ancestry group", y = "L∞") +
+  scale_x_discrete(labels=c('ADM', "NB", "SMB")) +
+  ylab(expression(italic(L[infinity]))) + 
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+
+# Plot K parameter estimate results
+pdf("figures/parameter_plots/ancestry_k.pdf", width = 6, height = 3)
+
+ggplot(k_data)+
+  aes(x = group, y = k, fill = group) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, show.legend = F) + 
+  scale_fill_manual("",values = c("mediumpurple","deepskyblue", "deeppink2"), labels=c('ADM', "NB", "SMB")) +
+  theme_set(theme_cowplot(12)) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  labs(x = "Ancestry group", y = "K") + 
+  scale_x_discrete(labels=c('ADM', "NB", "SMB")) +
+  ylab(expression(italic(K[B]))) + 
+  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+##### 2d.4. Plot von Bertalannfy curves from JAGS model for ancestry groups; run the Rmd chunk below.
+
+##### Plot results from JAGS model for ancestry groups: `figures/vb_plots/ancestry_predict.pdf`
+```{r}
+# Load von Bertalannfy curve data
+load("data/jags_results/ancestry/curves_group.Rda")
+
+# Get numeric for sequence of ages, 1 to 16 (we included higher ages than observed in our dataset for prediction)
+age_seq <- seq(0, 16, by = 1)
+
+# Get ADM curve data from curves list
+adm_data <- as.data.frame(curves[[1]])
+
+# Create column for age
+adm_data$age <- age_seq
+
+# Create column for ancestry group
+adm_data$ancestry_group <- rep("ADM", times = 17)
+
+# Get NB curve data from curves list
+nb_data <- as.data.frame(curves[[2]])
+
+# Create column for age
+nb_data$age <- age_seq
+
+# Create column for ancestry group
+nb_data$ancestry_group <- rep("NB", times = 17)
+
+# Get NB curve data from curves list
+smb_data <- as.data.frame(curves[[3]])
+
+# Create column for age
+smb_data$age <- age_seq
+
+# Create column for ancestry group
+smb_data$ancestry_group <- rep("SMB", times = 17)
+
+# Get dataset for all curves
+group_curves <- rbind(adm_data, 
+                      nb_data, 
+                      smb_data)
+
+# Plot von Bertalanffy curves for ancestry data
+pdf("figures/vb_plots/ancestry_predict.pdf", width = 6, height = 5)
+
+ggplot() + 
+  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl), fill = "grey", alpha = 0.5, show.legend = F, size = 3, pch = 21, position = position_jitter(width = 0.2)) + 
+  geom_ribbon(data = group_curves, aes(x = age, ymin = lci, ymax = hci, fill = ancestry_group, alpha = 0.1), show.legend = F) +
+  geom_line(data = group_curves, aes(x = age, y = mean, linetype = ancestry_group, color = ancestry_group), show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_fill_manual(values = c("deeppink2","deepskyblue","mediumpurple")) +
+  scale_color_manual(values = c("deeppink2","deepskyblue","mediumpurple")) +
+  scale_y_continuous(name = "Mean back-calculated total length (mm)", limits = c(0,575), expand = c(0,0)) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), limits = c(0,15), breaks = seq(0,15,1)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
