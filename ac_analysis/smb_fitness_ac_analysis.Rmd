@@ -127,11 +127,12 @@ data <- list(con = con,
 ```
 
 ### STEP 1: Load and prepare data for analysis; run the Rmd chunk below.
-In this step, we use a Bayesian hierarchical framework and fit a generalized linear model of the form: condition ~ smb + river + sex. We
+In this step, we use a Bayesian hierarchical framework and fit a generalized linear model of the form: condition ~ smb + river + sex. We used 4 cores to run 4 Markov chains, with 2000 warmup and 4000 iterations.
 
+##### Fit ancestry-fitness correlation model:
 ```{r}
 fit <- stan(
-  file = "code/condition_model_2.stan",  
+  file = "code/condition_model.stan",  
   data = data,    
   chains = 4,             
   warmup = 2000,          
@@ -139,18 +140,21 @@ fit <- stan(
   cores = 4,              
 )
 
+# Save model output for downstream analyses
+save(fit, file='data/condition_model.rds')
+```
 
 
-rstan::traceplot(fit2)
-#save (fit2, file='ac_analysis/condition_model_2_out.rds')
+```{r}
+rstan::traceplot(fit)
 load('ac_analysis/condition_model_2_out.rds')
 
-print(fit2,digits=3)
+print(fit,digits=3)
 
 sampler_params <- get_sampler_params(fit2, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
-draws <- as.data.frame(fit2)
+draws <- as.data.frame(fit)
 
 # boxplot of effect sizes
 # really just to look at (keeping in mind smb is scaled, and river and sex were binary)
