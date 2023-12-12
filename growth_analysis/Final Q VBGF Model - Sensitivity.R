@@ -13,7 +13,7 @@ control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 # control = list()
 warmup = 5000       # number of warmup iterations per chain
 thin = 2
-iter = 5000        # final number of iterations per chain
+iter = 6000        # final number of iterations per chain
 
 ##### Assign data to list ##### 
 # Real data

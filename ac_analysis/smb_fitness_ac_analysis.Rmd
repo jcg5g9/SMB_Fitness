@@ -107,14 +107,14 @@ In this step, we load the raw condition data calculated in Phase 1, Step 1c abov
 load("data/condition_data.Rda")
 
 # Generate variables and match names to model 
-con <- condition_data$condition*100
-smb <- as.numeric(scale(condition_data$smb))
+con <- condition_data$condition
+smb <- as.numeric(condition_data$smb)
 n <- length(con)
 riv <- as.numeric(as.factor(condition_data$river))
 riv[which(riv == 3)] <- 2 # recode to 1 and 2 instead of 1 and 3
 sex <- as.numeric(as.factor(condition_data$sex))
 
-# make riv and sex 0 or 1 for stan
+# make stream (riv) and sex factors 0 or 1 for stan
 riv_1 <- riv - 1
 sex_1 <- sex - 1
 
@@ -126,8 +126,8 @@ data <- list(con = con,
              sex = sex_1)
 ```
 
-### STEP 1: Load and prepare data for analysis; run the Rmd chunk below.
-In this step, we use a Bayesian hierarchical framework and fit a generalized linear model of the form: condition ~ smb + river + sex. We used 4 cores to run 4 Markov chains, with 2000 warmup and 4000 iterations.
+### STEP 2: Load and prepare data for analysis; run the Rmd chunk below.
+In this step, we use a Bayesian hierarchical framework and fit a generalized linear model of the form: condition ~ smb + river + sex. We used 4 cores to run 4 Markov chains, with 2,000 warmup and 4,000 iterations.
 
 ##### Fit ancestry-fitness correlation model:
 ```{r}
@@ -137,24 +137,56 @@ fit <- stan(
   chains = 4,             
   warmup = 2000,          
   iter = 4000,            
-  cores = 4,              
-)
+  cores = 4
+  )
 
-# Save model output for downstream analyses
-save(fit, file='data/condition_model.rds')
-```
-
-
-```{r}
+# Visually inspect chains
 rstan::traceplot(fit)
-load('ac_analysis/condition_model_2_out.rds')
 
-print(fit,digits=3)
+# Extract parameters 
+sampler_params <- get_sampler_params(fit, inc_warmup = TRUE)
 
-sampler_params <- get_sampler_params(fit2, inc_warmup = TRUE)
 summary(do.call(rbind, sampler_params), digits = 2)
 
+# Save model output for downstream analyses
+save(fit, file = 'data/condition_model.rds')
+```
+
+### STEP 3: Load and prepare data for analysis; run the Rmd chunk below.
+In this step, we analyze and plot output results from the generalized linear model of the condition and ancestry proportion.
+
+#### 3a:
+
+```{r}
+# Load generalized linear model output
+load('data/condition_model.rds')
+
+# Extract all data from model 
 draws <- as.data.frame(fit)
+
+# Gather parameters and estimates at each iteration so that there are only two columns, for plotting
+draws <- draws %>%
+  gather(beta1:lp__, key = "parameter", value = "estimate") %>%
+  mutate(parameter = factor(parameter))
+
+# Select only parameters needed for plotting (beta1, beta2, beta3)
+betas <- draws %>%
+  filter(parameter == "beta1" |
+         parameter == "beta2" |
+         parameter == "beta3")
+
+ggplot(betas, aes(x = parameter, y = estimate)) +
+  geom_point(position = position_jitter(width = 0.2), alpha = 0.1) +
+  geom_boxplot(fill = "grey", alpha = 0.3) +
+  labs(x = "Parameter", y = "Estimate") +
+  scale_y_continuous(limits = c(-0.004,0.002)) +
+  geom_hline(yintercept = 0, size = 1.5, linetype = "longdash", color = "red") +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text.x = element_blank()) +
+  theme(axis.text.y = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
 
 # boxplot of effect sizes
 # really just to look at (keeping in mind smb is scaled, and river and sex were binary)
