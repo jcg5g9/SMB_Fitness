@@ -133,10 +133,11 @@ In this step, we use a Bayesian hierarchical framework and fit a generalized lin
 ```{r}
 fit <- stan(
   file = "code/condition_model.stan",  
-  data = data,    
-  chains = 4,             
-  warmup = 2000,          
-  iter = 4000,            
+  data = data,
+  chains = 4,          
+  thin = 2,
+  warmup = 5000,          
+  iter = 6000,            
   cores = 4
   )
 
