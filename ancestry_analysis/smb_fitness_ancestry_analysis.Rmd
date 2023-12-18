@@ -36,7 +36,6 @@ library(cowplot)
 library(readxl)
 library(writexl)
 library(genepopedit)
-library(adegenet)
 ```
 
 ## PHASE 1: ANCESTRY INFERENCE
@@ -502,6 +501,7 @@ ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) +
 
 dev.off()
 ```
+
 This plot is used as a component of Figure 1b in the final manuscript.
 
 #### 2b. Plot ancestry coefficients for all individuals at best K value (K=2) in order by the proportion of Smallmouth Bass ancestry inferred in STRUCTURE; run the rmd chunk below.
@@ -544,7 +544,7 @@ ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) +
 dev.off()
 ```
 
-This plot is the basis for Figure S2a in the final manuscript.
+This plot is the basis for Figure S3 in the final manuscript.
 
 ### STEP 3: Assign individuals to genetic groups based on ancestry proportions and summarize sample sizes for each group.
 In this step, we assign individual fish to one of three "ancestry" groups based on the membership coefficients calculated in STRUCTURE: 1) Pure Smallmouth Bass (<i>q</i><sub>SMB</sub> = 0.75 or greater), 2) Pure Neosho Bass (<i>q</i><sub>NB</sub> = 0.75 or greater), or 3) Admixed (<i>q</i><sub>SMB</sub> = 0.25-0.75). 
@@ -589,356 +589,124 @@ full_ancestry_data <- merge(full_data,
 save(full_ancestry_data, file = "data/processed_ancestry_data/full_ancestry_data.Rda")
 ```
 
-#### 3c. Summarize ancestry data by quantifying sample sizes per group; run the Rmd chunk below.
-In this step, we count sample sizes for each ancestry group and present them in Table 1, along with sample sizes per length category and stream (Big Sugar Creek or Elk River).
+#### 3c. Summarize ancestry data by group; run the Rmd chunk below.
+In this step, we calculate average proportion of SMB and NB ancestry across the global dataset and summarize by size category, streams, and sexes. 
 
 ##### Summarize ancestry group data:
 ```{r}
 # Load ancestry group data
 load("data/processed_ancestry_data/full_ancestry_data.Rda")
 
-# Calculate mean ancestry proportion in the SMB reference samples
+# Calculate mean ancestry proportions and standard deviations by species (NB and SMB) in the SMB reference samples
 full_ancestry_data %>%
   filter(population == "reference") %>%
-  summarize(mean_smb = mean(smb))
+  summarize(mean_smb = mean(smb),
+            sd_smb = sd(smb),
+            mean_nb = mean(nb),
+            sd_nb = sd(nb))
 
-# Calculate mean ancestry proportions by species (NB and SMB) within the NB native range
+# Calculate mean ancestry proportions and standard deviations by species (NB and SMB) within the NB native range
 full_ancestry_data %>%
   filter(population == "sample") %>%
   summarize(mean_smb = mean(smb),
-            mean_nb = mean(nb))
-
-# Convert ancestry group variable to factor
-full_ancestry_data <- full_ancestry_data %>%
-  mutate(ancestry_group = factor(ancestry_group))
-
-# Count total number of fish per ancestry group
-full_ancestry_data %>% 
-  group_by(ancestry_group) %>%
-  count()
-
-# Summarize full data by river within ancestry group
-full_ancestry_data %>% 
-  group_by(ancestry_group, river) %>%
-  count()
-
-# Summarize full data by size bin for sex within river
-full_ancestry_data %>% 
-  group_by(size_bin, river, ancestry_group) %>%
-  count()
-
-# Summarize SMB ancestry range in reference SMB samples 
-full_ancestry_data %>%
-  filter(population == "reference") %>%
-  arrange(desc(smb))
+            sd_smb = sd(smb),
+            mean_nb = mean(nb),
+            sd_nb = sd(nb))
 
 # Summarize SMB ancestry range in native NB samples
 full_ancestry_data %>%
   filter(population == "sample") %>%
   arrange(desc(smb))
+
+# Summarize proportion of SMB and NB ancestry across size bins 
+full_ancestry_data %>% 
+  filter(population == "sample") %>%
+  group_by(size_bin) %>%
+  summarize(mean_smb = mean(smb),   
+            sd_smb = sd(smb),
+            mean_nb = mean(nb),
+            sd_nb = sd(nb))
+
+# Summarize proportion of SMB and NB ancestry across size bins, for the remaining 375-400+ size bin
+full_ancestry_data %>%
+  filter(size_bin == "375-400" | size_bin == "400+") %>%
+  summarize(mean_smb = mean(smb), 
+            sd_smb = sd(smb), 
+            mean_nb = mean(nb),
+            sd_nb = sd(nb))
+
+# Summarize proportion of SMB and NB ancestry for streams
+full_ancestry_data %>% 
+  filter(population == "sample") %>%
+  group_by(river) %>%
+  summarize(mean_smb = mean(smb),   
+            sd_smb = sd(smb),
+            mean_nb = mean(nb),
+            sd_nb = sd(nb))
+
+# Summarize proportion of SMB and NB ancestry for sexes
+full_ancestry_data %>% 
+  filter(population == "sample") %>%
+  group_by(sex) %>%
+  summarize(mean_smb = mean(smb),   
+            sd_smb = sd(smb),
+            mean_nb = mean(nb),
+            sd_nb = sd(nb))
+
 ```
 
-### Data summary:
+## Data summary:
 
-## Mean ancestry proportions
-<b>NB</sub> = 0.6176129 </b><br>
-<b>SMB</sub> = 0.3823871 </b><br>
+## Reference SMB
 
-## Totals by ancestry group 
-<b><i>N</i><sub>Neosho_Bass</sub> = 46 </b><br>
-<i>N</i><sub>Smallmouth Bass</sub> = 14 <br>
-<i>N</i><sub>Admixed</sub> = 56 <br>
-
-## By river (wihtin ancestry group)
-<i>N</i><sub>adm_elk</sub> = 34 <br>
-<i>N</i><sub>adm_bigsugar</sub> = 20 <br>
-
-<i>N</i><sub>nb_elk</sub> = 26 <br>
-<i>N</i><sub>nb_bigsugar</sub> = 20 <br>
-
-<i>N</i><sub>smb_elk</sub> = 10 <br>
-<i>N</i><sub>smb_bigsugar</sub> = 6 <br>
-
-## By size bin within sex within river
-<i>N</i><sub>bigsugar_200-225_nb</sub> = 4 <br>
-<i>N</i><sub>bigsugar_200-225_smb</sub> = 2 <br>
-<i>N</i><sub>bigsugar_200-225_adm</sub> = 4 <br>
-
-<i>N</i><sub>bigsugar_225-250_nb</sub> = 3 <br>
-<i>N</i><sub>bigsugar_225-250_smb</sub> = 0 <br>
-<i>N</i><sub>bigsugar_225-250_adm</sub> = 2 <br>
-
-<i>N</i><sub>bigsugar_250-275_nb</sub> = 1 <br>
-<i>N</i><sub>bigsugar_250-275_smb</sub> = 1 <br>
-<i>N</i><sub>bigsugar_250-275_adm</sub> = 1 <br>
-
-<i>N</i><sub>bigsugar_275-300_nb</sub> = 3 <br>
-<i>N</i><sub>bigsugar_275-300_smb</sub> = 2 <br>
-<i>N</i><sub>bigsugar_275-300_adm</sub> = 3 <br>
-
-<i>N</i><sub>bigsugar_300-325_nb</sub> = 5 <br>
-<i>N</i><sub>bigsugar_300-325_smb</sub> = 1 <br>
-<i>N</i><sub>bigsugar_300-325_adm</sub> = 5 <br>
-
-<i>N</i><sub>bigsugar_325-350_nb</sub> = 1 <br>
-<i>N</i><sub>bigsugar_325-350_smb</sub> = 0 <br>
-<i>N</i><sub>bigsugar_325-350_adm</sub> = 3 <br>
-
-<i>N</i><sub>bigsugar_350-375_nb</sub> =  1c<br>
-<i>N</i><sub>bigsugar_350-375_smb</sub> = 0 <br>
-<i>N</i><sub>bigsugar_350-375_adm</sub> = 0 <br>
-
-<i>N</i><sub>bigsugar_375-400+_nb</sub> = 2 <br>
-<i>N</i><sub>bigsugar_375-400+_smb</sub> = 0 <br>
-<i>N</i><sub>bigsugar_375-400+_adm</sub> = 2 <br>
-
-<i>N</i><sub>elk_200-225_nb</sub> = 3 <br>
-<i>N</i><sub>elk_200-225_smb</sub> = 2 <br>
-<i>N</i><sub>elk_200-225_adm</sub> = 5 <br>
-
-<i>N</i><sub>elk_225-250_nb</sub> = 6 <br>
-<i>N</i><sub>elk_225-250_smb</sub> = 2 <br>
-<i>N</i><sub>elk_225-250_adm</sub> = 6 <br>
-
-<i>N</i><sub>elk_250-275_nb</sub> = 6 <br>
-<i>N</i><sub>elk_250-275_smb</sub> = 3 <br>
-<i>N</i><sub>elk_250-275_adm</sub> = 8 <br>
-
-<i>N</i><sub>elk_275-300_nb</sub> = 6 <br>
-<i>N</i><sub>elk_275-300_smb</sub> = 1 <br>
-<i>N</i><sub>elk_275-300_adm</sub> = 5 <br>
-
-<i>N</i><sub>elk_300-325_nb</sub> = 2 <br>
-<i>N</i><sub>elk_300-325_smb</sub> = 0 <br>
-<i>N</i><sub>elk_300-325_adm</sub> = 5 <br>
-
-<i>N</i><sub>elk_325-350_nb</sub> = 0 <br>
-<i>N</i><sub>elk_325-350_smb</sub> = 1 <br>
-<i>N</i><sub>elk_325-350_adm</sub> = 2 <br>
-
-<i>N</i><sub>elk_350-375_nb</sub> = 0 <br>
-<i>N</i><sub>elk_350-375_smb</sub> = 0 <br>
-<i>N</i><sub>elk_350-375_adm</sub> = 1 <br>
-
-<i>N</i><sub>elk_375-400+_nb</sub> = 3 <br>
-<i>N</i><sub>elk_375-400+_smb</sub> = 1 <br>
-<i>N</i><sub>elk_375-400+_adm</sub> = 2 <br>
-
-These sample sizes were used as the basis for Table 1b.
-
-### STEP 4. Validate ancestry group assignment using Discriminant Analysis of Principal Components (DAPC).
-In this step, we validate the group assignments used in STEP 3 above using DAPC.
-
-#### 4a. Read in genotype data and format for DAPC (convert to genind object for DFA); run the Rmd chunk below.
-In this step, we format the genotype data (two columns per locus, each column containing a three digit code for each allele at a locus) for analysis in DAPC. The dapc() function in the adegenet package requires genotypes to be in genind format, so we prepare the genotype file for conversion using the df2genind() function.
-
-##### Convert genotypes to genind format:
-```{r}
-## Load in full ancestry data
-load("data/processed_ancestry_data/full_ancestry_data.Rda")
-
-# Read in the fully processed genotype data
-genotypes <- read_excel("data/processed_genotype_data/genotype_data.xlsx")
-
-# Concatenate alleles for each locus (each locus has 2 columns in the original dataset, each with one allele at that locus)
-genotypes <- genotypes %>%
-  unite("mdo9", c(2:3), sep = "") %>%
-  unite("mdo5", c(3:4), sep = "") %>%
-  unite("mdo7", c(4:5), sep = "") %>%
-  unite("mdo10", c(5:6), sep = "") %>%
-  unite("mdo6", c(6:7), sep = "") %>%
-  unite("mdo3", c(7:8), sep = "") %>%
-  unite("mdo2", c(8:9), sep = "") %>%
-  unite("lma21", c(9:10), sep = "") %>%
-  unite("msaf29", c(10:11), sep = "") %>%
-  unite("msaf05", c(11:12), sep = "") %>%
-  unite("msaf14", c(12:13), sep = "") %>%
-  unite("msaf17", c(13:14), sep = "") %>%
-  unite("msaf09", c(14:15), sep = "") %>%
-  unite("msaf06", c(15:16), sep = "")
-
-# Remove the first column
-genotypes <- genotypes[,-c(1)]
-
-# Create factor for ancestry group
-ancestry_group <- factor(full_ancestry_data$ancestry_group)
-
-# Convert genotypes to genind object
-genind <- df2genind(genotypes,
-                    ncode = 3, 
-                    pop = ancestry_group, 
-                    ploidy = 2)
-
-# Scale genind object, filling NA's with imputed means
-genind <- scaleGen(genind, 
-                   center = TRUE, 
-                   scale = TRUE,
-                   NA.method = c("mean"), 
-                   truenames = TRUE)
-
-# Save genind for downstream processing and plotting
-save(genind, file = "data/processed_ancestry_data/genind.Rda")
-```
-
-#### 4b. Run 10-fold cross-validation on genotype data; run the Rmd chunk below.
-In this step, we run a cross-validation analysis, using 90% of samples in the data as a training set and 10% of data as a test set, maximum number of pcs at 100, and 30 replicates per PC value tested, to choose the number of PCs to use in each analysis. We choose the number of PCs that maximizes successful assignment to our <i>a priori</i> defined populations, which will then give us the optimal clustering patterns of the data.
-
-##### Run 10-fold cross-validation and generate plot: `dapc_xval.pdf`
-```{r}
-# Load in genind object for analysis
-load("data/processed_ancestry_data/genind.Rda")
-
-# Run 10-fold cross-validation
-xval <- xvalDapc(genind, 
-                 ancestry_group, 
-                 n.pca.max = 100, 
-                 training.set = 0.9,
-                 result = "groupMean", 
-                 center = TRUE, 
-                 scale = FALSE,
-                 n.pca = NULL,
-                 n.rep = 30, 
-                 xval.plot = TRUE)
-
-# Get xval data 
-xval_data <- as.data.frame(xval$`Cross-Validation Results`) 
-
-# Get mean of assignment success for plotting
-xval_aves <- xval_data %>%
-  group_by(n.pca) %>%
-  summarize(mean_success = mean(success))
-
-# Get standard deviation of assignment success for plotting
-xval_sd <- xval_data %>%
-  group_by(n.pca) %>%
-  summarize(sd_success = sd(success))
-
-# Merge averages and standard deviations for plotting
-xval_data <- merge(xval_aves,
-                   xval_sd, 
-                   by = "n.pca")
-
-# Save xval data for plotting
-save(xval_data, file = "data/processed_ancestry_data/xval_data.Rda")
-
-# Load in xval data for plotting
-load("data/processed_ancestry_data/xval_data.Rda")
-
-# Plot cross validation results for SPB vs. SMBC
-pdf("figures/dapc_xval.pdf", width=8, height=6)
-
-ggplot(xval_data, aes(x = n.pca, y = mean_success)) +
-  geom_errorbar(aes(ymin = mean_success - sd_success, ymax = mean_success + sd_success), width=1) +
-  geom_point(fill = "grey", color = "black", pch = 21, size = 5, show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "PCs retained", y = "Average CV success (%)") +
-  theme(axis.text = element_text(size = 20)) +
-  theme(axis.title = element_text(size = 20)) +
-  scale_x_continuous("PCs retained", labels = as.character(xval_data$n.pca), breaks = xval_data$n.pca) +
-  theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
-
-dev.off()
-```
-
-This plot is the basis for Figure S2b in the final manuscript.
-
-We found that the optimal number of PCs for DAPC (based on 10-fold cross-validation analysis) is 30. We therefore input 30 as the number of PCs to retain for analysis.
-
-#### 4c. Run DAPC analysis; run the Rmd chunk below.
-In this step, we run DAPC analysis.
-
-##### Run DAPC and plot: 1) `figures/dapc.pdf` and 2) `figures/dapc_legends.pdf`
-```{r}
-# Load in genind object for analysis
-load("data/processed_ancestry_data/genind.Rda")
-
-## Load in full ancestry data
-load("data/processed_ancestry_data/full_ancestry_data.Rda")
-
-# Create factor for ancestry group
-ancestry_group <- factor(full_ancestry_data$ancestry_group)
-
-# Run DAPC at inferred optimal number of PCs
-dapc <- dapc(genind, ancestry_group)
-
-# We selected 30 PCs and 2 Discriminant Functions to retain (see figure inset)
-
-#Save dapc for future plotting
-save(dapc, file = "data/processed_ancestry_data/dapc.Rda")
-```
-
-#### 4d: Plot DAPC results; run the Rmd chunk below.
-In this step, we plot DAPC results using built-in functions in the R package "adegenet."
-
-##### Plot DAPC results: 1) `figures/dapc.pdf` and 2) `figures/dapc_legends.pdf`
-```{r}
-# Load DAPC results
-load("data/processed_ancestry_data/dapc.Rda")
-
-# Choose color palette for plotting.
-color_palette <- c("mediumpurple","deepskyblue","deeppink2")
-
-## Generate two plots: 1) genotype data in DAPC WITHOUT LEGENDS (We created a second figure with labels so they could be cut and pasted into the first figure, giving more control over placement and aesthetics); and 2) genotype data WITH LEGENDS
-
-# Plot genetic data WITHOUT LEGENDS
-pdf("figures/dapc.pdf", width = 5, height = 3)
-
-scatter(dapc, 
-        legend = F,
-        col = color_palette, 
-        clab = 0, 
-        cstar = 1,
-        cex = 2,
-        scree.pca = F,
-        posi.pca = "topleft",
-        scree.da = F,
-        posi.da = "topright",
-        cell = 2.5)
-
-dev.off()
-
-# Plot genetic data WITH LEGENDS
-pdf("figures/dapc_legends.pdf", width = 10, height = 10)
-
-scatter(dapc, 
-        legend = F,
-        col = color_palette, 
-        clab = 0, 
-        cstar = 1,
-        cex = 2,
-        scree.pca = T,
-        posi.pca = "topleft",
-        scree.da = T,
-        posi.da = "topright",
-        cell = 1)
-
-dev.off()
-```
-
-These plots are the basis for Figure S2c in the final manuscript.
-
-### ----------------------- END OF PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION ----------------------- ###
-
-### ----------------------- END OF ANALYSIS 2: ANCESTRY INFERENCE AND GENETIC GROUP ASSIGNMENT ANALYSIS ----------------------- ###
-
-### Extra stuff for deciding whether three data points should switch ancestry group labels.
-
-load("data/processed_ancestry_data/dapc.Rda")
-
-data <- data.frame(cbind(dapc$ind.coord, ancestry_group))
-
-data_neosho <- data %>%
-  filter(ancestry_group == "2")
-
-data_admix %>%
-  arrange(LD1)
-
-data_neosho %>%
-  arrange(LD1)
-  
-Indidivudal 2 and 4 in the dataset should become neosho_bass
-
-Individual 39 should be admixed
-
-full_ancestry_data
+### Global mean ancestry proportions (standard deviations)
+<b>NB</b> = 0.134275 (0.06554603) 
+<b>SMB</b> = 0.865725 (0.06554603)
 
+## Samples
+
+### Global mean ancestry proportions (standard deviations)
+<b>NB</b> = 0.6176129 (0.2396801)
+<b>SMB</b> = 0.3823871 (0.2396801) 
+
+### Mean ancestry proportions by size bin (standard deviations)
+<b>SMB</b><sub>200-225</sub>	0.4027450	(0.2541078)
+<b>NB</b><sub>200-225</sub>	0.5972550 (0.2541078)
+
+<b>SMB</b><sub>225-250</sub>	0.3557474	(0.2427747)	
+<b>NB</b><sub>225-250</sub> 0.6442526	(0.2427747)
+
+<b>SMB</b><sub>250-275</sub>	0.4123150	(0.2587338)
+<b>NB</b><sub>250-275</sub>	0.5876850	(0.2587338)
+
+<b>SMB</b><sub>275-300</sub>	0.3689700	(0.2549745)	
+<b>NB</b><sub>275-300</sub> 0.6310300	(0.2549745)
+
+<b>SMB</b><sub>300-325</sub>	0.3407167	(0.1844219)
+<b>NB</b><sub>300-325</sub>	0.6592833	(0.1844219)
+
+<b>SMB</b><sub>325-350</sub>	0.5326714	(0.2452440)	
+<b>NB</b><sub>325-350</sub> 0.4673286	(0.2452440)
+
+<b>SMB</b><sub>350-375</sub>	0.2040000	(0.1178040)	
+<b>NB</b><sub>350-375</sub> 0.7960000	(0.1178040)
+
+<b>SMB</b><sub>375-400</sub> 0.4560000	(0.2777949)
+<b>NB</b><sub>375-400</sub>	0.5440000	(0.2777949)
+
+<b>SMB</b><sub>400+</sub>	0.2278750	(0.1269682)
+<b>NB</b><sub>400+</sub>	0.7721250	(0.126968)
+
+### Mean ancestry proportions by stream (standard deviations)
+<b>SMB</b><sub>Big Sugar</sub> 0.3639348	(0.2321879)
+<b>NB</b><sub>Big Sugar</sub> 	0.6360652	(0.2321879)
+
+<b>SMB</b><sub>Elk</sub> 0.3945129	(0.2453744)
+<b>NB</b><sub>Elk</sub>	0.6054871	(0.2453744)
+
+### Mean ancestry proportions by sex (standard deviations)
+<b>SMB</b><sub>Female</sub> 0.3846017	(0.2557877)	
+<b>NB</b><sub>Female</sub> 0.6153983	(0.2557877)
+
+<b>SMB</b><sub>Male</sub>	0.3800947	(0.2240447)
+<b>NB</b><sub>Male</sub> 0.6199053	(0.2240447)
