@@ -86,9 +86,9 @@ model {
   // * Priors ----
   // - Global parameters
   // - Starks, T. A., & Rodger, A. W. (2020). Otolith and scale‐based growth standards for lotic Smallmouth Bass. North American Journal of Fisheries Management, 40(4), 986-994.
-  mu_linf ~ lognormal(log(578), 0.02432599);
-  mu_k ~ lognormal(log(0.125), 0.04580929);
-  mu_t0 ~ normal(-1.79, 0.0625);
+  mu_linf ~ lognormal(log(578), 0.02432599 * 10);
+  mu_k ~ lognormal(log(0.125), 0.04580929 * 10);
+  mu_t0 ~ normal(-1.79, 0.0625 * 10);
   
   // - Ancestry level variation priors
   sigma_group ~ normal(0, eta_scale_prior);
@@ -122,9 +122,9 @@ generated quantities{
   // - Only doing group level
   
   // - VBGF Params 
-  real prior_mu_linf = lognormal_rng(log(578), 0.02432599);      // asymptotic length
-  real prior_mu_k = lognormal_rng(log(0.125), 0.04580929);       // growth coef
-  real prior_mu_t0 = normal_rng(-1.79, 0.0625);                  // age at length 0
+  real prior_mu_linf = lognormal_rng(log(578), 0.02432599 * 10);      // asymptotic length
+  real prior_mu_k = lognormal_rng(log(0.125), 0.04580929 * 10);       // growth coef
+  real prior_mu_t0 = normal_rng(-1.79, 0.0625 * 10);                  // age at length 0
   matrix[2, 3] prior_eta_lineage;                                // Ancestry level deviation
   // matrix[Nind, 3] prior_eta_ind;                                 // Individual deviation from VBGF parameters
   

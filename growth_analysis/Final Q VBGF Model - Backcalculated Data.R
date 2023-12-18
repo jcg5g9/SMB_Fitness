@@ -9,9 +9,9 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
 
 # - MCMC specifications
-control = list(adapt_delta=0.90, stepsize=0.01, max_treedepth=14)
+control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
 # control = list()
-warmup = 5000       # number of warmup iterations per chain
+warmup = 6000       # number of warmup iterations per chain
 thin = 2
 iter = 6000        # final number of iterations per chain
 
@@ -49,7 +49,7 @@ dat = list(
   
   eta_scale_prior = 0.5, 
   cholesky_prior = 3,
-  beta_scale = 1, 
+  beta_scale = 0.5, 
   
   Nind = Nind,
   Ncoef = 2,
@@ -190,13 +190,18 @@ hist(draws$`prior_t0_lineage[1]`-draws$`prior_t0_lineage[2]`, xlab = "t0 diff", 
 par(mfrow = c(1,1))
 
 
+# * Posterior prior plots ----
+source("growth_analysis/Plot densities.R")
+plot_density(fit_backcalculated, file_name = "growth_analysis/Figures/backcalculated")
+
+
 # * Summary ----
 summ <- summary(fit_backcalculated, probs=c(.1,.5,.9))$summary
-summ <- summary(fit_backcalculated, pars=c("mu_linf", "mu_k", "mu_t0", "linf_lineage", "post_linf_diff", "k_lineage", "post_k_diff", "t0_lineage", "post_t0_diff", "beta_linf", "beta_k", "beta_t0"), probs=c(.0125, 0.05, .5, 0.95, .975))$summary # None of the betas are sig
+summ <- summary(fit_backcalculated, pars=c("mu_linf", "mu_k", "mu_t0", "linf_lineage", "post_linf_diff", "k_lineage", "post_k_diff", "t0_lineage", "post_t0_diff", "beta_linf", "beta_k", "beta_t0"), probs=c(.025, 0.05, .5, 0.95, .975))$summary # None of the betas are sig
 summ <- as.data.frame(summ)
 summ$parameter <- rownames(summ)
 summ <- summ %>%
-  select(parameter, mean, `1.25%`, `5%`, `50%`, `95%`, `97.5%`)
+  select(parameter, mean, `2.5%`, `5%`, `50%`, `95%`, `97.5%`)
 write.csv(summ, file = "growth_analysis/Table2_backcalculated_param.csv")
 
 
@@ -205,7 +210,7 @@ length_at_age_diff <- draws[,grepl("pred_length\\[2,",colnames(draws))] - draws[
 colnames(length_at_age_diff) <- paste0("Difference at ", 1:8, " annuli")
 length_at_age_diff <- rbind(
   apply(length_at_age_diff, 2, mean), 
-  apply(length_at_age_diff, 2, function(x) quantile(x, probs=c(.0125, 0.05, .5, 0.95, .975)))
+  apply(length_at_age_diff, 2, function(x) quantile(x, probs=c(.025, 0.05, .5, 0.95, .975)))
 )
 length_at_age_diff <- t(length_at_age_diff)
 
@@ -214,7 +219,7 @@ length_at_age_smb <- draws[,grepl("pred_length\\[2,",colnames(draws))]
 colnames(length_at_age_smb) <- paste0("SMB ",  1:8, " annuli")
 length_at_age_smb <- rbind(
   apply(length_at_age_smb, 2, mean), 
-  apply(length_at_age_smb, 2, function(x) quantile(x, probs=c(.0125, 0.05, .5, 0.95, .975)))
+  apply(length_at_age_smb, 2, function(x) quantile(x, probs=c(.025, 0.05, .5, 0.95, .975)))
 )
 length_at_age_smb <- t(length_at_age_smb)
 
@@ -222,7 +227,7 @@ length_at_age_n <- draws[,grepl("pred_length\\[6,",colnames(draws))]
 colnames(length_at_age_n) <- paste0("NB ", 1:8, " annuli")
 length_at_age_n <- rbind(
   apply(length_at_age_n, 2, mean), 
-  apply(length_at_age_n, 2, function(x) quantile(x, probs=c(.0125, 0.05, .5, 0.95, .975)))
+  apply(length_at_age_n, 2, function(x) quantile(x, probs=c(.025, 0.05, .5, 0.95, .975)))
 )
 length_at_age_n <- t(length_at_age_n)
 
