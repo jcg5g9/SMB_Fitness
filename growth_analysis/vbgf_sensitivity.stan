@@ -84,9 +84,9 @@ model {
   // * Priors ----
   // - Global parameters
   // - Starks, T. A., & Rodger, A. W. (2020). Otolith and scale‐based growth standards for lotic Smallmouth Bass. North American Journal of Fisheries Management, 40(4), 986-994.
-  mu_linf ~ lognormal(log(578), 0.02432599);
-  mu_k ~ lognormal(log(0.125), 0.04580929);
-  mu_t0 ~ normal(-1.79, 0.0625);
+  mu_linf ~ lognormal(log(578), 0.02432599 * 10);
+  mu_k ~ lognormal(log(0.125), 0.04580929 * 10);
+  mu_t0 ~ normal(-1.79, 0.0625 * 10);
   
   // - Ancestry level variation priors
   sigma_group ~ normal(0, eta_scale_prior);
@@ -113,10 +113,12 @@ generated quantities{
   // - Only doing group level
   
   // - VBGF Params 
-  real prior_mu_linf = lognormal_rng(log(578), 0.02432599);      // asymptotic length
-  real prior_mu_k = lognormal_rng(log(0.125), 0.04580929);       // growth coef
-  real prior_mu_t0 = normal_rng(-1.79, 0.0625);                  // age at length 0
-  matrix[2, 3] prior_eta_lineage;                                // Ancestry level deviation
+  real prior_mu_linf = lognormal_rng(log(578), 0.02432599 * 10);      // asymptotic length
+  real prior_mu_k = lognormal_rng(log(0.125), 0.04580929 * 10);       // growth coef
+  real prior_mu_t0 = normal_rng(-1.79, 0.0625 * 10);                  // age at length 0
+  matrix[2, 3] prior_eta_lineage;                                     // Ancestry level deviation
+  vector[3] prior_eta_lineage_SMB;                                    // Ancestry level deviation
+  vector[3] prior_eta_lineage_NB;                                     // Ancestry level deviation
   
   // - Regressors
   vector[Ncoef] prior_beta_linf;
@@ -167,9 +169,12 @@ generated quantities{
     prior_beta_t0[i] = normal_rng(0, beta_scale);
   }
   
-  for(i in 1:2){
-    prior_eta_lineage[i,] = to_row_vector(multi_normal_cholesky_rng(Zero, diag_pre_multiply(prior_sigma_group, prior_Lcorr)));
-  }
+  prior_eta_lineage_SMB = multi_normal_cholesky_rng(Zero, diag_pre_multiply(prior_sigma_group, prior_Lcorr));
+  prior_eta_lineage_NB = multi_normal_cholesky_rng(Zero, diag_pre_multiply(prior_sigma_group, prior_Lcorr));
+  
+  prior_eta_lineage[1,] = to_row_vector(prior_eta_lineage_SMB);
+  prior_eta_lineage[2,] = to_row_vector(prior_eta_lineage_NB);
+  
   
   // - Group level transformed parameters
   prior_linf_lineage = prior_mu_linf * exp(prior_eta_lineage[,1]);
