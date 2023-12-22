@@ -140,6 +140,7 @@ metadata %>%
 genotype_data %>% 
   filter(!genotype_data$sample_id %in% metadata$sample_id)
 ```
+
 We found no discrepancies in the data.
 
 ### STEP 3: Read in phenotype data data for samples

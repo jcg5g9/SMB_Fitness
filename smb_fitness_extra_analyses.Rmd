@@ -3255,3 +3255,24 @@ full_ancestry_data
 <i>N</i><sub>elk_375-400+_nb</sub> = 3 <br>
 <i>N</i><sub>elk_375-400+_smb</sub> = 1 <br>
 <i>N</i><sub>elk_375-400+_adm</sub> = 2 <br>
+
+
+# Plot frequency histogram of body condition values to test for conformity to normal distribution
+pdf("figures/condition_normality.pdf", width = 6, height = 4)
+
+ggplot(condition_data, aes(x = condition)) +
+  geom_histogram(aes(y=..density..), fill = "grey", binwidth = 0.0008, color = "black", show.legend = F) +
+  stat_function(fun = dnorm, args = list(mean = mean(condition_data$condition), sd = sd(condition_data$condition)), color = "blue", linetype = "solid", size = 1) +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Condition (g/cm3)", y = "Density") +
+  xlab(expression(Condition~(g/cm^{"3"}))) + 
+  scale_fill_manual(values = c("grey")) +
+  theme(axis.title = element_text(size = 15)) +
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+
+# Test body condition for conformity to normal distribution
+shapiro.test(condition_data$condition)
