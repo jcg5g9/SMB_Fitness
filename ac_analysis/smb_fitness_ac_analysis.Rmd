@@ -272,19 +272,18 @@ colnames(h) <- c("structure_number","h")
   
 condition_data <- merge(condition_data, h, by = "structure_number")
 
-ggplot(condition_data, aes(x = h, y = condition)) +
+ggplot(condition_data, aes(x = h, y = condition)) + 
   geom_point() +
   geom_smooth(method = "lm")
 
-condition_data_4 <- condition_data %>%
-  filter(consensus_age <= 4) %>%
-  mutate(condition_alive = mass_dead/(tl_alive^3))
+condition_data_4_fbs13 <- condition_data %>%
+  mutate(condition_mod = mass_dead/(tl_alive^3))
 
-ggplot(condition_data_4, aes(x = h, y = condition_alive)) +
+ggplot(condition_data_4_fbs13, aes(x = smb, y = condition_mod)) + 
   geom_point() +
   geom_smooth(method = "lm")
 
-summary(lm(condition ~ h, data = condition_data_4))
+summary(lm(condition_mod ~ smb, data = condition_data_4_fbs13))
 
 ```
 
