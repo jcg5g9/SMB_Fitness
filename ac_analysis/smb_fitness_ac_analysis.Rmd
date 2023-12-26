@@ -272,6 +272,17 @@ colnames(h) <- c("structure_number","h")
   
 condition_data <- merge(condition_data, h, by = "structure_number")
 
+ggplot(condition_data, aes(x = tl_alive, h)) + 
+  geom_point(position = position_jitter(width = 0.2)) +
+  geom_smooth(method = "lm")
+
+condition_nb <- condition_data %>%
+  filter(smb < 0.25)
+
+ggplot(condition_nb, aes(x = smb, y = h, color = ancestry_group)) + 
+  geom_point() +
+  geom_smooth(method = "lm")
+
 ggplot(condition_data, aes(x = h, y = condition)) + 
   geom_point() +
   geom_smooth(method = "lm")
