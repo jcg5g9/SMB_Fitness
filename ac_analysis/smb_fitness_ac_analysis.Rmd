@@ -239,64 +239,7 @@ length(which(b2>0))/length(b2) #98.6 % - Riv
 length(which(b3<0))/length(b3) # 74.4 % - Sex
 ```
 
-### PHASE 2: LINEAR REGRESSION OF HETEROZYGOSITY AND CONDITION
-In this step, we use a generalized linear model in a Bayesian hierarchical framework to assess the correlation between non-native SMB ancestry and body condition in the NB native range. 
 
-#### STEP 1: Load and prepare data for analysis; run the Rmd chunk below.
-In this step, we load the raw condition data calculated in Phase 1, Step 1c above and prepare for the Bayesian generalized linear model analysis.
-
-##### Assess heterozygosity-fitness correlation:
-```{r}
-load("../filtering_analysis/data/processed_raw_data/genotype_data.Rda")
-load("data/condition_data.Rda")
-
-genotype_data <- genotype_data %>%
-  select(-c(1)) %>%
-  filter(!str_detect(structure_number, "REF"))
-
-genotype_data <- column_to_rownames(genotype_data, "structure_number")
-
-ibr_data <- convert_raw(genotype_data)
-check_data(ibr_data)
-
-g2 <- g2_microsats(ibr_data, 
-                   nperm = 1000, 
-                   nboot = 1000, 
-                   CI = 0.95)
-
-h <- data.frame(sMLH(ibr_data))
-
-h <- rownames_to_column(h)
-
-colnames(h) <- c("structure_number","h")
-  
-condition_data <- merge(condition_data, h, by = "structure_number")
-
-ggplot(condition_data, aes(x = tl_alive, h)) + 
-  geom_point(position = position_jitter(width = 0.2)) +
-  geom_smooth(method = "lm")
-
-condition_nb <- condition_data %>%
-  filter(smb < 0.25)
-
-ggplot(condition_nb, aes(x = smb, y = h, color = ancestry_group)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
-
-ggplot(condition_data, aes(x = h, y = condition)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
-
-condition_data_4_fbs13 <- condition_data %>%
-  mutate(condition_mod = mass_dead/(tl_alive^3))
-
-ggplot(condition_data_4_fbs13, aes(x = smb, y = condition_mod)) + 
-  geom_point() +
-  geom_smooth(method = "lm")
-
-summary(lm(condition_mod ~ smb, data = condition_data_4_fbs13))
-
-```
 
 
 

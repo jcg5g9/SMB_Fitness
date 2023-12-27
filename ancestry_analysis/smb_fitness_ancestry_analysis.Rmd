@@ -531,8 +531,6 @@ pdf("figures/k2_smb_ancestry.pdf", width=140, height=12)
 
 ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) + 
   geom_bar(stat = "identity", show.legend = T, color = "black") +
-  geom_hline(yintercept = 0.25, color = "black", linetype = "longdash", size = 4) +
-  geom_hline(yintercept = 0.75, color = "black", linetype = "longdash", size = 4) +
   theme_set(theme_cowplot(12)) +
   labs(x = "Individual", y = "q") +
   scale_fill_manual(values = c("deepskyblue", "deeppink2")) +

@@ -530,7 +530,6 @@ full_bc_data %>%
   group_by(annulus, ancestry_group) %>%
   summarize(mean_bctl = mean(bc_tl),
             sd_bctl = sd(bc_tl))
-
 ```
 
 <b>Summary of back-calculated length-at-age sample sizes</b>:
