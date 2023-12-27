@@ -192,7 +192,7 @@ par(mfrow = c(1,1))
 
 # * Posterior prior plots ----
 source("growth_analysis/Plot densities.R")
-plot_density(fit_backcalculated, file_name = "growth_analysis/Figures/backcalculated")
+plot_density(fit_backcalculated, file_name = "growth_analysis/Figure3_backcalculated", probs = c(0.01, 0.99))
 
 
 # * Summary ----
