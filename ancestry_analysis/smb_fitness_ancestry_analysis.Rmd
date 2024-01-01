@@ -36,6 +36,7 @@ library(cowplot)
 library(readxl)
 library(writexl)
 library(genepopedit)
+library(inbreedR)
 ```
 
 ## PHASE 1: ANCESTRY INFERENCE
@@ -345,7 +346,7 @@ In this step, we used the software program CLUMPP (Jakobbson and Rosenberg 2007)
 ###### 2g.3.4. For each analysis separately, copy the 'pop_K#-combined.txt' file and 'paramfile' over to the CLUMPP directory (`CLUMPP_Linux64.1.1.2`)
 
 ###### 2g.3.5. For each analysis separately, execute CLUMPP on the paramfile; run the code `./CLUMPP paramfile`
-We are running this code with GREEDY OPTION 2, which uses random sampling of replicate runs. 
+We run this code with GREEDY OPTION 2, which uses random sampling of replicate runs. 
 
 This code generates three additional files, which we moved back to the corresponding pop_K folder in the clumpp_data directory:
 
@@ -386,62 +387,147 @@ In this step, we collect Smallmouth Bass and Neosho Bass ancestry coefficients f
 ##### Isolate ancestry coefficient data:
 ```{r}
 # Read in merged runs from STRUCTURE (file generated in CLUMPP)
-ancestry <- read.table("data/structure_data/clumpp_data/pop_K2/pop_K2-combined-merged.txt", header = F)
+q <- read.table("data/structure_data/clumpp_data/pop_K2/pop_K2-combined-merged.txt", header = F)
 
 # Remove first and last columns (they are not needed)
-ancestry <- ancestry[,-c(1,4)]
+q <- q[,-c(1,4)]
 
 ## Bind Structure Number metadata to ancestry data
 # Load in saved metadata
 load("../filtering_analysis/data/processed_raw_data/metadata.Rda")
 
 # Bind metadata to ancestry data
-ancestry <- cbind(metadata$structure_number, 
-                  ancestry)
+q <- cbind(metadata$structure_number, 
+           q)
 
 # Name columns based on majority ancestry
-colnames(ancestry) <- c("structure_number", "nb", "smb")
+colnames(q) <- c("structure_number", "nb", "smb")
 
 # Save processed ancestry data
-save(ancestry, file = "data/structure_data/ancestry_data/ancestry.Rda")
+save(q, file = "data/structure_data/ancestry_data/q.Rda")
 ```
 
 ### ----------------------- END OF PHASE 1: ANCESTRY INFERENCE ----------------------- ###
 
-## PHASE 2: ANCESTRY GROUP ASSIGNMENT AND VISUALIZATION
-In this phase of analysis, we use the individual ancestry coefficients for Smallmouth Bass and Neosho Bass calculated in STRUCTURE (see Phase 1 above) to assign each fish in the Neosho range (Big Sugar Creek and Elk River) to one of three ancestry groups: 1) pure Smallmouth Bass, 2) pure Neosho Bass, or 3) Admixed. We visualize ancestry coefficients and ancestry group assignment proportions in each river, and we use group assignments for growth and heterozygosity-fitness correlation analysis in Analyses 4 and 5, respectively.
+## PHASE 2: HETEROZYGOSITY INFERENCE
+In this phase of the analysis, we compute standardized multilocus heterozygosity for each individual, which is the individual heterozygosity relative to the global mean heterozygosity value. 
 
-### STEP 1: Order ancestry data for effective plotting; run the Rmd chunk below.
+### STEP 1: Read in raw genotype data and convert to input format for inbreedR package.
+In this step, we convert the raw genotype data into the correct input format for the inbreedR package (which is used to assess heterozygosity fitness correlation)
+
+#### 1a: Read in and format raw genotype data; run the Rmd chunk below.
+
+##### Read in and format data for inbreedR:
+```{r}
+# Load genotype data
+load("../filtering_analysis/data/processed_raw_data/genotype_data.Rda")
+
+# Omit sample id column, only retaining raw genotype data
+genotype_data <- genotype_data[,-c(1)]
+
+# generate dataframe for inbreedR; convert sample id column into row names
+ibr <- column_to_rownames(genotype_data, "structure_number")
+
+# Convert data to inbreedR format
+ibr <- convert_raw(ibr)
+
+# Check dataset in inbreedR
+check_data(ibr)
+
+# Save inbreedR data object
+save(ibr, file = "data/inbreedr_data/ibr.Rda")
+```
+
+### STEP 2: Calculate g2 statistic and heterozygosity values (significant g2 indicates that heterozygosity values are correlated such that they are indicative of genome-wide heterozygosity)
+
+#### 2a: Calculate g2 statistic; run the Rmd chunk below:
+
+##### Calculate g2 statistic:
+```{r}
+# Load ibr data
+load("data/inbreedr_data/ibr.Rda")
+
+# Calculate g2 statistic in inbreedR
+g2 <- g2_microsats(ibr,
+                   nperm = 1000, 
+                   nboot = 1000, 
+                   CI = 0.95)
+```
+
+Results Summary: 
+
+p(g2) = 0.019 (significant); there is sufficient power to detect genome-wide heterozygosity
+
+#### 2b: Calculate standardized multilocus heterozygosity; run the Rmd chunk below:
+
+##### Calculate heterozygosity:
+```{r}
+# Load ibr data
+load("data/inbreedr_data/ibr.Rda")
+
+# Compute standardized multi-locus heterozygosity
+h <- sMLH(ibr)
+
+# Convert to data frame
+h <- data.frame(h)
+
+# Convert rownames (sample id) back to column
+h <- rownames_to_column(h, "structure_number")
+
+# Convert characters to factors for sample id column
+h <- h %>%
+  mutate(structure_number = factor(structure_number))
+
+# Save heterozygosity data object
+save(h, file = "data/inbreedr_data/h.Rda")
+```
+
+### ----------------------- END OF PHASE 2: HETEROZYGOSITY INFERENCE ----------------------- ###
+
+## PHASE 3: ANCESTRY AND HETEROZYGOSITY VISUALIZATION
+In this phase of analysis, we visualize ancestry coefficients and heterozygosity across the full sample set.
+
+### STEP 1: Order ancestry data for plotting; run the Rmd chunk below.
 In this step, we arrange samples with the Smallmouth Bass range (reference samples) and samples within the Neosho Bass range (Big Sugar Creek and Elk River samples) in order of Smallmouth Bass ancestry coefficient for effective plotting.
 
 ##### Arrange Smallmouth Bass reference samples and Neosho Bass samples separately in order of Smallmouth Bass ancestry coefficient:
 ```{r}
-# Load in processed ancestry data
-load("data/structure_data/ancestry_data/ancestry.Rda")
+# Load processed ancestry data
+load("data/structure_data/ancestry_data/q.Rda")
+
+# Load processed heterozygosity data
+load("data/inbreedr_data/h.Rda")
 
 # Separate out and create data frame for Neosho Bass samples only
-ancestry_nb <- ancestry[c(1:116),]
+q_nb <- q[c(1:116),]
+h_nb <- h[c(1:116),]
 
-# Name columns based on majority ancestry
-colnames(ancestry_nb) <- c("structure_number", "nb", "smb")
+# Merge ancestry and heterozygosity data
+ancestry_nb <- merge(q_nb, 
+                     h_nb,
+                     by = "structure_number")
 
 # Arrange samples in order of Smallmouth Bass ancestry
 ancestry_nb <- ancestry_nb %>%
   arrange(desc(smb))
 
-# Separate out and create data frame for Smallmouth Bass samples only
-ancestry_smb <- ancestry[c(117:136),]
+# Separate out and create data frame for Neosho Bass samples only
+q_smb <- q[c(117:136),]
+h_smb <- h[c(117:136),]
 
-# Name columns based on majority ancestry
-colnames(ancestry_smb) <- c("structure_number", "nb", "smb")
+# Merge ancestry and heterozygosity data
+ancestry_smb <- merge(q_smb, 
+                     h_smb,
+                     by = "structure_number")
 
 # Arrange samples in order of Smallmouth Bass ancestry
 ancestry_smb <- ancestry_smb %>%
   arrange(desc(smb))
 
+
 # Combine (rbind) nb and smb samples in their arranged order
 ancestry_ordered <- rbind(ancestry_smb, 
-                  ancestry_nb)
+                          ancestry_nb)
 
 # Create rank order column for later plotting (column to give the order of plotting, from 1 to 136)
 ancestry_ordered$rank_order <- as.numeric(c(1:136))
@@ -513,7 +599,7 @@ In this step, we plot all individuals (including sample Big Sugar Creek and Elk 
 load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
 
 # Omit unneeded columns
-ancestry_metadata <- ancestry_metadata[,c(1,11:13)]
+ancestry_metadata <- ancestry_metadata[,c(1,11:14)]
 
 # Gather dataset for plotting and convert variables to factors/characters. 'structure_number' was converted to a character in this step, and then factor levels were set in the next step to ensure that individuals were graphed in the same order as in STRUCTURE (for later direct one-to-one comparison)
 ancestry_metadata <- ancestry_metadata %>%
@@ -544,25 +630,9 @@ dev.off()
 
 This plot is the basis for Figure S3 in the final manuscript.
 
-### STEP 3: Assign individuals to genetic groups based on ancestry proportions and summarize sample sizes for each group.
-In this step, we assign individual fish to one of three "ancestry" groups based on the membership coefficients calculated in STRUCTURE: 1) Pure Smallmouth Bass (<i>q</i><sub>SMB</sub> = 0.75 or greater), 2) Pure Neosho Bass (<i>q</i><sub>NB</sub> = 0.75 or greater), or 3) Admixed (<i>q</i><sub>SMB</sub> = 0.25-0.75). 
+### STEP 3: Summarize ancestry coefficients and heterozygosity for all individuals. 
 
-We chose to set 0.75 as a threshold for ancestry group, given that first generation back-crossed individuals would be expected to possess 75% of their ancestry from one species and 25% to the other. Greater than 75% ancestry could therefore indicate there's a greater probability of pure ancestry in that individual.
-
-#### 3a. Generate a new column in the ancestry metadata set assigning individuals to their respective ancestry group based on membership coefficient; run the Rmd chunk below.
-
-##### Assign individuals to ancestry group and add data to metadata file.
-```{r}
-## Load in ancestry metadata (un-manipulated as in Step 2 above)
-load("data/structure_data/ancestry_data/ancestry_metadata.Rda")
-
-# Categorize sample ids into ancestry groups based on membership coefficient
-ancestry_metadata$ancestry_group <- with(ancestry_metadata, ifelse(smb > 0.75, "Smallmouth_Bass",
-                                             ifelse(nb > 0.75, "Neosho_Bass",
-                                                    ifelse(smb <= 0.75 & nb <= 275, "Admixed", "done"))))
-```
-
-#### 3b. Merge ancestry metadata with full dataset (see Analysis 2) and save for downstream analyses; run the Rmd chunk below.
+#### 3a. Merge ancestry metadata with full dataset (see Analysis 2) and save for downstream analyses; run the Rmd chunk below.
 
 ##### Summarize ancestry group data:
 ```{r}
@@ -587,7 +657,7 @@ full_ancestry_data <- merge(full_data,
 save(full_ancestry_data, file = "data/processed_ancestry_data/full_ancestry_data.Rda")
 ```
 
-#### 3c. Summarize ancestry data by group; run the Rmd chunk below.
+#### 3b. Summarize ancestry data by group; run the Rmd chunk below.
 In this step, we calculate average proportion of SMB and NB ancestry across the global dataset and summarize by size category, streams, and sexes. 
 
 ##### Summarize ancestry group data:
