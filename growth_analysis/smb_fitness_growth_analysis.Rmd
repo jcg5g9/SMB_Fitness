@@ -482,11 +482,6 @@ full_bc_data %>%
   group_by(sex) %>%
   count()
 
-# Get sample size by river
-full_bc_data %>%
-  group_by(ancestry_group) %>%
-  count()
-
 # Get sample size for each annulus for the global dataset (number of fish with a length measurement at each annulus)
 full_bc_data %>%
   group_by(annulus) %>%
@@ -519,17 +514,6 @@ full_bc_data %>%
   group_by(annulus, sex) %>%
   summarize(mean_bctl = mean(bc_tl),
             sd_bctl = sd(bc_tl))
-
-# Get sample size for each annulus for the ancestry group datasets (number of fish with a length measurement at each annulus within each ancestry group)
-full_bc_data %>%
-  group_by(annulus, ancestry_group) %>%
-  count()
-
-# Get mean and standard deviation of back-calculated total length for each sex dataset
-full_bc_data %>%
-  group_by(annulus, ancestry_group) %>%
-  summarize(mean_bctl = mean(bc_tl),
-            sd_bctl = sd(bc_tl))
 ```
 
 <b>Summary of back-calculated length-at-age sample sizes</b>:
@@ -544,12 +528,7 @@ full_bc_data %>%
 <b>Male</b>: 183
 <b>Female</b>: 154
 
-<b><i>By ancestry group</i></b>:
-<b>NB</b>: 134
-<b>SMB</b>: 44
-<b>ADM</b>: 159
-
-### STEP 7: Plot average back-calculated total length for the global dataset, by river, by sex, and by ancestry group, to show general trends.
+### STEP 7: Plot average back-calculated total length for the global dataset, by river, and by sex, to show general trends.
 In this step, we generate box plots to show the average and standard deviation of back-calculated total length across ages (annuli) in the global dataset (including all back-calculated data points), by river, by sex, and by ancestry group.
 
 #### 7a: Plot average back-calculated total length for the global dataset; run the Rmd chunk below.
@@ -625,33 +604,6 @@ ggplot(full_bc_data, aes(x = annulus, y = bc_tl, fill = sex)) +
   labs(x = "Annulus (years)", y = "Back-calculated total length (mm)") +
   theme(axis.title = element_text(size = 15)) +
   theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-dev.off()
-```
-
-#### 7d: Plot average back-calculated total length for ancestry groups; run the Rmd chunk below.
-
-##### Plot mean back-calculated total length for ancestry groups: `figures/vb_plots/ancestry_raw.pdf`
-```{r}
-# Load full bc data
-load("data/bc_data/full_bc_data.Rda")
-
-# Convert annulus (age) to factor for plotting
-full_bc_data <- full_bc_data %>%
-  mutate(annulus = factor(annulus))
-
-pdf("figures/vb_plots/ancestry_raw.pdf", width = 6, height = 4)
-
-ggplot(full_bc_data, aes(x = annulus, y = bc_tl, fill = ancestry_group)) +
-  geom_boxplot(position = position_dodge(), alpha = 0.6, outlier.shape = NA, show.legend = F) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.7, pch = 21, show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_manual(values = c("mediumpurple","deepskyblue","deeppink2")) +
-  labs(x = "Annulus (years)", y = "Back-calculated total length (mm)") +
-  theme(axis.title = element_text(size = 15)) +
-  theme(axis.text = element_text(size = 15)) + 
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1)) +
   theme(plot.margin = margin(10,10,10,10))
 
