@@ -720,7 +720,6 @@ full_ancestry_data %>%
             sd_smb = sd(smb),
             mean_nb = mean(nb),
             sd_nb = sd(nb))
-
 ```
 
 ## Data summary:
