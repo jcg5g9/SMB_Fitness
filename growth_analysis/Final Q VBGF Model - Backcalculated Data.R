@@ -42,7 +42,7 @@ model_mat <- full_bc_data %>%
 # - Assign to list
 dat = list(
   Nobs = length(length),
-  Nages = round(max(age)),
+  Nages = 15,
   length = length,
   age = age,
   Zero = rep(0, 3),
@@ -153,23 +153,23 @@ par( mar=c(3, 3 , 0.5 , 3) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.
 plot(y = length , x = age, ylab = "Back-calculated TL (mm)", xlab = "Annuli", cex = 2, cex.lab = 1.25,
      col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex])
 # - Plot median curve
-lines(1:max(age), apply(draws[,grepl("pred_length\\[1,",colnames(draws))], 2, median), col = 1, lty = 1, lwd = 4) # Global
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[1,",colnames(draws))], 2, median), col = 1, lty = 1, lwd = 4) # Global
 
 # - SMB Females
-lines(1:max(age), apply(draws[,grepl("pred_length\\[2,",colnames(draws))], 2, median), col = cols[1], lty = 1, lwd = 2) # Females river 1
-lines(1:max(age), apply(draws[,grepl("pred_length\\[4,",colnames(draws))], 2, median), col = cols[31], lty = 2, lwd = 2) # Females river 2
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[2,",colnames(draws))], 2, median), col = cols[1], lty = 1, lwd = 2) # Females river 1
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[4,",colnames(draws))], 2, median), col = cols[31], lty = 2, lwd = 2) # Females river 2
 
 # - Neosho Females
-lines(1:max(age), apply(draws[,grepl("pred_length\\[6,",colnames(draws))], 2, median), col = cols[2], lty = 1, lwd = 2) # Females river 1
-lines(1:max(age), apply(draws[,grepl("pred_length\\[8,",colnames(draws))], 2, median), col = cols[2], lty = 2, lwd = 2) # Females river 2
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[6,",colnames(draws))], 2, median), col = cols[2], lty = 1, lwd = 2) # Females river 1
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[8,",colnames(draws))], 2, median), col = cols[2], lty = 2, lwd = 2) # Females river 2
 
 # - SMB males
-lines(1:max(age), apply(draws[,grepl("pred_length\\[3,",colnames(draws))], 2, median), col = cols[3], lty = 1, lwd = 2) # Males river 1
-lines(1:max(age), apply(draws[,grepl("pred_length\\[5,",colnames(draws))], 2, median), col = cols[3], lty = 2, lwd = 2) # Males river 2
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[3,",colnames(draws))], 2, median), col = cols[3], lty = 1, lwd = 2) # Males river 1
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[5,",colnames(draws))], 2, median), col = cols[3], lty = 2, lwd = 2) # Males river 2
 
 # - Neosho Males
-lines(1:max(age), apply(draws[,grepl("pred_length\\[7,",colnames(draws))], 2, median), col = cols[4], lty = 1, lwd = 2) # Males river 1
-lines(1:max(age), apply(draws[,grepl("pred_length\\[9,",colnames(draws))], 2, median), col = cols[4], lty = 2, lwd = 2) # Males river 2
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[7,",colnames(draws))], 2, median), col = cols[4], lty = 1, lwd = 2) # Males river 1
+lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[9,",colnames(draws))], 2, median), col = cols[4], lty = 2, lwd = 2) # Males river 2
 
 legend("bottomright", c("SMB Females", "Neosho Females","SMB Males", "Neosho Males", "Big Sugar Creek", "Elk River"), col = c(cols,1,1), lty = c(1,1,1,1,1,2), bty = "n", lwd = 2)
 dev.off()
