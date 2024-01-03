@@ -24,9 +24,7 @@ library(boot)
 library(jagsUI)
 library(rstan)
 library(emmeans)
-library(inbreedR)
 ```
-
 
 ## PHASE 1: PHYSIOLOGICAL (BODY) CONDITION CALCULATION
 In this phase of analysis, we calculate physiological condition for each fish using the raw total length observation data (not including the back-calculated length-at-age data points ascertained in Analysis 4). To calculate condition, we use the Fulton Condition Index (FCI): F(W,TL) = W/(TL)^3; where F(W,TL) is the FCI at mass (g) W and total length (mm) TL. We measured mass (g) and TL (mm) at the time of sample processing, after fish had died and been preserved on ice. We therefore used measures of mass and TL after some loss of weight due to freeze-thawing. 
@@ -128,7 +126,7 @@ data <- list(con = con,
 ```
 
 ### STEP 2: Load and prepare data for analysis; run the Rmd chunk below.
-In this step, we use a Bayesian hierarchical framework and fit a generalized linear model of the form: condition ~ smb + river + sex. We used 4 cores to run 4 Markov chains, with 2,000 warmup and 4,000 iterations.
+In this step, we use a Bayesian hierarchical framework to fit a generalized linear model of the form: condition ~ smb + river + sex. We used 4 cores to run 4 Markov chains, with 2,000 warmup and 4,000 iterations.
 
 ##### Fit ancestry-fitness correlation model:
 ```{r}

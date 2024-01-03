@@ -668,58 +668,96 @@ load("data/processed_ancestry_data/full_ancestry_data.Rda")
 # Calculate mean ancestry proportions and standard deviations by species (NB and SMB) in the SMB reference samples
 full_ancestry_data %>%
   filter(population == "reference") %>%
-  summarize(mean_smb = mean(smb),
+  summarize(n = n(),
+            mean_smb = mean(smb),
             sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
             mean_nb = mean(nb),
-            sd_nb = sd(nb))
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
+
+full_ancestry_data %>%
+  filter(population == "reference") %>%
+  group_by(river) %>%
+  summarize(n = n(),
+            mean_smb = mean(smb),
+            sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
+            mean_nb = mean(nb),
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
 
 # Calculate mean ancestry proportions and standard deviations by species (NB and SMB) within the NB native range
 full_ancestry_data %>%
   filter(population == "sample") %>%
-  summarize(mean_smb = mean(smb),
+  summarize(n = n(),
+            mean_smb = mean(smb),
             sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
             mean_nb = mean(nb),
-            sd_nb = sd(nb))
-
-# Summarize SMB ancestry range in native NB samples
-full_ancestry_data %>%
-  filter(population == "sample") %>%
-  arrange(desc(smb))
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
 
 # Summarize proportion of SMB and NB ancestry across size bins 
 full_ancestry_data %>% 
   filter(population == "sample") %>%
   group_by(size_bin) %>%
-  summarize(mean_smb = mean(smb),   
+  summarize(n = n(),
+           mean_smb = mean(smb),
             sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
             mean_nb = mean(nb),
-            sd_nb = sd(nb))
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
 
 # Summarize proportion of SMB and NB ancestry across size bins, for the remaining 375-400+ size bin
 full_ancestry_data %>%
   filter(size_bin == "375-400" | size_bin == "400+") %>%
-  summarize(mean_smb = mean(smb), 
-            sd_smb = sd(smb), 
+  summarize(n = n(),
+            mean_smb = mean(smb),
+            sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
             mean_nb = mean(nb),
-            sd_nb = sd(nb))
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
 
 # Summarize proportion of SMB and NB ancestry for streams
 full_ancestry_data %>% 
   filter(population == "sample") %>%
   group_by(river) %>%
-  summarize(mean_smb = mean(smb),   
+  summarize(n = n(),
+            mean_smb = mean(smb),
             sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
             mean_nb = mean(nb),
-            sd_nb = sd(nb))
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
 
 # Summarize proportion of SMB and NB ancestry for sexes
 full_ancestry_data %>% 
   filter(population == "sample") %>%
   group_by(sex) %>%
-  summarize(mean_smb = mean(smb),   
+  summarize(n = n(),
+            mean_smb = mean(smb),
             sd_smb = sd(smb),
+            max_smb = max(smb),
+            min_smb = min(smb),
             mean_nb = mean(nb),
-            sd_nb = sd(nb))
+            sd_nb = sd(nb),
+            max_nb = max(nb),
+            min_nb = min(nb))
 ```
 
 ## Data summary:
