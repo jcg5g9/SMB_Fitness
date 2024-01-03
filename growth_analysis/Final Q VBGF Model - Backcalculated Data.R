@@ -150,8 +150,13 @@ draws <- as.data.frame(fit_backcalculated)
 png( file = "growth_analysis/Figure2_backcalculated.png" , width=5, height = 5, family = "serif", units = "in", res = 300)
 par( mar=c(3, 3 , 0.5 , 3) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
 
-plot(y = length , x = age, ylab = "Back-calculated TL (mm)", xlab = "Annuli", cex = 2, cex.lab = 1.25,
-     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], pch = c(17, 19)[full_bc_data$sex])
+plot(y = length , x = age, 
+     ylab = "Back-calculated TL (mm)", xlab = "Annuli", 
+     cex = 2, cex.lab = 1.25,
+     col = cols[full_bc_data$sex*2-1 + full_bc_data$river_code-1], 
+     pch = c(17, 19)[full_bc_data$sex], 
+     xlim = c(0, dat$Nages), ylim = c(0, 500))
+
 # - Plot median curve
 lines(1:dat$Nages, apply(draws[,grepl("pred_length\\[1,",colnames(draws))], 2, median), col = 1, lty = 1, lwd = 4) # Global
 
