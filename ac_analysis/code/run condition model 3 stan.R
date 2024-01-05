@@ -42,7 +42,7 @@ fit2 <- stan(
 
 rstan::traceplot(fit2)
 #save (fit2, file='ac_analysis/condition_model_3_out.rds')
-load('ac_analysis/condition_model_3_out.rds')
+load('code/condition_model_3_out.rds')
 
 print(fit2,digits=3)
 

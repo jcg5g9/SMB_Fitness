@@ -13,7 +13,7 @@ For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see 
 
 ## Phases of Analysis
 ### Phase 1: Ancestry inference
-### Phase 2: Ancestry group assignment and visualization
+### Phase 2:Ancestry and heterozygosity summary and vizualization
 
 Programs needed:
 
@@ -413,7 +413,7 @@ save(q, file = "data/structure_data/ancestry_data/q.Rda")
 In this phase of the analysis, we compute standardized multilocus heterozygosity for each individual, which is the individual heterozygosity relative to the global mean heterozygosity value. 
 
 ### STEP 1: Read in raw genotype data and convert to input format for inbreedR package.
-In this step, we convert the raw genotype data into the correct input format for the inbreedR package (which is used to assess heterozygosity fitness correlation)
+In this step, we convert the raw genotype data into the correct input format for the inbreedR package (which is used to assess heterozygosity fitness correlation).
 
 #### 1a: Read in and format raw genotype data; run the Rmd chunk below.
 
@@ -454,7 +454,7 @@ g2 <- g2_microsats(ibr,
                    CI = 0.95)
 ```
 
-Results Summary: 
+<b>Results Summary:</b> 
 
 p(g2) = 0.019 (significant); there is sufficient power to detect genome-wide heterozygosity
 
@@ -484,7 +484,7 @@ save(h, file = "data/inbreedr_data/h.Rda")
 
 ### ----------------------- END OF PHASE 2: HETEROZYGOSITY INFERENCE ----------------------- ###
 
-## PHASE 3: ANCESTRY AND HETEROZYGOSITY VISUALIZATION
+## PHASE 3: ANCESTRY AND HETEROZYGOSITY SUMMARY AND VISUALIZATION
 In this phase of analysis, we visualize ancestry coefficients and heterozygosity across the full sample set.
 
 ### STEP 1: Order ancestry data for plotting; run the Rmd chunk below.
@@ -588,8 +588,6 @@ ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) +
 dev.off()
 ```
 
-This plot is used as a component of Figure 1b in the final manuscript.
-
 #### 2b. Plot ancestry coefficients for all individuals at best K value (K=2) in order by the proportion of Smallmouth Bass ancestry inferred in STRUCTURE; run the rmd chunk below.
 In this step, we plot all individuals (including sample Big Sugar Creek and Elk River individuals along with reference Smallmouth Bass) in order of the genomic proportion of Smallmouth Bass ancestry. This plot allows easy interpretation of the number of samples assigned to each genetic ancestry group, as we also indicate the cutoff thresholds of 0.75 and 0.25 for "pure" ancestry (see further explanation in STEP 3 below).
 
@@ -628,9 +626,8 @@ ggplot(ancestry_metadata, aes(x = structure_number, y = q, fill = ancestry)) +
 dev.off()
 ```
 
-This plot is the basis for Figure S3 in the final manuscript.
-
-### STEP 3: Summarize ancestry coefficients and heterozygosity for all individuals. 
+### STEP 3: Summarize ancestry coefficients for all individuals. 
+At this point, we decided not to use heterozygosity in downstream analyses and instead decided to assess only the correlation ancestry proportion and body condition. We therefore do not summarize heterozygosity values for the data and only present summaries for the indiviudal ancestry data.
 
 #### 3a. Merge ancestry metadata with full dataset (see Analysis 2) and save for downstream analyses; run the Rmd chunk below.
 
