@@ -181,8 +181,8 @@ load('data/ac_fit.Rda')
 ac_fit <- as.data.frame(ac_fit)
 
 # find proportion of data points above or below zero for each coefficient to assess significance
-length(which(ac_fit$beta1<0))/length(ac_fit$beta1) # 0.96725
-length(which(ac_fit$beta2>0))/length(ac_fit$beta2) # 0.986
+length(which(ac_fit$beta1<0))/length(ac_fit$beta1)
+length(which(ac_fit$beta2>0))/length(ac_fit$beta2) 
 length(which(ac_fit$beta3<0))/length(ac_fit$beta3)
 length(which(ac_fit$beta4<0))/length(ac_fit$beta4)
 
@@ -238,8 +238,7 @@ betas <- ac_fit %>%
 pdf("figures/ac_betas.pdf", width = 6, height = 5)
 
 ggplot(betas, aes(x = parameter, y = estimate)) +
-  geom_point(position = position_jitter(width = 0.2), alpha = 0.1) +
-  geom_boxplot(fill = "grey", alpha = 0.3) +
+  geom_boxplot(fill = "grey") +
   theme_set(theme_cowplot(12)) + 
   labs(x = "Parameter", y = "Estimate") +
   scale_y_continuous(breaks = c(2.5, 2, 1.5, 1, 0.5, 0, -0.5, -1, -1.5, -2), limits = c(-2,2)) + 
@@ -276,7 +275,7 @@ min(ac_data$smb)
 max(ac_data$smb)
 
 # Get sequence of smb values to predict from, and increase by 0.1
-smb <- seq(-1.3, 2.2, 0.1)
+smb <- seq(-6, 6, 0.1) # We opted to extend these values beyond the min and max of the scaled values to make sure we encompassed predicted condition values for smb ancestry values of 1 and 0.
 
 # Generate empty matrix to hold predicted condition values for the sequence of smb values given above (smb)
 predicted_condition <- matrix(NA, 
@@ -330,7 +329,7 @@ colnames(smb_unscaled) <- c("smb_us")
 predicted_condition <- cbind(smb_unscaled, predicted_condition)
 
 # Plot von Bertalanffy curve for global data
-pdf("figures/ac_predict.pdf", width = 7, height = 5)
+pdf("figures/ac_predict.pdf", width = 6, height = 5)
 
 ggplot() + 
   geom_point(data = condition_data, aes(x = smb, y = condition_mg_cm), fill = "grey", show.legend = F, size = 3, pch = 21) + 
@@ -340,13 +339,14 @@ ggplot() +
   scale_fill_manual(values = c("grey")) +
   scale_color_manual(values = c("black")) +
   xlim(0,1) +
-  scale_x_continuous(name = "Proportion of SMB ancestry (%)", expand = c(0,0), labels = number_format(accuracy = 0.001)) +
-  scale_y_continuous(labels = number_format(accuracy = 0.001)) +
+  ylim(7.5, 17.5) +
+  scale_x_continuous(name = "Proportion of SMB ancestry (%)", expand = c(0,0), limits = c(0,1)) +
+  scale_y_continuous(labels = number_format(accuracy = 0.001), expand = c(0,0)) +
   ylab(expression(Condition~(mg/cm^{"3"}))) + 
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(10,10,10,10))
+  theme(plot.margin = margin(15,15,15,15))
 
 dev.off()
 ```
