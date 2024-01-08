@@ -106,7 +106,7 @@ In this step, we use a generalized linear model in a Bayesian hierarchical frame
 #### STEP 1: Load and prepare data for analysis; run the Rmd chunk below.
 In this step, we load the raw condition data calculated in Phase 1, Step 1c above and prepare for the Bayesian generalized linear model analysis.
 
-##### Assess ancestry-fitness correlation:
+##### Load and prepare data for ancestry-condition correlation:
 ```{r}
 # Load condition data generated in Phase 1 above
 load("data/condition_data.Rda")
@@ -144,7 +144,7 @@ In this step, we use a Bayesian hierarchical framework to fit a generalized line
 # Load data for ancestry-condition correlation model
 load("data/ac_data.Rda")
 
-# Run ancestry
+# Run ancestry-condition model
 ac_fit <- stan(file = "code/ac_model.stan",  
                data = data,
                chains = 4,        
