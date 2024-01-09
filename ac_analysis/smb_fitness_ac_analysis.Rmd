@@ -239,7 +239,7 @@ ac_fit <- ac_fit %>%
   gather(beta1:lp__, key = "parameter", value = "estimate") %>%
   mutate(parameter = factor(parameter))
 
-# Select only parameters needed for plotting (beta1, beta2, beta3)
+# Select only parameters needed for plotting (beta1, beta2, beta3, beta4)
 betas <- ac_fit %>%
   filter(parameter == "beta1" |
            parameter == "beta2" |
@@ -286,8 +286,8 @@ alpha <- ac_fit$alpha
 min(ac_data$smb)
 max(ac_data$smb)
 
-# Get sequence of smb values to predict from, and increase by 0.1
-smb <- seq(-6, 6, 0.1) # We opted to extend these values beyond the min and max of the scaled values to make sure we encompassed predicted condition values for smb ancestry values of 1 and 0.
+# Get sequence of smb values to predict from, and increase by 0.1 - We opted to extend these values beyond the min and max of the scaled values to make sure we encompassed predicted condition values for smb ancestry values of 1 and 0.
+smb <- seq(-6, 6, 0.1) 
 
 # Generate empty matrix to hold predicted condition values for the sequence of smb values given above (smb)
 predicted_condition <- matrix(NA, 
