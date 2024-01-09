@@ -4,9 +4,11 @@ smb_fitness_project_notes.Rmd
 .Rhistory
 .RData
 .Ruserdata
+.Rda
+.rds
 
 #Folders
 project_info/
 figures/
 raw_data/
-*.rds
+

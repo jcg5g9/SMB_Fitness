@@ -136,7 +136,7 @@ ac_data <- list(con = con,
 save(ac_data, file = "data/ac_data.Rda")
 ```
 
-### STEP 2: Load and prepare data for analysis; run the Rmd chunk below.
+### STEP 2: Run generalized linear regression model for body condition and SMB ancestry; run the Rmd chunk below.
 In this step, we use a Bayesian hierarchical framework to fit a generalized linear model to assess the linear relationship between body condition and proportion of SMB ancestry. We used 4 cores to run 4 Markov chains, with 2,000 warmup and 4,000 iterations.
 
 ##### Fit ancestry-condition correlation model:
@@ -144,33 +144,45 @@ In this step, we use a Bayesian hierarchical framework to fit a generalized line
 # Load data for ancestry-condition correlation model
 load("data/ac_data.Rda")
 
+# Set MCMC specifications
+warmup = 2000       
+thin = 2
+iter = 4000    
+
 # Run ancestry-condition model
 ac_fit <- stan(file = "code/ac_model.stan",  
                data = data,
                chains = 4,        
-               thin = 2,
-               warmup = 2000,          
-               iter = 4000,           
-               cores = 4
-               )
+               thin = thin,
+               warmup = warmup,          
+               iter = iter,           
+               cores = 4)
+
+# Save ancestry-correlation model fit output for downstream analyses
+save(ac_fit, file = 'data/ac_fit.Rda')
+```
+
+### STEP 3: Summarize and plot model output from ancestry-condition correlation analysis.
+In this step, we analyze and plot output results from the generalized linear model of the condition and ancestry proportion.
+
+#### 3a: Run diagnostics on model fit; run the Rmd chunk below:
+
+##### Model diagnostics:
+```{r}
+# Load ancestry-correlation model fit output
+load('data/ac_fit.Rda')
 
 # Visually inspect chains
-rstan::traceplot(ac_fit)
+traceplot(ac_fit)
 
 # Extract summary data for model fit  
 sampler_params <- get_sampler_params(ac_fit, inc_warmup = TRUE)
 
 # Summarize model fit
 summary(do.call(rbind, sampler_params), digits = 2)
-
-# Save ancestry-correlation model fit output for downstream analyses
-save(ac_fit, file = 'data/ac_fit.Rda')
 ```
 
-### STEP 3: Load and prepare data for analysis; run the Rmd chunk below.
-In this step, we analyze and plot output results from the generalized linear model of the condition and ancestry proportion.
-
-#### 3a: Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
+#### 3b: Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
 
 ##### Summarize ancestry-condition fit model output:
 ```{r}
@@ -191,15 +203,15 @@ ac_fit <- ac_fit %>%
   gather(beta1:lp__, key = "parameter", value = "estimate") %>%
   mutate(parameter = factor(parameter))
 
-# Summarize 
+# Summarize parameter estimates and 95% credible intervals
 ac_fit %>%
   group_by(parameter) %>%
   summarize(mean = mean(estimate),
             sd = sd(estimate),
             q2.5 = quantile(estimate, probs = 0.025),
-            q25 = quantile(estimate, probs = 0.25), 
+            q25 = quantile(estimate, probs = 0.05), 
             q50 = quantile(estimate, probs = 0.50),
-            q75 = quantile(estimate, probs = 0.75),
+            q75 = quantile(estimate, probs = 0.95),
             q97.5 = quantile(estimate, probs = 0.975))
 ```
 
@@ -212,7 +224,7 @@ ac_fit %>%
 
 We found that SMB ancestry explained substantial negative variation in condition, and we found that Elk River fish had significantly higher condition than Big Sugar Creek fish.
 
-#### 3b: Plot 95% credible intervals for each parameter coefficient; run the Rmd chunk below.
+#### 3c: Plot 95% credible intervals for each parameter coefficient; run the Rmd chunk below.
 
 ##### Plot ancestry-condition beta coefficient 95% credible intervals: `figures/ac_betas.pdf`
 ```{r}
@@ -251,7 +263,7 @@ ggplot(betas, aes(x = parameter, y = estimate)) +
 dev.off()
 ```
 
-#### 3c: Plot predicted condition values across ancestry along with raw (converted) data; run the Rmd chunk below.
+#### 3d: Plot predicted condition values across ancestry along with raw (converted) data; run the Rmd chunk below.
 
 ##### Plot ancestry-condition correlation prediction: `figures/ac_predict.pdf`
 ```{r}

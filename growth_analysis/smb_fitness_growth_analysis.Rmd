@@ -25,6 +25,7 @@ library(RFishBC)
 library(rlist)
 library(rstan)
 library(bayesplot)
+library(GGally)
 ```
 
 ## PHASE 1: INTRA- AND INTER-OBSERVER ERROR ANALYSIS FOR OTOLITH ANNULI ESTIMATES
@@ -59,13 +60,13 @@ We then calculated the mean of intra-observer error values across observers and 
 
 ##### Calculate intra-observer error:
 ```{r}
+# Load in full ancestry data curated in Analysis 3 
+load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+
 # Read in recount data for each observer
 eddie_recount <- read_excel("data/otolith_recounts/eddie_recount.xlsx")
 joe_recount <- read_excel("data/otolith_recounts/joe_recount.xlsx")
 michael_recount <- read_excel("data/otolith_recounts/michael_recount.xlsx")
-
-# Load in full ancestry data curated in Analysis 3 
-load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
 # format recount data
 eddie_recount <- eddie_recount %>%
@@ -571,12 +572,6 @@ rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
 
-# Set MCMC specifications
-control = list(adapt_delta=0.999, stepsize=0.001, max_treedepth=18)
-warmup = 6000       
-thin = 2
-iter = 6000        
-
 # Generate variables and match names to model 
 full_bc_data <- full_bc_data %>%
   mutate(river_code = factor(river_code),
@@ -590,7 +585,7 @@ sample.id <- as.numeric(as.factor(as.character(full_bc_data$sample_id)))
 Nind <- length(unique(sample.id))
 
 # Set up model matrix (sex/river) where nrow = number of ind
-model_mat <- full_bc_data %>%
+model_matrix <- full_bc_data %>%
   group_by(sample_id) %>%
   slice(n()) %>%
   select(sample_id, smb, river_code, sex) %>%
@@ -599,111 +594,183 @@ model_mat <- full_bc_data %>%
   arrange(sample_id)
 
 # Define data for model
-bc_data = list(Nobs = length(length),
-               Nages = 15,
-               length = length,
-               age = age,
-               Zero = rep(0, 3),
-               
-               #Priors
-               eta_scale_prior = 0.5, 
-               cholesky_prior = 3,
-               beta_scale = 0.5, 
-               
-               Nind = Nind,
-               Ncoef = 2,
-               X = model.matrix(~ sex + river_code, model_mat)[,2:3],
-               Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE),
-               q = model_mat$smb,
-               id = sample.id)
+bc_model_data = list(Nobs = length(length),
+                     Nages = 15,
+                     length = length,
+                     age = age,
+                     Zero = rep(0, 3),
+                     
+                     #Priors
+                     eta_scale_prior = 0.5, 
+                     cholesky_prior = 3,
+                     beta_scale = 0.5,
+                     
+                     Nind = Nind,
+                     Ncoef = 2,
+                     X = model.matrix(~ sex + river_code, model_matrix)[,2:3],
+                     Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE),
+                     q = model_matrix$smb,
+                     id = sample.id)
 
 # Save data for back-calculated growth model
-save(bc_data, file = "data/bc_data.Rda")
+save(bc_model_data, file = "data/growth_model_data/bc_model_data.Rda")
 ```
 
+### STEP 2: Run von Bertalanffy model for back-calculated length at age; run the Rmd chunk below.
+In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to back-calculated lenght-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
+
+##### Fit von Bertalanffy model:
 ```{r}
 # Load data for back-calculated growth model
-load("data/bc_data.Rda")
+load("data/growth_model_data/bc_model_data.Rda")
+
+# Set MCMC specifications
+control = list(adapt_delta = 0.999, 
+               stepsize = 0.001, 
+               max_treedepth = 18)
+warmup = 6000       
+thin = 2
+iter = 6000    
 
 # Run back-calculated growth model
-bc_fit <- stan(file = "code/bc_model.stan",  
-  data = bc_data,    
+bc_model_fit <- stan(file = "code/bc_model.stan",  
+  data = bc_model_data,    
   chains = 4,            
   warmup = warmup,      
   thin = thin,
   iter = iter * thin + warmup,     
   cores = 4,            
-  control = control
-)
+  control = control)
 
 # Save back-calculation growth model fit output for downstream analyses
-saveRDS(bc_fit, file = "growth_analysis/bc_fit.rds")
+save(bc_model_fit, file = "data/growth_model_data/bc_model_fit.Rda")
+```
 
+### STEP 3: Summarize and plot model output from von Bertalanffy growth analysis with back-calculated data.
+In this step, we analyze and plot output results from the generalized linear model of the condition and ancestry proportion.
 
-# * Convergence diagnostics ----
-# https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
+#### 3a: Run diagnostics on model fit; run the Rmd chunk below:
 
+##### Model diagnostics:
+```{r}
+# Load back-calculated model fit output
+load("data/growth_model_data/bc_model_fit.Rda")
 
-# # - Posterior ll
-# lp_cp <- log_posterior(fit_backcalculated)
-# head(lp_cp)
-#
-# # - Accepted prob
-# np_cp <- nuts_params(fit_backcalculated)
-# head(np_cp)
-#
-# # - Look at par vs divergence
-# color_scheme_set("darkgray")
-# posterior_cp <- as.array(fit_backcalculated)
-# mcmc_parcoord(posterior_cp, np = np_cp)
-#
-# # - Look at ll vs acceptance
-# color_scheme_set("red")
-# mcmc_nuts_divergence(np_cp, lp_cp)
+# Visually inspect chains
+traceplot(bc_model_fit)
 
+# Extract summary data for model fit  
+sampler_params <- get_sampler_params(bc_model_fit, inc_warmup = TRUE)
 
-
-
-# * Print and plot MCMC ----
-print(fit_backcalculated, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
-traceplot(fit_backcalculated, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
-traceplot(fit_backcalculated, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
-traceplot(fit_backcalculated, pars = c("Lcorr", "sigma_group"), inc_warmup = FALSE, nrow = 2)
-traceplot(fit_backcalculated, pars = c("Lcorr", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
-
-pairs(fit_backcalculated, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
-pairs(fit_backcalculated, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"), las = 1)
-pairs(fit_backcalculated, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
-# pairs(fit_backcalculated, pars = c("sigma_group", "Lcorr", "lp__"), las = 1)
-# pairs(fit_backcalculated, pars = c("sigma_ind", "Lcorr", "lp__"), las = 1)
-
-# - Sampler issues for all chains combined
-sampler_params <- get_sampler_params(fit_backcalculated, inc_warmup = FALSE)
+# Summarize model fit
 summary(do.call(rbind, sampler_params), digits = 2)
 
+
+# Convergence diagnostics ----
+#https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
+
+#Posterior ll
+lp_cp <- log_posterior(bc_model_fit)
+head(lp_cp)
+
+#Accepted prob
+np_cp <- nuts_params(bc_model_fit)
+head(np_cp)
+
+# Look at par vs divergence
+color_scheme_set("darkgray")
+posterior_cp <- as.array(bc_model_fit)
+mcmc_parcoord(posterior_cp, np = np_cp)
+
+#Look at ll vs acceptance
+color_scheme_set("red")
+mcmc_nuts_divergence(np_cp, lp_cp)
+
+# Print and plot MCMC ----
+print(bc_model_fit, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
+traceplot(bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
+traceplot(bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(bc_model_fit, pars = c("Lcorr", "sigma_group"), inc_warmup = FALSE, nrow = 2)
+traceplot(bc_model_fit, pars = c("Lcorr", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
+
+pairs(bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("sigma_group", "Lcorr", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("sigma_ind", "Lcorr", "lp__"), las = 1)
+
 # BFMI low
-# pairs_stan <- function(chain, stan_model, pars) {
-#   energy <- as.matrix(sapply(get_sampler_params(stan_model, inc_warmup = F), 
-#                              function(x) x[,"energy__"]))
-#   pars <- extract(stan_model, pars = pars, permuted = F)
-#   df <- data.frame(energy[,chain], pars[,chain,])
-#   names(df)[1] <- "energy"
-#   GGally::ggpairs(df, title = paste0("Chain", chain), 
-#                   lower = list(continuous = GGally::wrap("points", alpha = 0.2)))                    
-# }
-# 
-# pairs_stan(1, fit_backcalculated, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"))
-# pairs_stan(1, fit_backcalculated, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"))
-# pairs_stan(1, fit_backcalculated, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"))
-# pairs_stan(1, fit_backcalculated, pars = c("Lcorr", "lp__"))
+pairs_stan <- function(chain, stan_model, pars) {
+energy <- as.matrix(sapply(get_sampler_params(stan_model, inc_warmup = F), 
+                           function(x) x[,"energy__"]))
+pars <- extract(stan_model, pars = pars, permuted = F)
+df <- data.frame(energy[,chain], pars[,chain,])
+names(df)[1] <- "energy"
 
-check_energy(fit_backcalculated)
+GGally::ggpairs(df, title = paste0("Chain", chain), 
+                lower = list(continuous = GGally::wrap("points", alpha = 0.2)))                    
+ }
+ 
+pairs_stan(1, bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"))
+pairs_stan(1, bc_model_fit, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"))
+pairs_stan(1, bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"))
+pairs_stan(1, bc_model_fit, pars = c("Lcorr", "lp__"))
 
-# - Rhat for chain convergence
-rhats <- rhat(fit_backcalculated)
+check_energy(bc_model_fit)
+
+# Rhat for chain convergence
+rhats <- rhat(bc_model_fit)
 color_scheme_set("brightblue") # see help("color_scheme_set")
 mcmc_rhat(rhats)
 rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
+```
+
+#### 3b: Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
+
+##### Summarize ancestry-condition fit model output:
+```{r}
+# Load back-calculated model fit output
+load('data/growth_model_data/bc_model_fit.Rda')
+
+# Convert model fit data to dataframe
+bc_model_fit <- as.data.frame(bc_model_fit)
+
+# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
+bc_fixed <- bc_model_fit %>%
+  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
+  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
+         k_diff = `k_lineage[1]` - `k_lineage[2]`,
+         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
+
+# Gather parameters and estimates at each iteration so that there are only two columns
+bc_fixed <- bc_fixed %>%
+  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
+  mutate(parameter = factor(parameter))
+
+# Summarize parameter estimates and 95% credible intervals
+bc_fixed %>%
+  group_by(parameter) %>%
+  summarize(mean = mean(estimate),
+            sd = sd(estimate),
+            q2.5 = quantile(estimate, probs = 0.025),
+            q5 = quantile(estimate, probs = 0.05), 
+            q50 = quantile(estimate, probs = 0.50),
+            q95 = quantile(estimate, probs = 0.95),
+            q97.5 = quantile(estimate, probs = 0.975))
+```
+
+
+
+
+
+```{r}
+
+
+
+
+
+
+
 
 
 # * Plot fitted model ----
