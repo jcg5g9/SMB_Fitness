@@ -620,7 +620,7 @@ save(bc_model_data, file = "data/growth_model_data/bc_model_data.Rda")
 ```
 
 #### 1b: Run von Bertalanffy model for back-calculated length at age; run the Rmd chunk below.
-In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to back-calculated lenght-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
+In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to back-calculated length-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
 
 ##### Fit von Bertalanffy model:
 ```{r}
@@ -636,14 +636,14 @@ thin = 2
 iter = 6000    
 
 # Run back-calculated growth model
-bc_model_fit <- stan(file = "code/bc_model.stan",  
-  data = bc_model_data,    
-  chains = 4,            
-  warmup = warmup,      
-  thin = thin,
-  iter = iter * thin + warmup,     
-  cores = 4,            
-  control = control)
+bc_model_fit <- stan(file = "code/bc_model.stan",
+                     data = bc_model_data,    
+                     chains = 4,            
+                     warmup = warmup,      
+                     thin = thin,
+                     iter = iter * thin + warmup,     
+                     cores = 4,            
+                     control = control)
 
 # Save back-calculation growth model fit output for downstream analyses
 save(bc_model_fit, file = "data/growth_model_data/bc_model_fit.Rda")
@@ -956,8 +956,8 @@ f_bs_smb_predicted_length <- matrix(NA,
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Big Sugar Creek
 f_bs_nb_predicted_length <- matrix(NA,
-                                length(bc_model_fit$mu_linf), 
-                                length(ages)) 
+                                   length(bc_model_fit$mu_linf), 
+                                   length(ages)) 
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for female SMB from Elk River
 f_e_smb_predicted_length <- matrix(NA, 
@@ -966,8 +966,8 @@ f_e_smb_predicted_length <- matrix(NA,
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Elk River
 f_e_nb_predicted_length <- matrix(NA, 
-                                 length(bc_model_fit$mu_linf),
-                                 length(ages)) 
+                                  length(bc_model_fit$mu_linf),
+                                  length(ages)) 
 
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Big Sugar Creek
@@ -982,13 +982,13 @@ m_bs_nb_predicted_length <- matrix(NA,
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Elk River
 m_e_smb_predicted_length <- matrix(NA, 
-                               length(bc_model_fit$mu_linf), 
-                               length(ages)) 
+                                   length(bc_model_fit$mu_linf), 
+                                   length(ages)) 
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for male NB from Elk River
 m_e_nb_predicted_length <- matrix(NA, 
-                               length(bc_model_fit$mu_linf), 
-                               length(ages)) 
+                                  length(bc_model_fit$mu_linf), 
+                                  length(ages)) 
 
 # Fill empty matrix for female SMB from Big Sugar Creek
 for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
@@ -1386,12 +1386,21 @@ In this step, we repeat the von Bertalanffy analysis as conducted above, but onl
 ##### Load and prepare data for growth analysis:
 ```{r}
 # Load full back-calculated data
-load('data/bc_data/full_bc_data.rda')
+load("data/bc_data/full_bc_data.Rda")
 
 # Set rstan parameters
 rstan_options(threads_per_chain = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores()-1)
+
+# Set up model matrix (sex/river) where nrow = number of ind
+model_matrix <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  select(sample_id, smb, river_code, sex, consensus_age, tl_alive, ancestry_group) %>%
+  mutate(river_code = factor(river_code),
+         sex = factor(sex)) %>%
+  arrange(sample_id)
 
 # Generate variables and match names to model 
 full_bc_data <- full_bc_data %>%
@@ -1399,51 +1408,41 @@ full_bc_data <- full_bc_data %>%
          river_code = ifelse(river_code == 3, 2, river_code),
          sex = as.numeric(factor(sex)))
 
-age <- full_bc_data$annulus
-length <- full_bc_data$bc_tl
-group <- as.numeric(as.factor(full_bc_data$ancestry_group)) 
-sample.id <- as.numeric(as.factor(as.character(full_bc_data$sample_id)))
+age <- model_matrix$consensus_age
+length <- model_matrix$tl_alive
+group <- as.numeric(as.factor(model_matrix$ancestry_group)) 
+sample.id <- as.numeric(as.factor(as.character(model_matrix$sample_id)))
 Nind <- length(unique(sample.id))
 
-# Set up model matrix (sex/river) where nrow = number of ind
-model_matrix <- full_bc_data %>%
-  group_by(sample_id) %>%
-  slice(n()) %>%
-  select(sample_id, smb, river_code, sex) %>%
-  mutate(river_code = factor(river_code),
-         sex = factor(sex)) %>%
-  arrange(sample_id)
-
 # Define data for model
-bc_model_data = list(Nobs = length(length),
-                     Nages = 15,
-                     length = length,
-                     age = age,
-                     Zero = rep(0, 3),
+sensitivity_model_data = list(Nobs = length(length),
+                              Nages = 15,
+                              length = length,
+                              age = age,
+                              Zero = rep(0, 3),
                      
-                     #Priors
-                     eta_scale_prior = 0.5, 
-                     cholesky_prior = 3,
-                     beta_scale = 0.5,
-                     
-                     Nind = Nind,
-                     Ncoef = 2,
-                     X = model.matrix(~ sex + river_code, model_matrix)[,2:3],
-                     Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE),
-                     q = model_matrix$smb,
-                     id = sample.id)
+                              #Priors
+                              eta_scale_prior = 0.5, 
+                              cholesky_prior = 3,
+                              beta_scale = 0.5,
+                              Nind = Nind,
+                              Ncoef = 2,
+                              X = model.matrix(~ sex + river_code, model_matrix)[,2:3],
+                              Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE),
+                              q = model_matrix$smb,
+                              id = sample.id)
 
-# Save data for back-calculated growth model
-save(bc_model_data, file = "data/growth_model_data/bc_model_data.Rda")
+# Save data for sensitivity growth model
+save(sensitivity_model_data, file = "data/growth_model_data/sensitivity_model_data.Rda")
 ```
 
-#### 1b: Run von Bertalanffy model for back-calculated length at age; run the Rmd chunk below.
-In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to back-calculated lenght-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
+#### 2b: Run von Bertalanffy model for observed length-at-age; run the Rmd chunk below.
+In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to observed length-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
 
 ##### Fit von Bertalanffy model:
 ```{r}
-# Load data for back-calculated growth model
-load("data/growth_model_data/bc_model_data.Rda")
+# Load data for sensitivity growth model
+load("data/growth_model_data/sensitivity_model_data.Rda")
 
 # Set MCMC specifications
 control = list(adapt_delta = 0.999, 
@@ -1453,18 +1452,18 @@ warmup = 6000
 thin = 2
 iter = 6000    
 
-# Run back-calculated growth model
-bc_model_fit <- stan(file = "code/bc_model.stan",  
-  data = bc_model_data,    
-  chains = 4,            
-  warmup = warmup,      
-  thin = thin,
-  iter = iter * thin + warmup,     
-  cores = 4,            
-  control = control)
+# Run sensitivity growth model
+sensitivity_model_fit <- stan(file = "code/sensitivity_model.stan",  
+                              data = sensitivity_model_data,    
+                              chains = 4,            
+                              warmup = warmup,
+                              thin = thin,
+                              iter = iter * thin + warmup,     
+                              cores = 4,            
+                              control = control)
 
-# Save back-calculation growth model fit output for downstream analyses
-save(bc_model_fit, file = "data/growth_model_data/bc_model_fit.Rda")
+# Save sensitivity growth model fit output for downstream analyses
+save(sensitivity_model_fit, file = "data/growth_model_data/sensitivity_model_fit.Rda")
 ```
 
 #### 1c: Summarize and plot model output from von Bertalanffy growth analysis with back-calculated data.
@@ -1475,13 +1474,13 @@ In this step, we analyze and plot output results from the generalized linear mod
 ##### Model diagnostics:
 ```{r}
 # Load back-calculated model fit output
-load("data/growth_model_data/bc_model_fit.Rda")
+load("data/growth_model_data/sensitivity_model_fit.Rda")
 
 # Visually inspect chains
-traceplot(bc_model_fit)
+traceplot(sensitivity_model_fit)
 
 # Extract summary data for model fit  
-sampler_params <- get_sampler_params(bc_model_fit, inc_warmup = TRUE)
+sampler_params <- get_sampler_params(sensitivity_model_fit, inc_warmup = TRUE)
 
 # Summarize model fit
 summary(do.call(rbind, sampler_params), digits = 2)
@@ -1551,25 +1550,25 @@ rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
 ##### Summarize ancestry-condition fit model output:
 ```{r}
 # Load back-calculated model fit output
-load('data/growth_model_data/bc_model_fit.Rda')
+load('data/growth_model_data/sensitivity_model_fit.Rda')
 
 # Convert model fit data to dataframe
-bc_model_fit <- as.data.frame(bc_model_fit)
+sensitivity_model_fit <- as.data.frame(sensitivity_model_fit)
 
 # select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
-bc_fixed <- bc_model_fit %>%
+sensitivity_fixed <- sensitivity_model_fit %>%
   select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
   mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
          k_diff = `k_lineage[1]` - `k_lineage[2]`,
          t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
 
 # Gather parameters and estimates at each iteration so that there are only two columns
-bc_fixed <- bc_fixed %>%
+sensitivity_fixed <- sensitivity_fixed %>%
   gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
   mutate(parameter = factor(parameter))
 
 # Summarize parameter estimates and 95% credible intervals
-bc_fixed %>%
+sensitivity_fixed %>%
   group_by(parameter) %>%
   summarize(mean = mean(estimate),
             sd = sd(estimate),
