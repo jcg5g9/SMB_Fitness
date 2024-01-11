@@ -730,7 +730,7 @@ rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
 
 ##### 1c.2. Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
 
-##### Summarize ancestry-condition fit model output:
+##### Summarize back-calculated growth model fit model output:
 ```{r}
 # Load back-calculated model fit output
 load('data/growth_model_data/bc_model_fit.Rda')
@@ -752,823 +752,6 @@ bc_fixed <- bc_fixed %>%
 
 # Summarize parameter estimates and 95% credible intervals
 bc_fixed %>%
-  group_by(parameter) %>%
-  summarize(mean = mean(estimate),
-            sd = sd(estimate),
-            q2.5 = quantile(estimate, probs = 0.025),
-            q5 = quantile(estimate, probs = 0.05), 
-            q50 = quantile(estimate, probs = 0.50),
-            q95 = quantile(estimate, probs = 0.95),
-            q97.5 = quantile(estimate, probs = 0.975))
-```
-
-##### 1c.3. Plot 95% credible intervals for posterior differences of L∞, k, and a0 parameters; run the Rmd chunk below.
-
-##### Plot posterior differences: `figures/bc_p_diffs.pdf`
-```{r}
-# Load back-calculated model fit output
-load('data/growth_model_data/bc_model_fit.Rda')
-
-# Convert model fit data to dataframe
-bc_model_fit <- as.data.frame(bc_model_fit)
-
-# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
-bc_fixed <- bc_model_fit %>%
-  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
-  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
-         k_diff = `k_lineage[1]` - `k_lineage[2]`,
-         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
-
-# Gather parameters and estimates at each iteration so that there are only two columns
-bc_fixed <- bc_fixed %>%
-  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
-  mutate(parameter = factor(parameter))
-
-# Select only linf difference parameter for plotting
-linf_p_diffs <- bc_fixed %>%
-  filter(parameter == "linf_diff")
-
-# Select only k difference parameter for plotting
-k_p_diffs <- bc_fixed %>%
-  filter(parameter == "k_diff")
-
-# Select only t0 difference parameter for plotting
-t0_p_diffs <- bc_fixed %>%
-  filter(parameter == "t0_diff")
-
-# Get posterior difference parameter plots
-linf <- ggplot(linf_p_diffs, aes(x = parameter, y = estimate)) +
-  geom_boxplot(fill = "grey") +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "Parameter", y = "Estimate") + 
-  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
-  theme(axis.text = element_text(size = 15)) +
-  theme(axis.title = element_blank()) + 
-  theme(axis.text.x = element_blank()) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-# Get posterior difference parameter plots
-k <- ggplot(k_p_diffs, aes(x = parameter, y = estimate)) +
-  geom_boxplot(fill = "grey") +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "Parameter", y = "Estimate") + 
-  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
-  theme(axis.text = element_text(size = 15)) +
-  theme(axis.title = element_blank()) + 
-  theme(axis.text.x = element_blank()) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-# Get posterior difference parameter plots
-t0 <- ggplot(t0_p_diffs, aes(x = parameter, y = estimate)) +
-  geom_boxplot(fill = "grey") +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "Parameter", y = "Estimate") + 
-  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
-  theme(axis.text = element_text(size = 15)) +
-  theme(axis.title = element_blank()) + 
-  theme(axis.text.x = element_blank()) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-# Plot posterior difference 95% CIs
-pdf("figures/bc_p_diffs.pdf", width = 9, height = 5)
-
-plot_grid(linf,
-          k,
-          t0,
-          nrow = 1,
-          ncol = 3)
-
-dev.off()
-```
-
-##### 1c.4. Plot 95% credible intervals for beta coefficient posterior densities of L∞, k, and a0 parameters for sex and stream; run the Rmd chunk below.
-
-##### Plot posterior differences: 1) `figures/bc_sex_betas.pdf`, 2) `figures/bc_stream_betas.pdf`
-```{r}
-# Load back-calculated model fit output
-load('data/growth_model_data/bc_model_fit.Rda')
-
-# Convert model fit data to dataframe
-bc_model_fit <- as.data.frame(bc_model_fit)
-
-# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
-bc_fixed <- bc_model_fit %>%
-  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
-  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
-         k_diff = `k_lineage[1]` - `k_lineage[2]`,
-         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
-
-# Gather parameters and estimates at each iteration so that there are only two columns
-bc_fixed <- bc_fixed %>%
-  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
-  mutate(parameter = factor(parameter))
-
-# Select only posterior densities for stream- and sex-specific fixed effects
-stream_sex_betas <- bc_fixed %>%
-  filter(parameter == "beta_linf[1]" |
-           parameter == "beta_linf[2]" |
-           parameter == "beta_k[1]" |
-           parameter == "beta_k[2]" |
-           parameter == "beta_t0[1]" |
-           parameter == "beta_t0[2]")
-
-# Add column in beta table to describe parameter type (linf, k, and t0) for facet wrapping in plot
-stream_sex_betas$variable <- factor(c(rep("Sex", times = 24000), 
-                                      rep("Stream", times = 24000), 
-                                      rep("Sex", times = 24000), 
-                                      rep("Stream", times = 24000), 
-                                      rep("Sex", times = 24000), 
-                                      rep("Stream", times = 24000)))
-
-# Get only betas for sex
-sex_betas <- stream_sex_betas %>%
-  filter(variable == "Sex")
-
-# Get only betas for stream 
-stream_betas <- stream_sex_betas %>%
-  filter(variable == "Stream")
-
-# Put parameters in desired order to show up on graph (linf, then k, then t0)
-sex_betas$parameter <- factor(sex_betas$parameter, levels = c("beta_linf[1]", "beta_k[1]", "beta_t0[1]"))
-
-# Put parameters in desired order to show up on graph (linf, then k, then t0)
-stream_betas$parameter <- factor(stream_betas$parameter, levels = c("beta_linf[2]", "beta_k[2]", "beta_t0[2]"))
-
-# Plot sex beta coefficient 95% CIs
-pdf("figures/bc_sex_betas.pdf", width = 7, height = 5)
-
-ggplot(sex_betas, aes(x = parameter, y = estimate)) +
-  geom_boxplot(fill = "grey") +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "Parameter", y = "Estimate") + 
-  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
-  theme(axis.text = element_text(size = 15)) +
-  theme(axis.title = element_text(size = 15)) + 
-  theme(axis.text.x = element_blank()) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-dev.off()
-
-# Plot sex beta coefficient 95% CIs
-pdf("figures/bc_stream_betas.pdf", width = 7, height = 5)
-
-ggplot(stream_betas, aes(x = parameter, y = estimate)) +
-  geom_boxplot(fill = "grey") +
-  theme_set(theme_cowplot(12)) +
-  labs(x = "Parameter", y = "Estimate") + 
-  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
-  theme(axis.text = element_text(size = 15)) +
-  theme(axis.title = element_text(size = 15)) + 
-  theme(axis.text.x = element_blank()) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(10,10,10,10))
-
-dev.off()
-```
-
-##### 1c.5. Plot predicted length-at-age using calculated parameter values; run the Rmd chunk below.
-
-##### Plot back-calculated length-at-age prediction: `figures/bc_predict.pdf`
-```{r}
-# Load back-calculated model fit output
-load('data/growth_model_data/bc_model_fit.Rda')
-
-# Load data for back-calculated growth model
-load("data/growth_model_data/bc_model_data.Rda")
-
-# Load bc data
-load("data/bc_data/full_bc_data.Rda")
-
-# Convert model fit data to dataframe
-bc_model_fit <- as.data.frame(bc_model_fit)
-
-# Get sequence of ages
-ages <- seq(1, 15, 1)
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for female SMB from Big Sugar Creek
-f_bs_smb_predicted_length <- matrix(NA,
-                                    length(bc_model_fit$mu_linf), 
-                                    length(ages)) 
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Big Sugar Creek
-f_bs_nb_predicted_length <- matrix(NA,
-                                   length(bc_model_fit$mu_linf), 
-                                   length(ages)) 
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for female SMB from Elk River
-f_e_smb_predicted_length <- matrix(NA, 
-                                   length(bc_model_fit$mu_linf), 
-                                   length(ages)) 
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Elk River
-f_e_nb_predicted_length <- matrix(NA, 
-                                  length(bc_model_fit$mu_linf),
-                                  length(ages)) 
-
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Big Sugar Creek
-m_bs_smb_predicted_length <- matrix(NA,
-                                    length(bc_model_fit$mu_linf), 
-                                    length(ages)) 
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for male NB from Big Sugar Creek
-m_bs_nb_predicted_length <- matrix(NA, 
-                                   length(bc_model_fit$mu_linf), 
-                                   length(ages)) 
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Elk River
-m_e_smb_predicted_length <- matrix(NA, 
-                                   length(bc_model_fit$mu_linf), 
-                                   length(ages)) 
-
-# Generate empty matrix to hold predicted length values up to 15 annuli for male NB from Elk River
-m_e_nb_predicted_length <- matrix(NA, 
-                                  length(bc_model_fit$mu_linf), 
-                                  length(ages)) 
-
-# Fill empty matrix for female SMB from Big Sugar Creek
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   f_bs_smb_predicted_length[,i] = bc_model_fit$`pred_linf[1]` * exp(bc_model_fit$eta_smb_linf) * (1 - exp(-bc_model_fit$`pred_k[1]` * exp(bc_model_fit$eta_smb_k) * (i - bc_model_fit$`pred_t0[1]` - bc_model_fit$eta_smb_t0)))
-
-}
-
-# Fill empty matrix for female NB from Big Sugar Creek
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   f_bs_nb_predicted_length[,i] = bc_model_fit$`pred_linf[1]` * exp(bc_model_fit$eta_n_linf) * (1 - exp(-bc_model_fit$`pred_k[1]` * exp(bc_model_fit$eta_n_k) * (i - bc_model_fit$`pred_t0[1]` - bc_model_fit$eta_n_t0)))
-
-}
-
-# Fill empty matrix for female SMB from Elk River
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   f_e_smb_predicted_length[,i] = bc_model_fit$`pred_linf[3]` * exp(bc_model_fit$eta_smb_linf) * (1 - exp(-bc_model_fit$`pred_k[3]` * exp(bc_model_fit$eta_smb_k) * (i - bc_model_fit$`pred_t0[3]` - bc_model_fit$eta_smb_t0)))
-
-}
-
-# Fill empty matrix for female NB from Elk River
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   f_e_nb_predicted_length[,i] = bc_model_fit$`pred_linf[3]` * exp(bc_model_fit$eta_n_linf) * (1 - exp(-bc_model_fit$`pred_k[3]` * exp(bc_model_fit$eta_n_k) * (i - bc_model_fit$`pred_t0[3]` - bc_model_fit$eta_n_t0)))
-
-}
-
-# Fill empty matrix for male SMB from Big Sugar Creek
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   m_bs_smb_predicted_length[,i] = bc_model_fit$`pred_linf[2]` * exp(bc_model_fit$eta_smb_linf) * (1 - exp(-bc_model_fit$`pred_k[2]` * exp(bc_model_fit$eta_smb_k) * (i - bc_model_fit$`pred_t0[2]` - bc_model_fit$eta_smb_t0)))
-
-}
-
-# Fill empty matrix for male NB from Big Sugar Creek
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   m_bs_nb_predicted_length[,i] = bc_model_fit$`pred_linf[2]` * exp(bc_model_fit$eta_n_linf) * (1 - exp(-bc_model_fit$`pred_k[2]` * exp(bc_model_fit$eta_n_k) * (i - bc_model_fit$`pred_t0[2]` - bc_model_fit$eta_n_t0)))
-
-}
-
-# Fill empty matrix for male SMB from Elk River
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   m_e_smb_predicted_length[,i] = bc_model_fit$`pred_linf[4]` * exp(bc_model_fit$eta_smb_linf) * (1 - exp(-bc_model_fit$`pred_k[4]` * exp(bc_model_fit$eta_smb_k) * (i - bc_model_fit$`pred_t0[4]` -bc_model_fit$eta_smb_t0)))
-
-}
-
-# Fill empty matrix for male NB from Elk River
-for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   m_e_nb_predicted_length[,i] = bc_model_fit$`pred_linf[4]` * exp(bc_model_fit$eta_n_linf) * (1 - exp(-bc_model_fit$`pred_k[4]`* exp(bc_model_fit$eta_n_k) * (i - bc_model_fit$`pred_t0[4]` -bc_model_fit$eta_n_t0)))
-
-}
-
-# Get numeric vectors to hold means and credible interval estimates from predictions
-f_bs_smb_mean_length <- f_bs_smb_uci_length <- f_bs_smb_lci_length <- numeric()
-f_bs_nb_mean_length <- f_bs_nb_uci_length <- f_bs_nb_lci_length <- numeric()
-f_e_smb_mean_length <- f_e_smb_uci_length <- f_e_smb_lci_length <- numeric()
-f_e_nb_mean_length <- f_e_nb_uci_length <- f_e_nb_lci_length <- numeric()
-m_bs_smb_mean_length <- m_bs_smb_uci_length <- m_bs_smb_lci_length <- numeric()
-m_bs_nb_mean_length <- m_bs_nb_uci_length <- m_bs_nb_lci_length <- numeric()
-m_e_smb_mean_length <- m_e_smb_uci_length <- m_e_smb_lci_length <- numeric()
-m_e_nb_mean_length <- m_e_nb_uci_length <- m_e_nb_lci_length <- numeric()
-
-# Predict mean and confidence intervals around trendline for female SMB from Big Sugar Creek
-for (i in 1:length(ages)){
-  f_bs_smb_mean_length[i] <- mean(f_bs_smb_predicted_length[,i]) 
-  f_bs_smb_uci_length[i] <- quantile(f_bs_smb_predicted_length[,i], probs=0.975)
-  f_bs_smb_lci_length[i] <- quantile(f_bs_smb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-f_bs_smb_mean_length <- as.data.frame(f_bs_smb_mean_length)
-f_bs_smb_uci_length <- as.data.frame(f_bs_smb_uci_length)
-f_bs_smb_lci_length <- as.data.frame(f_bs_smb_lci_length)
-
-# Change column names
-colnames(f_bs_smb_mean_length) <- c("length")
-colnames(f_bs_smb_uci_length) <- c("uci")
-colnames(f_bs_smb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-f_bs_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
-f_bs_smb_lci_length$sex <- factor(rep("Female", times = 15))
-f_bs_smb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
-
-# Bind mean, uci, and lci columns together
-f_bs_smb <- cbind(ages,
-                  f_bs_smb_mean_length,
-                  f_bs_smb_uci_length,
-                  f_bs_smb_lci_length)
-
-# Predict mean and confidence intervals around trendline for female NB from Big Sugar Creek
-for (i in 1:length(ages)){
-  f_bs_nb_mean_length[i] <- mean(f_bs_nb_predicted_length[,i]) 
-  f_bs_nb_uci_length[i] <- quantile(f_bs_nb_predicted_length[,i], probs=0.975)
-  f_bs_nb_lci_length[i] <- quantile(f_bs_nb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-f_bs_nb_mean_length <- as.data.frame(f_bs_nb_mean_length)
-f_bs_nb_uci_length <- as.data.frame(f_bs_nb_uci_length)
-f_bs_nb_lci_length <- as.data.frame(f_bs_nb_lci_length)
-
-# Change column names
-colnames(f_bs_nb_mean_length) <- c("length")
-colnames(f_bs_nb_uci_length) <- c("uci")
-colnames(f_bs_nb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-f_bs_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
-f_bs_nb_lci_length$sex <- factor(rep("Female", times = 15))
-f_bs_nb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
-
-# Bind mean, uci, and lci columns together
-f_bs_nb <- cbind(ages,
-                 f_bs_nb_mean_length,
-                 f_bs_nb_uci_length,
-                 f_bs_nb_lci_length)
-
-# Predict mean and confidence intervals around trendline for female SMB from Elk River
-for (i in 1:length(ages)){
-  f_e_smb_mean_length[i] <- mean(f_e_smb_predicted_length[,i]) 
-  f_e_smb_uci_length[i] <- quantile(f_e_smb_predicted_length[,i], probs=0.975)
-  f_e_smb_lci_length[i] <- quantile(f_e_smb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-f_e_smb_mean_length <- as.data.frame(f_e_smb_mean_length)
-f_e_smb_uci_length <- as.data.frame(f_e_smb_uci_length)
-f_e_smb_lci_length <- as.data.frame(f_e_smb_lci_length)
-
-# Change column names
-colnames(f_e_smb_mean_length) <- c("length")
-colnames(f_e_smb_uci_length) <- c("uci")
-colnames(f_e_smb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-f_e_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
-f_e_smb_lci_length$sex <- factor(rep("Female", times = 15))
-f_e_smb_lci_length$stream <- factor(rep("Elk River", times = 15))
-
-# Bind mean, uci, and lci columns together
-f_e_smb <- cbind(ages,
-                 f_e_smb_mean_length,
-                 f_e_smb_uci_length,
-                 f_e_smb_lci_length)
-
-# Predict mean and confidence intervals around trendline for female NB from Elk River
-for (i in 1:length(ages)){
-  f_e_nb_mean_length[i] <- mean(f_e_nb_predicted_length[,i]) 
-  f_e_nb_uci_length[i] <- quantile(f_e_nb_predicted_length[,i], probs=0.975)
-  f_e_nb_lci_length[i] <- quantile(f_e_nb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-f_e_nb_mean_length <- as.data.frame(f_e_nb_mean_length)
-f_e_nb_uci_length <- as.data.frame(f_e_nb_uci_length)
-f_e_nb_lci_length <- as.data.frame(f_e_nb_lci_length)
-
-# Change column names
-colnames(f_e_nb_mean_length) <- c("length")
-colnames(f_e_nb_uci_length) <- c("uci")
-colnames(f_e_nb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-f_e_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
-f_e_nb_lci_length$sex <- factor(rep("Female", times = 15))
-f_e_nb_lci_length$stream <- factor(rep("Elk River", times = 15))
-
-# Bind mean, uci, and lci columns together
-f_e_nb <- cbind(ages,
-                f_e_nb_mean_length,
-                f_e_nb_uci_length,
-                f_e_nb_lci_length)
-
-# Predict mean and confidence intervals around trendline for male SMB from Big Sugar Creek
-for (i in 1:length(ages)){
-  m_bs_smb_mean_length[i] <- mean(m_bs_smb_predicted_length[,i]) 
-  m_bs_smb_uci_length[i] <- quantile(m_bs_smb_predicted_length[,i], probs=0.975)
-  m_bs_smb_lci_length[i] <- quantile(m_bs_smb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-m_bs_smb_mean_length <- as.data.frame(m_bs_smb_mean_length)
-m_bs_smb_uci_length <- as.data.frame(m_bs_smb_uci_length)
-m_bs_smb_lci_length <- as.data.frame(m_bs_smb_lci_length)
-
-# Change column names
-colnames(m_bs_smb_mean_length) <- c("length")
-colnames(m_bs_smb_uci_length) <- c("uci")
-colnames(m_bs_smb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-m_bs_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
-m_bs_smb_lci_length$sex <- factor(rep("Male", times = 15))
-m_bs_smb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
-
-# Bind mean, uci, and lci columns together
-m_bs_smb <- cbind(ages,
-                  m_bs_smb_mean_length,
-                  m_bs_smb_uci_length,
-                  m_bs_smb_lci_length)
-
-# Predict mean and confidence intervals around trendline for male NB from Big Sugar Creek
-for (i in 1:length(ages)){
-  m_bs_nb_mean_length[i] <- mean(m_bs_nb_predicted_length[,i]) 
-  m_bs_nb_uci_length[i] <- quantile(m_bs_nb_predicted_length[,i], probs=0.975)
-  m_bs_nb_lci_length[i] <- quantile(m_bs_nb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-m_bs_nb_mean_length <- as.data.frame(m_bs_nb_mean_length)
-m_bs_nb_uci_length <- as.data.frame(m_bs_nb_uci_length)
-m_bs_nb_lci_length <- as.data.frame(m_bs_nb_lci_length)
-
-# Change column names
-colnames(m_bs_nb_mean_length) <- c("length")
-colnames(m_bs_nb_uci_length) <- c("uci")
-colnames(m_bs_nb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-m_bs_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
-m_bs_nb_lci_length$sex <- factor(rep("Male", times = 15))
-m_bs_nb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
-
-# Bind mean, uci, and lci columns together
-m_bs_nb <- cbind(ages,
-                 m_bs_nb_mean_length,
-                 m_bs_nb_uci_length,
-                 m_bs_nb_lci_length)
-
-# Predict mean and confidence intervals around trendline for male SMB from Elk River
-for (i in 1:length(ages)){
-  m_e_smb_mean_length[i] <- mean(m_e_smb_predicted_length[,i]) 
-  m_e_smb_uci_length[i] <- quantile(m_e_smb_predicted_length[,i], probs=0.975)
-  m_e_smb_lci_length[i] <- quantile(m_e_smb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-m_e_smb_mean_length <- as.data.frame(m_e_smb_mean_length)
-m_e_smb_uci_length <- as.data.frame(m_e_smb_uci_length)
-m_e_smb_lci_length <- as.data.frame(m_e_smb_lci_length)
-
-# Change column names
-colnames(m_e_smb_mean_length) <- c("length")
-colnames(m_e_smb_uci_length) <- c("uci")
-colnames(m_e_smb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-m_e_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
-m_e_smb_lci_length$sex <- factor(rep("Male", times = 15))
-m_e_smb_lci_length$stream <- factor(rep("Elk River", times = 15))
-
-# Bind mean, uci, and lci columns together
-m_e_smb <- cbind(ages,
-                 m_e_smb_mean_length,
-                 m_e_smb_uci_length,
-                 m_e_smb_lci_length)
-
-# Predict mean and confidence intervals around trendline for male NB from Elk River
-for (i in 1:length(ages)){
-  m_e_nb_mean_length[i] <- mean(m_e_nb_predicted_length[,i]) 
-  m_e_nb_uci_length[i] <- quantile(m_e_nb_predicted_length[,i], probs=0.975)
-  m_e_nb_lci_length[i] <- quantile(m_e_nb_predicted_length[,i], probs=0.025)
-}
-
-# Generate dataframes for each vector
-m_e_nb_mean_length <- as.data.frame(m_e_nb_mean_length)
-m_e_nb_uci_length <- as.data.frame(m_e_nb_uci_length)
-m_e_nb_lci_length <- as.data.frame(m_e_nb_lci_length)
-
-# Change column names
-colnames(m_e_nb_mean_length) <- c("length")
-colnames(m_e_nb_uci_length) <- c("uci")
-colnames(m_e_nb_lci_length) <- c("lci")
-
-# Add additional descriptor columns for ancestry, sex, and stream
-m_e_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
-m_e_nb_lci_length$sex <- factor(rep("Male", times = 15))
-m_e_nb_lci_length$stream <- factor(rep("Elk River", times = 15))
-
-# Bind mean, uci, and lci columns together
-m_e_nb <- cbind(ages,
-                m_e_nb_mean_length,
-                m_e_nb_uci_length,
-                m_e_nb_lci_length)
-  
-# Bind all data frames together by row
-bc_predict <- rbind(f_bs_smb,
-                    f_bs_nb,
-                    f_e_smb,
-                    f_e_nb,
-                    m_bs_smb,
-                    m_bs_nb,
-                    m_e_smb,
-                    m_e_nb)
-
-# Get dataframe for females in Big Sugar Creek
-f_bs <- bc_predict %>%
-  filter(sex == "Female" & stream == "Big Sugar Creek")
-
-# Get dataframe for males in Big Sugar Creek
-m_bs <- bc_predict %>%
-  filter(sex == "Male" & stream == "Big Sugar Creek")
-
-# Get dataframe for females in Elk River
-f_e <- bc_predict %>%
-  filter(sex == "Female" & stream == "Elk River")
-
-# Get dataframe for males in Elk River
-m_e <- bc_predict %>%
-  filter(sex == "Male" & stream == "Elk River")
-
-m_e <- m_e %>%
-  mutate(length = as.numeric(length))
-
-# Plot females in big sugar creek
-f_bs_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = f_bs, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
-  geom_line(data = f_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
-  scale_color_manual(values = c("deeppink2","deepskyblue")) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
-  theme(axis.text.x = element_blank()) +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.title = element_text(size = 15)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(15,15,15,15))
-
-# Plot males in big sugar creek
-m_bs_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = m_bs, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
-  geom_line(data = m_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
-  scale_color_manual(values = c("deeppink2","deepskyblue")) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
-  theme(axis.title = element_blank()) +
-  theme(axis.text.x = element_blank()) +
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(15,15,15,15))
-
-# Plot males in big sugar creek
-f_e_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = f_e, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
-  geom_line(data = f_e, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
-  scale_color_manual(values = c("deeppink2","deepskyblue")) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +  
-  theme(axis.title = element_text(size = 15)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(15,15,15,15))
-
-# Plot males in big sugar creek
-m_e_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = m_e, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
-  geom_line(data = m_e, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
-  theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
-  scale_color_manual(values = c("deeppink2","deepskyblue")) +
-  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
-  theme(axis.title.y = element_blank()) +
-  theme(axis.title = element_text(size = 15)) + 
-  theme(axis.text = element_text(size = 15)) +
-  theme(panel.border = element_rect(colour = "black", fill = NA)) +
-  theme(plot.margin = margin(15,15,15,15))
-
-# Plot all von bertalanffy curves
-pdf("figures/bc_predict.pdf", width = 12, height = 9)
-
-plot_grid(f_bs_plot,
-          m_bs_plot,
-          f_e_plot,
-          m_e_plot,
-          ncol = 2,
-          nrow = 2)
-
-dev.off()
-```
-
-### STEP 2: Sensitivity analysis - von bertalanffy growth analysis using raw data.
-In this step, we repeat the von Bertalanffy analysis as conducted above, but only using raw length-at-age data, to assess the sensitivity of the data (consistency between datasets, i.e., do patterns from the back-calculated data reflect what is shown by the raw data?) These data are then used as input for Bayesian hierarchical analysis. 
-
-#### 2a: Prepare data for Bayesian hierarhical analysis; run the Rmd code below.
-
-##### Load and prepare data for growth analysis:
-```{r}
-# Load full back-calculated data
-load("data/bc_data/full_bc_data.Rda")
-
-# Set rstan parameters
-rstan_options(threads_per_chain = 1)
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores()-1)
-
-# Set up model matrix (sex/river) where nrow = number of ind
-model_matrix <- full_bc_data %>%
-  group_by(sample_id) %>%
-  slice(n()) %>%
-  select(sample_id, smb, river_code, sex, consensus_age, tl_alive, ancestry_group) %>%
-  mutate(river_code = factor(river_code),
-         sex = factor(sex)) %>%
-  arrange(sample_id)
-
-# Generate variables and match names to model 
-full_bc_data <- full_bc_data %>%
-  mutate(river_code = factor(river_code),
-         river_code = ifelse(river_code == 3, 2, river_code),
-         sex = as.numeric(factor(sex)))
-
-age <- model_matrix$consensus_age
-length <- model_matrix$tl_alive
-group <- as.numeric(as.factor(model_matrix$ancestry_group)) 
-sample.id <- as.numeric(as.factor(as.character(model_matrix$sample_id)))
-Nind <- length(unique(sample.id))
-
-# Define data for model
-sensitivity_model_data = list(Nobs = length(length),
-                              Nages = 15,
-                              length = length,
-                              age = age,
-                              Zero = rep(0, 3),
-                     
-                              #Priors
-                              eta_scale_prior = 0.5, 
-                              cholesky_prior = 3,
-                              beta_scale = 0.5,
-                              Nind = Nind,
-                              Ncoef = 2,
-                              X = model.matrix(~ sex + river_code, model_matrix)[,2:3],
-                              Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE),
-                              q = model_matrix$smb,
-                              id = sample.id)
-
-# Save data for sensitivity growth model
-save(sensitivity_model_data, file = "data/growth_model_data/sensitivity_model_data.Rda")
-```
-
-#### 2b: Run von Bertalanffy model for observed length-at-age; run the Rmd chunk below.
-In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to observed length-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
-
-##### Fit von Bertalanffy model:
-```{r}
-# Load data for sensitivity growth model
-load("data/growth_model_data/sensitivity_model_data.Rda")
-
-# Set MCMC specifications
-control = list(adapt_delta = 0.999, 
-               stepsize = 0.001, 
-               max_treedepth = 18)
-warmup = 6000       
-thin = 2
-iter = 6000    
-
-# Run sensitivity growth model
-sensitivity_model_fit <- stan(file = "code/sensitivity_model.stan",  
-                              data = sensitivity_model_data,    
-                              chains = 4,            
-                              warmup = warmup,
-                              thin = thin,
-                              iter = iter * thin + warmup,     
-                              cores = 4,            
-                              control = control)
-
-# Save sensitivity growth model fit output for downstream analyses
-save(sensitivity_model_fit, file = "data/growth_model_data/sensitivity_model_fit.Rda")
-```
-
-#### 1c: Summarize and plot model output from von Bertalanffy growth analysis with back-calculated data.
-In this step, we analyze and plot output results from the generalized linear model of the condition and ancestry proportion.
-
-##### 1c.1. Run diagnostics on model fit; run the Rmd chunk below:
-
-##### Model diagnostics:
-```{r}
-# Load back-calculated model fit output
-load("data/growth_model_data/sensitivity_model_fit.Rda")
-
-# Visually inspect chains
-traceplot(sensitivity_model_fit)
-
-# Extract summary data for model fit  
-sampler_params <- get_sampler_params(sensitivity_model_fit, inc_warmup = TRUE)
-
-# Summarize model fit
-summary(do.call(rbind, sampler_params), digits = 2)
-
-
-# Convergence diagnostics ----
-#https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
-
-#Posterior ll
-lp_cp <- log_posterior(bc_model_fit)
-head(lp_cp)
-
-#Accepted prob
-np_cp <- nuts_params(bc_model_fit)
-head(np_cp)
-
-# Look at par vs divergence
-color_scheme_set("darkgray")
-posterior_cp <- as.array(bc_model_fit)
-mcmc_parcoord(posterior_cp, np = np_cp)
-
-#Look at ll vs acceptance
-color_scheme_set("red")
-mcmc_nuts_divergence(np_cp, lp_cp)
-
-# Print and plot MCMC ----
-print(bc_model_fit, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
-traceplot(bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
-traceplot(bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
-traceplot(bc_model_fit, pars = c("Lcorr", "sigma_group"), inc_warmup = FALSE, nrow = 2)
-traceplot(bc_model_fit, pars = c("Lcorr", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
-
-pairs(bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
-pairs(bc_model_fit, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"), las = 1)
-pairs(bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
-pairs(bc_model_fit, pars = c("sigma_group", "Lcorr", "lp__"), las = 1)
-pairs(bc_model_fit, pars = c("sigma_ind", "Lcorr", "lp__"), las = 1)
-
-# BFMI low
-pairs_stan <- function(chain, stan_model, pars) {
-energy <- as.matrix(sapply(get_sampler_params(stan_model, inc_warmup = F), 
-                           function(x) x[,"energy__"]))
-pars <- extract(stan_model, pars = pars, permuted = F)
-df <- data.frame(energy[,chain], pars[,chain,])
-names(df)[1] <- "energy"
-
-GGally::ggpairs(df, title = paste0("Chain", chain), 
-                lower = list(continuous = GGally::wrap("points", alpha = 0.2)))                    
- }
- 
-pairs_stan(1, bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"))
-pairs_stan(1, bc_model_fit, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"))
-pairs_stan(1, bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"))
-pairs_stan(1, bc_model_fit, pars = c("Lcorr", "lp__"))
-
-check_energy(bc_model_fit)
-
-# Rhat for chain convergence
-rhats <- rhat(bc_model_fit)
-color_scheme_set("brightblue") # see help("color_scheme_set")
-mcmc_rhat(rhats)
-rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
-```
-
-##### 1c.2. Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
-
-##### Summarize ancestry-condition fit model output:
-```{r}
-# Load back-calculated model fit output
-load('data/growth_model_data/sensitivity_model_fit.Rda')
-
-# Convert model fit data to dataframe
-sensitivity_model_fit <- as.data.frame(sensitivity_model_fit)
-
-# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
-sensitivity_fixed <- sensitivity_model_fit %>%
-  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
-  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
-         k_diff = `k_lineage[1]` - `k_lineage[2]`,
-         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
-
-# Gather parameters and estimates at each iteration so that there are only two columns
-sensitivity_fixed <- sensitivity_fixed %>%
-  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
-  mutate(parameter = factor(parameter))
-
-# Summarize parameter estimates and 95% credible intervals
-sensitivity_fixed %>%
   group_by(parameter) %>%
   summarize(mean = mean(estimate),
             sd = sd(estimate),
@@ -2115,21 +1298,33 @@ f_e <- bc_predict %>%
 m_e <- bc_predict %>%
   filter(sex == "Male" & stream == "Elk River")
 
-m_e <- m_e %>%
-  mutate(length = as.numeric(length))
+# Get raw data for females in Big Sugar Creek
+bc_f_bs <- full_bc_data %>%
+  filter(sex == "Female" & river == "Big_Sugar")
+
+# Get raw data for males in Big Sugar Creek
+bc_m_bs <- full_bc_data %>%
+  filter(sex == "Male" & river == "Big_Sugar")
+
+# Get raw data for females in Elk River
+bc_f_e <- full_bc_data %>%
+  filter(sex == "Female" & river == "Elk_River")
+
+# Get raw data for males in Elk River
+bc_m_e <- full_bc_data %>%
+  filter(sex == "Male" & river == "Elk_River")
+
 
 # Plot females in big sugar creek
 f_bs_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = f_bs, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
+  geom_ribbon(data = f_bs, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = bc_f_bs, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
   geom_line(data = f_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
   scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
-  theme(axis.text.x = element_blank()) +
-  theme(axis.title.x = element_blank()) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA)) +
@@ -2137,30 +1332,29 @@ f_bs_plot <- ggplot() +
 
 # Plot males in big sugar creek
 m_bs_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = m_bs, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
+  geom_ribbon(data = m_bs, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = bc_m_bs, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
   geom_line(data = m_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
   scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
-  theme(axis.title = element_blank()) +
-  theme(axis.text.x = element_blank()) +
+  theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA)) +
   theme(plot.margin = margin(15,15,15,15))
 
 # Plot males in big sugar creek
 f_e_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = f_e, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
+  geom_ribbon(data = f_e, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = bc_f_e, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
   geom_line(data = f_e, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
   scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
-  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +  
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA)) +
@@ -2168,15 +1362,14 @@ f_e_plot <- ggplot() +
 
 # Plot males in big sugar creek
 m_e_plot <- ggplot() + 
-  geom_point(data = full_bc_data, aes(x = annulus, y = bc_tl, fill = smb), position = position_jitter(width = 0.3), show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
-  geom_ribbon(data = m_e, aes(x = ages, ymin = lci, ymax = uci, color = ancestry, alpha = 0.01), fill = c("grey"), show.legend = F) +
+  geom_ribbon(data = m_e, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = bc_m_e, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
   geom_line(data = m_e, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
   theme_set(theme_cowplot(12)) +
-  scale_fill_gradient(high = "deeppink2", low = "deepskyblue") +
   scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
   scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
   scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,550), breaks = seq(0, 550, 50)) +
-  theme(axis.title.y = element_blank()) +
   theme(axis.title = element_text(size = 15)) + 
   theme(axis.text = element_text(size = 15)) +
   theme(panel.border = element_rect(colour = "black", fill = NA)) +
@@ -2195,67 +1388,839 @@ plot_grid(f_bs_plot,
 dev.off()
 ```
 
+### STEP 2: Sensitivity analysis - von bertalanffy growth analysis using raw data.
+In this step, we repeat the von Bertalanffy analysis as conducted above, but only using raw length-at-age data, to assess the sensitivity of the data (consistency between datasets, i.e., do patterns from the back-calculated data reflect what is shown by the raw data?) These data are then used as input for Bayesian hierarchical analysis. 
 
+#### 2a: Prepare data for Bayesian hierarhical analysis; run the Rmd code below.
+
+##### Load and prepare data for growth analysis:
 ```{r}
+# Load full back-calculated data
+load("data/bc_data/full_bc_data.Rda")
 
-# * Test Lineage Parameters #####
-# - No sig difference
-par(mfrow = c(2,3))
-# - Posterior
-hist(draws$`linf_lineage[1]`-draws$`linf_lineage[2]`, xlab = "Linf diff", main = NA)
-hist(draws$`k_lineage[1]`-draws$`k_lineage[2]`, xlab = "K diff", main = "Back-calculated TL")
-hist(draws$`t0_lineage[1]`-draws$`t0_lineage[2]`, xlab = "t0 diff", main = NA)
+# Set rstan parameters
+rstan_options(threads_per_chain = 1)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores()-1)
 
-# - Prior
-hist(draws$`prior_linf_lineage[1]`-draws$`prior_linf_lineage[2]`, xlab = "Linf diff", main = NA)
-hist(draws$`prior_k_lineage[1]`-draws$`prior_k_lineage[2]`, xlab = "K diff")
-hist(draws$`prior_t0_lineage[1]`-draws$`prior_t0_lineage[2]`, xlab = "t0 diff", main = NA)
-par(mfrow = c(1,1))
+# Set up model matrix (sex/river) where nrow = number of ind
+model_matrix <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  select(sample_id, smb, river_code, sex, consensus_age, tl_alive, ancestry_group) %>%
+  mutate(river_code = factor(river_code),
+         sex = factor(sex)) %>%
+  arrange(sample_id)
+
+# Generate variables and match names to model 
+full_bc_data <- full_bc_data %>%
+  mutate(river_code = factor(river_code),
+         river_code = ifelse(river_code == 3, 2, river_code),
+         sex = as.numeric(factor(sex)))
+
+age <- model_matrix$consensus_age
+length <- model_matrix$tl_alive
+group <- as.numeric(as.factor(model_matrix$ancestry_group)) 
+sample.id <- as.numeric(as.factor(as.character(model_matrix$sample_id)))
+Nind <- length(unique(sample.id))
+
+# Define data for model
+sensitivity_model_data = list(Nobs = length(length),
+                              Nages = 15,
+                              length = length,
+                              age = age,
+                              Zero = rep(0, 3),
+                     
+                              #Priors
+                              eta_scale_prior = 0.5, 
+                              cholesky_prior = 3,
+                              beta_scale = 0.5,
+                              Nind = Nind,
+                              Ncoef = 2,
+                              X = model.matrix(~ sex + river_code, model_matrix)[,2:3],
+                              Xhat = matrix(c(0,0,1,0,0,1,1,1), nrow = 4, ncol = 2, byrow = TRUE),
+                              q = model_matrix$smb,
+                              id = sample.id)
+
+# Save data for sensitivity growth model
+save(sensitivity_model_data, file = "data/growth_model_data/sensitivity_model_data.Rda")
+```
+
+#### 2b: Run von Bertalanffy model for observed length-at-age; run the Rmd chunk below.
+In this step, we use a Bayesian hierarchical framework to fit a von Bertalanffy curve to observed length-at-age data and account for SMB ancestry, sex, and stream of origin to assess the effect of SMB ancestry on growth parameters. 
+
+##### Fit von Bertalanffy model:
+```{r}
+# Load data for sensitivity growth model
+load("data/growth_model_data/sensitivity_model_data.Rda")
+
+# Set MCMC specifications
+control = list(adapt_delta = 0.999, 
+               stepsize = 0.001, 
+               max_treedepth = 18)
+warmup = 6000       
+thin = 2
+iter = 6000    
+
+# Run sensitivity growth model
+sensitivity_model_fit <- stan(file = "code/sensitivity_model.stan",  
+                              data = sensitivity_model_data,    
+                              chains = 4,            
+                              warmup = warmup,
+                              thin = thin,
+                              iter = iter * thin + warmup,     
+                              cores = 4,            
+                              control = control)
+
+# Save sensitivity growth model fit output for downstream analyses
+save(sensitivity_model_fit, file = "data/growth_model_data/sensitivity_model_fit.Rda")
+```
+
+#### 1c: Summarize and plot model output from von Bertalanffy growth analysis with back-calculated data.
+In this step, we analyze and plot output results from the generalized linear model of the condition and ancestry proportion.
+
+##### 1c.1. Run diagnostics on model fit; run the Rmd chunk below:
+
+##### Model diagnostics:
+```{r}
+# Load back-calculated model fit output
+load("data/growth_model_data/sensitivity_model_fit.Rda")
+
+# Visually inspect chains
+traceplot(sensitivity_model_fit)
+
+# Extract summary data for model fit  
+sampler_params <- get_sampler_params(sensitivity_model_fit, inc_warmup = TRUE)
+
+# Summarize model fit
+summary(do.call(rbind, sampler_params), digits = 2)
 
 
-# * Posterior prior plots ----
-source("growth_analysis/Plot densities.R")
-plot_density(fit_backcalculated, file_name = "growth_analysis/Figure3_backcalculated", probs = c(0.01, 0.99))
+# Convergence diagnostics ----
+#https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html
+
+#Posterior ll
+lp_cp <- log_posterior(bc_model_fit)
+head(lp_cp)
+
+#Accepted prob
+np_cp <- nuts_params(bc_model_fit)
+head(np_cp)
+
+# Look at par vs divergence
+color_scheme_set("darkgray")
+posterior_cp <- as.array(bc_model_fit)
+mcmc_parcoord(posterior_cp, np = np_cp)
+
+#Look at ll vs acceptance
+color_scheme_set("red")
+mcmc_nuts_divergence(np_cp, lp_cp)
+
+# Print and plot MCMC ----
+print(bc_model_fit, pars=c("mu_linf", "mu_k", "mu_t0", "beta_linf", "beta_k", "beta_t0", "linf_lineage", "k_lineage", "t0_lineage"), probs=c(.1,.5,.9)) # None of the betas are sig
+traceplot(bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "sigma"), inc_warmup = FALSE, nrow = 2)
+traceplot(bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0"), inc_warmup = FALSE, nrow = 2)
+traceplot(bc_model_fit, pars = c("Lcorr", "sigma_group"), inc_warmup = FALSE, nrow = 2)
+traceplot(bc_model_fit, pars = c("Lcorr", "sigma_ind"), inc_warmup = FALSE, nrow = 2)
+
+pairs(bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("sigma_group", "Lcorr", "lp__"), las = 1)
+pairs(bc_model_fit, pars = c("sigma_ind", "Lcorr", "lp__"), las = 1)
+
+# BFMI low
+pairs_stan <- function(chain, stan_model, pars) {
+energy <- as.matrix(sapply(get_sampler_params(stan_model, inc_warmup = F), 
+                           function(x) x[,"energy__"]))
+pars <- extract(stan_model, pars = pars, permuted = F)
+df <- data.frame(energy[,chain], pars[,chain,])
+names(df)[1] <- "energy"
+
+GGally::ggpairs(df, title = paste0("Chain", chain), 
+                lower = list(continuous = GGally::wrap("points", alpha = 0.2)))                    
+ }
+ 
+pairs_stan(1, bc_model_fit, pars = c("mu_linf", "mu_k", "mu_t0", "lp__"))
+pairs_stan(1, bc_model_fit, pars = c("linf_lineage", "k_lineage", "t0_lineage", "lp__"))
+pairs_stan(1, bc_model_fit, pars = c("beta_linf", "beta_k", "beta_t0", "lp__"))
+pairs_stan(1, bc_model_fit, pars = c("Lcorr", "lp__"))
+
+check_energy(bc_model_fit)
+
+# Rhat for chain convergence
+rhats <- rhat(bc_model_fit)
+color_scheme_set("brightblue") # see help("color_scheme_set")
+mcmc_rhat(rhats)
+rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
+```
+
+##### 1c.2. Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
+
+##### Summarize ancestry-condition fit model output:
+```{r}
+# Load back-calculated model fit output
+load('data/growth_model_data/sensitivity_model_fit.Rda')
+
+# Convert model fit data to dataframe
+sensitivity_model_fit <- as.data.frame(sensitivity_model_fit)
+
+# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
+sensitivity_fixed <- sensitivity_model_fit %>%
+  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
+  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
+         k_diff = `k_lineage[1]` - `k_lineage[2]`,
+         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
+
+# Gather parameters and estimates at each iteration so that there are only two columns
+sensitivity_fixed <- sensitivity_fixed %>%
+  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
+  mutate(parameter = factor(parameter))
+
+# Summarize parameter estimates and 95% credible intervals
+sensitivity_fixed %>%
+  group_by(parameter) %>%
+  summarize(mean = mean(estimate),
+            sd = sd(estimate),
+            q2.5 = quantile(estimate, probs = 0.025),
+            q5 = quantile(estimate, probs = 0.05), 
+            q50 = quantile(estimate, probs = 0.50),
+            q95 = quantile(estimate, probs = 0.95),
+            q97.5 = quantile(estimate, probs = 0.975))
+```
+
+##### 1c.3. Plot 95% credible intervals for posterior differences of L∞, k, and a0 parameters; run the Rmd chunk below.
+
+##### Plot posterior differences: `figures/sensitivity_p_diffs.pdf`
+```{r}
+# Load back-calculated model fit output
+load('data/growth_model_data/sensitivity_model_fit.Rda')
+
+# Convert model fit data to dataframe
+sensitivity_model_fit <- as.data.frame(sensitivity_model_fit)
+
+# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
+sensitivity_fixed <- sensitivity_model_fit %>%
+  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
+  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
+         k_diff = `k_lineage[1]` - `k_lineage[2]`,
+         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
+
+# Gather parameters and estimates at each iteration so that there are only two columns
+sensitivity_fixed <- sensitivity_fixed %>%
+  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
+  mutate(parameter = factor(parameter))
+
+# Select only linf difference parameter for plotting
+linf_p_diffs <- sensitivity_fixed %>%
+  filter(parameter == "linf_diff")
+
+# Select only k difference parameter for plotting
+k_p_diffs <- sensitivity_fixed %>%
+  filter(parameter == "k_diff")
+
+# Select only t0 difference parameter for plotting
+t0_p_diffs <- sensitivity_fixed %>%
+  filter(parameter == "t0_diff")
+
+# Get posterior difference parameter plots
+linf <- ggplot(linf_p_diffs, aes(x = parameter, y = estimate)) +
+  geom_boxplot(fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Parameter", y = "Estimate") + 
+  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title = element_blank()) + 
+  theme(axis.text.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+# Get posterior difference parameter plots
+k <- ggplot(k_p_diffs, aes(x = parameter, y = estimate)) +
+  geom_boxplot(fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Parameter", y = "Estimate") + 
+  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title = element_blank()) + 
+  theme(axis.text.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+# Get posterior difference parameter plots
+t0 <- ggplot(t0_p_diffs, aes(x = parameter, y = estimate)) +
+  geom_boxplot(fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Parameter", y = "Estimate") + 
+  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title = element_blank()) + 
+  theme(axis.text.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+# Plot posterior difference 95% CIs
+pdf("figures/sensitivity_p_diffs.pdf", width = 9, height = 5)
+
+plot_grid(linf,
+          k,
+          t0,
+          nrow = 1,
+          ncol = 3)
+
+dev.off()
+```
+
+##### 1c.4. Plot 95% credible intervals for beta coefficient posterior densities of L∞, k, and a0 parameters for sex and stream; run the Rmd chunk below.
+
+##### Plot sensitivity posterior differences: 1) `figures/sensitivity_sex_betas.pdf`, 2) `figures/sensitivity_stream_betas.pdf`
+```{r}
+# Load back-calculated model fit output
+load('data/growth_model_data/sensitivity_model_fit.Rda')
+
+# Convert model fit data to dataframe
+sensitivity_model_fit <- as.data.frame(sensitivity_model_fit)
+
+# select columns with parameter estimates to summarize for analysis, and calculate posterior differences for ancestry-specific parameters
+sensitivity_fixed <- sensitivity_model_fit %>%
+  select(mu_linf, mu_k, mu_t0, "linf_lineage[1]", "linf_lineage[2]", "k_lineage[1]", "k_lineage[2]", "t0_lineage[1]", "t0_lineage[2]", "beta_linf[1]", "beta_linf[2]", "beta_k[1]", "beta_k[2]", "beta_t0[1]", "beta_t0[2]") %>%
+  mutate(linf_diff = `linf_lineage[1]` - `linf_lineage[2]`,
+         k_diff = `k_lineage[1]` - `k_lineage[2]`,
+         t0_diff = `t0_lineage[1]` - `t0_lineage[2]`)
+
+# Gather parameters and estimates at each iteration so that there are only two columns
+sensitivity_fixed <- sensitivity_fixed %>%
+  gather(mu_linf:t0_diff, key = "parameter", value = "estimate") %>%
+  mutate(parameter = factor(parameter))
+
+# Select only posterior densities for stream- and sex-specific fixed effects
+stream_sex_betas <- bc_fixed %>%
+  filter(parameter == "beta_linf[1]" |
+           parameter == "beta_linf[2]" |
+           parameter == "beta_k[1]" |
+           parameter == "beta_k[2]" |
+           parameter == "beta_t0[1]" |
+           parameter == "beta_t0[2]")
+
+# Add column in beta table to describe parameter type (linf, k, and t0) for facet wrapping in plot
+stream_sex_betas$variable <- factor(c(rep("Sex", times = 24000), 
+                                      rep("Stream", times = 24000), 
+                                      rep("Sex", times = 24000), 
+                                      rep("Stream", times = 24000), 
+                                      rep("Sex", times = 24000), 
+                                      rep("Stream", times = 24000)))
+
+# Get only betas for sex
+sex_betas <- stream_sex_betas %>%
+  filter(variable == "Sex")
+
+# Get only betas for stream 
+stream_betas <- stream_sex_betas %>%
+  filter(variable == "Stream")
+
+# Put parameters in desired order to show up on graph (linf, then k, then t0)
+sex_betas$parameter <- factor(sex_betas$parameter, levels = c("beta_linf[1]", "beta_k[1]", "beta_t0[1]"))
+
+# Put parameters in desired order to show up on graph (linf, then k, then t0)
+stream_betas$parameter <- factor(stream_betas$parameter, levels = c("beta_linf[2]", "beta_k[2]", "beta_t0[2]"))
+
+# Plot sex beta coefficient 95% CIs
+pdf("figures/sensitivity_sex_betas.pdf", width = 7, height = 5)
+
+ggplot(sex_betas, aes(x = parameter, y = estimate)) +
+  geom_boxplot(fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Parameter", y = "Estimate") + 
+  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+
+# Plot sex beta coefficient 95% CIs
+pdf("figures/sensitivity_stream_betas.pdf", width = 7, height = 5)
+
+ggplot(stream_betas, aes(x = parameter, y = estimate)) +
+  geom_boxplot(fill = "grey") +
+  theme_set(theme_cowplot(12)) +
+  labs(x = "Parameter", y = "Estimate") + 
+  geom_hline(yintercept = 0, size = 1, linetype = "longdash", color = "red") +
+  theme(axis.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text.x = element_blank()) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(10,10,10,10))
+
+dev.off()
+```
+
+##### 1c.5. Plot predicted observed using calculated parameter values; run the Rmd chunk below.
+
+##### Plot predicted observed length-at-age prediction: `figures/sensitivity_predict.pdf`
+```{r}
+# Load sensitivity model fit output
+load('data/growth_model_data/sensitivity_model_fit.Rda')
+
+# Load data for sensitivity growth model
+load("data/growth_model_data/sensitivity_model_data.Rda")
+
+# Load observed data
+load("data/bc_data/full_bc_data.Rda")
+
+# Convert model fit data to dataframe
+sensitivity_model_fit <- as.data.frame(sensitivity_model_fit)
+
+# Get sequence of ages
+ages <- seq(1, 15, 1)
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for female SMB from Big Sugar Creek
+f_bs_smb_predicted_length <- matrix(NA,
+                                    length(sensitivity_model_fit$mu_linf), 
+                                    length(ages)) 
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Big Sugar Creek
+f_bs_nb_predicted_length <- matrix(NA,
+                                   length(sensitivity_model_fit$mu_linf), 
+                                   length(ages)) 
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for female SMB from Elk River
+f_e_smb_predicted_length <- matrix(NA, 
+                                   length(sensitivity_model_fit$mu_linf), 
+                                   length(ages)) 
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Elk River
+f_e_nb_predicted_length <- matrix(NA, 
+                                  length(sensitivity_model_fit$mu_linf),
+                                  length(ages)) 
 
 
+# Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Big Sugar Creek
+m_bs_smb_predicted_length <- matrix(NA,
+                                    length(sensitivity_model_fit$mu_linf), 
+                                    length(ages)) 
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for male NB from Big Sugar Creek
+m_bs_nb_predicted_length <- matrix(NA, 
+                                   length(sensitivity_model_fit$mu_linf), 
+                                   length(ages)) 
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Elk River
+m_e_smb_predicted_length <- matrix(NA, 
+                                   length(sensitivity_model_fit$mu_linf), 
+                                   length(ages)) 
+
+# Generate empty matrix to hold predicted length values up to 15 annuli for male NB from Elk River
+m_e_nb_predicted_length <- matrix(NA, 
+                                  length(sensitivity_model_fit$mu_linf), 
+                                  length(ages)) 
+
+# Fill empty matrix for female SMB from Big Sugar Creek
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   f_bs_smb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[1]` * exp(sensitivity_model_fit$eta_smb_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[1]` * exp(sensitivity_model_fit$eta_smb_k) * (i - sensitivity_model_fit$`pred_t0[1]` - sensitivity_model_fit$eta_smb_t0)))
+
+}
+
+# Fill empty matrix for female NB from Big Sugar Creek
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   f_bs_nb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[1]` * exp(sensitivity_model_fit$eta_n_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[1]` * exp(sensitivity_model_fit$eta_n_k) * (i - sensitivity_model_fit$`pred_t0[1]` - sensitivity_model_fit$eta_n_t0)))
+
+}
+
+# Fill empty matrix for female SMB from Elk River
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   f_e_smb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[3]` * exp(sensitivity_model_fit$eta_smb_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[3]` * exp(sensitivity_model_fit$eta_smb_k) * (i - sensitivity_model_fit$`pred_t0[3]` - sensitivity_model_fit$eta_smb_t0)))
+
+}
+
+# Fill empty matrix for female NB from Elk River
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   f_e_nb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[3]` * exp(sensitivity_model_fit$eta_n_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[3]` * exp(sensitivity_model_fit$eta_n_k) * (i - sensitivity_model_fit$`pred_t0[3]` - sensitivity_model_fit$eta_n_t0)))
+
+}
+
+# Fill empty matrix for male SMB from Big Sugar Creek
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   m_bs_smb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[2]` * exp(sensitivity_model_fit$eta_smb_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[2]` * exp(sensitivity_model_fit$eta_smb_k) * (i - sensitivity_model_fit$`pred_t0[2]` - sensitivity_model_fit$eta_smb_t0)))
+
+}
+
+# Fill empty matrix for male NB from Big Sugar Creek
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   m_bs_nb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[2]` * exp(sensitivity_model_fit$eta_n_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[2]` * exp(sensitivity_model_fit$eta_n_k) * (i - sensitivity_model_fit$`pred_t0[2]` - sensitivity_model_fit$eta_n_t0)))
+
+}
+
+# Fill empty matrix for male SMB from Elk River
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   m_e_smb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[4]` * exp(sensitivity_model_fit$eta_smb_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[4]` * exp(sensitivity_model_fit$eta_smb_k) * (i - sensitivity_model_fit$`pred_t0[4]` -sensitivity_model_fit$eta_smb_t0)))
+
+}
+
+# Fill empty matrix for male NB from Elk River
+for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
+   m_e_nb_predicted_length[,i] = sensitivity_model_fit$`pred_linf[4]` * exp(sensitivity_model_fit$eta_n_linf) * (1 - exp(-sensitivity_model_fit$`pred_k[4]`* exp(sensitivity_model_fit$eta_n_k) * (i - sensitivity_model_fit$`pred_t0[4]` -sensitivity_model_fit$eta_n_t0)))
+
+}
+
+# Get numeric vectors to hold means and credible interval estimates from predictions
+f_bs_smb_mean_length <- f_bs_smb_uci_length <- f_bs_smb_lci_length <- numeric()
+f_bs_nb_mean_length <- f_bs_nb_uci_length <- f_bs_nb_lci_length <- numeric()
+f_e_smb_mean_length <- f_e_smb_uci_length <- f_e_smb_lci_length <- numeric()
+f_e_nb_mean_length <- f_e_nb_uci_length <- f_e_nb_lci_length <- numeric()
+m_bs_smb_mean_length <- m_bs_smb_uci_length <- m_bs_smb_lci_length <- numeric()
+m_bs_nb_mean_length <- m_bs_nb_uci_length <- m_bs_nb_lci_length <- numeric()
+m_e_smb_mean_length <- m_e_smb_uci_length <- m_e_smb_lci_length <- numeric()
+m_e_nb_mean_length <- m_e_nb_uci_length <- m_e_nb_lci_length <- numeric()
+
+# Predict mean and confidence intervals around trendline for female SMB from Big Sugar Creek
+for (i in 1:length(ages)){
+  f_bs_smb_mean_length[i] <- mean(f_bs_smb_predicted_length[,i]) 
+  f_bs_smb_uci_length[i] <- quantile(f_bs_smb_predicted_length[,i], probs=0.975)
+  f_bs_smb_lci_length[i] <- quantile(f_bs_smb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+f_bs_smb_mean_length <- as.data.frame(f_bs_smb_mean_length)
+f_bs_smb_uci_length <- as.data.frame(f_bs_smb_uci_length)
+f_bs_smb_lci_length <- as.data.frame(f_bs_smb_lci_length)
+
+# Change column names
+colnames(f_bs_smb_mean_length) <- c("length")
+colnames(f_bs_smb_uci_length) <- c("uci")
+colnames(f_bs_smb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+f_bs_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
+f_bs_smb_lci_length$sex <- factor(rep("Female", times = 15))
+f_bs_smb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
+
+# Bind mean, uci, and lci columns together
+f_bs_smb <- cbind(ages,
+                  f_bs_smb_mean_length,
+                  f_bs_smb_uci_length,
+                  f_bs_smb_lci_length)
+
+# Predict mean and confidence intervals around trendline for female NB from Big Sugar Creek
+for (i in 1:length(ages)){
+  f_bs_nb_mean_length[i] <- mean(f_bs_nb_predicted_length[,i]) 
+  f_bs_nb_uci_length[i] <- quantile(f_bs_nb_predicted_length[,i], probs=0.975)
+  f_bs_nb_lci_length[i] <- quantile(f_bs_nb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+f_bs_nb_mean_length <- as.data.frame(f_bs_nb_mean_length)
+f_bs_nb_uci_length <- as.data.frame(f_bs_nb_uci_length)
+f_bs_nb_lci_length <- as.data.frame(f_bs_nb_lci_length)
+
+# Change column names
+colnames(f_bs_nb_mean_length) <- c("length")
+colnames(f_bs_nb_uci_length) <- c("uci")
+colnames(f_bs_nb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+f_bs_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
+f_bs_nb_lci_length$sex <- factor(rep("Female", times = 15))
+f_bs_nb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
+
+# Bind mean, uci, and lci columns together
+f_bs_nb <- cbind(ages,
+                 f_bs_nb_mean_length,
+                 f_bs_nb_uci_length,
+                 f_bs_nb_lci_length)
+
+# Predict mean and confidence intervals around trendline for female SMB from Elk River
+for (i in 1:length(ages)){
+  f_e_smb_mean_length[i] <- mean(f_e_smb_predicted_length[,i]) 
+  f_e_smb_uci_length[i] <- quantile(f_e_smb_predicted_length[,i], probs=0.975)
+  f_e_smb_lci_length[i] <- quantile(f_e_smb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+f_e_smb_mean_length <- as.data.frame(f_e_smb_mean_length)
+f_e_smb_uci_length <- as.data.frame(f_e_smb_uci_length)
+f_e_smb_lci_length <- as.data.frame(f_e_smb_lci_length)
+
+# Change column names
+colnames(f_e_smb_mean_length) <- c("length")
+colnames(f_e_smb_uci_length) <- c("uci")
+colnames(f_e_smb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+f_e_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
+f_e_smb_lci_length$sex <- factor(rep("Female", times = 15))
+f_e_smb_lci_length$stream <- factor(rep("Elk River", times = 15))
+
+# Bind mean, uci, and lci columns together
+f_e_smb <- cbind(ages,
+                 f_e_smb_mean_length,
+                 f_e_smb_uci_length,
+                 f_e_smb_lci_length)
+
+# Predict mean and confidence intervals around trendline for female NB from Elk River
+for (i in 1:length(ages)){
+  f_e_nb_mean_length[i] <- mean(f_e_nb_predicted_length[,i]) 
+  f_e_nb_uci_length[i] <- quantile(f_e_nb_predicted_length[,i], probs=0.975)
+  f_e_nb_lci_length[i] <- quantile(f_e_nb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+f_e_nb_mean_length <- as.data.frame(f_e_nb_mean_length)
+f_e_nb_uci_length <- as.data.frame(f_e_nb_uci_length)
+f_e_nb_lci_length <- as.data.frame(f_e_nb_lci_length)
+
+# Change column names
+colnames(f_e_nb_mean_length) <- c("length")
+colnames(f_e_nb_uci_length) <- c("uci")
+colnames(f_e_nb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+f_e_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
+f_e_nb_lci_length$sex <- factor(rep("Female", times = 15))
+f_e_nb_lci_length$stream <- factor(rep("Elk River", times = 15))
+
+# Bind mean, uci, and lci columns together
+f_e_nb <- cbind(ages,
+                f_e_nb_mean_length,
+                f_e_nb_uci_length,
+                f_e_nb_lci_length)
+
+# Predict mean and confidence intervals around trendline for male SMB from Big Sugar Creek
+for (i in 1:length(ages)){
+  m_bs_smb_mean_length[i] <- mean(m_bs_smb_predicted_length[,i]) 
+  m_bs_smb_uci_length[i] <- quantile(m_bs_smb_predicted_length[,i], probs=0.975)
+  m_bs_smb_lci_length[i] <- quantile(m_bs_smb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+m_bs_smb_mean_length <- as.data.frame(m_bs_smb_mean_length)
+m_bs_smb_uci_length <- as.data.frame(m_bs_smb_uci_length)
+m_bs_smb_lci_length <- as.data.frame(m_bs_smb_lci_length)
+
+# Change column names
+colnames(m_bs_smb_mean_length) <- c("length")
+colnames(m_bs_smb_uci_length) <- c("uci")
+colnames(m_bs_smb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+m_bs_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
+m_bs_smb_lci_length$sex <- factor(rep("Male", times = 15))
+m_bs_smb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
+
+# Bind mean, uci, and lci columns together
+m_bs_smb <- cbind(ages,
+                  m_bs_smb_mean_length,
+                  m_bs_smb_uci_length,
+                  m_bs_smb_lci_length)
+
+# Predict mean and confidence intervals around trendline for male NB from Big Sugar Creek
+for (i in 1:length(ages)){
+  m_bs_nb_mean_length[i] <- mean(m_bs_nb_predicted_length[,i]) 
+  m_bs_nb_uci_length[i] <- quantile(m_bs_nb_predicted_length[,i], probs=0.975)
+  m_bs_nb_lci_length[i] <- quantile(m_bs_nb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+m_bs_nb_mean_length <- as.data.frame(m_bs_nb_mean_length)
+m_bs_nb_uci_length <- as.data.frame(m_bs_nb_uci_length)
+m_bs_nb_lci_length <- as.data.frame(m_bs_nb_lci_length)
+
+# Change column names
+colnames(m_bs_nb_mean_length) <- c("length")
+colnames(m_bs_nb_uci_length) <- c("uci")
+colnames(m_bs_nb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+m_bs_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
+m_bs_nb_lci_length$sex <- factor(rep("Male", times = 15))
+m_bs_nb_lci_length$stream <- factor(rep("Big Sugar Creek", times = 15))
+
+# Bind mean, uci, and lci columns together
+m_bs_nb <- cbind(ages,
+                 m_bs_nb_mean_length,
+                 m_bs_nb_uci_length,
+                 m_bs_nb_lci_length)
+
+# Predict mean and confidence intervals around trendline for male SMB from Elk River
+for (i in 1:length(ages)){
+  m_e_smb_mean_length[i] <- mean(m_e_smb_predicted_length[,i]) 
+  m_e_smb_uci_length[i] <- quantile(m_e_smb_predicted_length[,i], probs=0.975)
+  m_e_smb_lci_length[i] <- quantile(m_e_smb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+m_e_smb_mean_length <- as.data.frame(m_e_smb_mean_length)
+m_e_smb_uci_length <- as.data.frame(m_e_smb_uci_length)
+m_e_smb_lci_length <- as.data.frame(m_e_smb_lci_length)
+
+# Change column names
+colnames(m_e_smb_mean_length) <- c("length")
+colnames(m_e_smb_uci_length) <- c("uci")
+colnames(m_e_smb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+m_e_smb_lci_length$ancestry <- factor(rep("SMB", times = 15))
+m_e_smb_lci_length$sex <- factor(rep("Male", times = 15))
+m_e_smb_lci_length$stream <- factor(rep("Elk River", times = 15))
+
+# Bind mean, uci, and lci columns together
+m_e_smb <- cbind(ages,
+                 m_e_smb_mean_length,
+                 m_e_smb_uci_length,
+                 m_e_smb_lci_length)
+
+# Predict mean and confidence intervals around trendline for male NB from Elk River
+for (i in 1:length(ages)){
+  m_e_nb_mean_length[i] <- mean(m_e_nb_predicted_length[,i]) 
+  m_e_nb_uci_length[i] <- quantile(m_e_nb_predicted_length[,i], probs=0.975)
+  m_e_nb_lci_length[i] <- quantile(m_e_nb_predicted_length[,i], probs=0.025)
+}
+
+# Generate dataframes for each vector
+m_e_nb_mean_length <- as.data.frame(m_e_nb_mean_length)
+m_e_nb_uci_length <- as.data.frame(m_e_nb_uci_length)
+m_e_nb_lci_length <- as.data.frame(m_e_nb_lci_length)
+
+# Change column names
+colnames(m_e_nb_mean_length) <- c("length")
+colnames(m_e_nb_uci_length) <- c("uci")
+colnames(m_e_nb_lci_length) <- c("lci")
+
+# Add additional descriptor columns for ancestry, sex, and stream
+m_e_nb_lci_length$ancestry <- factor(rep("NB", times = 15))
+m_e_nb_lci_length$sex <- factor(rep("Male", times = 15))
+m_e_nb_lci_length$stream <- factor(rep("Elk River", times = 15))
+
+# Bind mean, uci, and lci columns together
+m_e_nb <- cbind(ages,
+                m_e_nb_mean_length,
+                m_e_nb_uci_length,
+                m_e_nb_lci_length)
+  
+# Bind all data frames together by row
+sensitivity_predict <- rbind(f_bs_smb,
+                             f_bs_nb,
+                             f_e_smb,
+                             f_e_nb,
+                             m_bs_smb,
+                             m_bs_nb,
+                             m_e_smb,
+                             m_e_nb)
+
+# Get dataframe for females in Big Sugar Creek
+f_bs <- sensitivity_predict %>%
+  filter(sex == "Female" & stream == "Big Sugar Creek")
+
+# Get dataframe for males in Big Sugar Creek
+m_bs <- sensitivity_predict %>%
+  filter(sex == "Male" & stream == "Big Sugar Creek")
+
+# Get dataframe for females in Elk River
+f_e <- sensitivity_predict %>%
+  filter(sex == "Female" & stream == "Elk River")
+
+# Get dataframe for males in Elk River
+m_e <- sensitivity_predict %>%
+  filter(sex == "Male" & stream == "Elk River")
+
+# Get raw data for females in Big Sugar Creek
+obs_f_bs <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  filter(sex == "Female" & river == "Big_Sugar")
+
+# Get raw data for males in Big Sugar Creek
+obs_m_bs <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  filter(sex == "Male" & river == "Big_Sugar")
+
+# Get raw data for females in Elk River
+obs_f_e <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  filter(sex == "Female" & river == "Elk_River")
+
+# Get raw data for males in Elk River
+obs_m_e <- full_bc_data %>%
+  group_by(sample_id) %>%
+  slice(n()) %>%
+  filter(sex == "Male" & river == "Elk_River")
 
 
+# Plot females in big sugar creek
+f_bs_plot <- ggplot() + 
+  geom_ribbon(data = f_bs, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = obs_f_bs, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
+  geom_line(data = f_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,700), breaks = seq(0, 700, 100)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(15,15,15,15))
 
+# Plot males in big sugar creek
+m_bs_plot <- ggplot() + 
+  geom_ribbon(data = m_bs, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = obs_m_bs, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
+  geom_line(data = m_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,700), breaks = seq(0, 700, 100)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(15,15,15,15))
 
+# Plot males in big sugar creek
+f_e_plot <- ggplot() + 
+  geom_ribbon(data = f_e, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = obs_f_e, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
+  geom_line(data = f_e, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,700), breaks = seq(0, 700, 100)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(15,15,15,15))
 
+# Plot males in big sugar creek
+m_e_plot <- ggplot() + 
+  geom_ribbon(data = m_e, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_point(data = obs_m_e, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
+  geom_line(data = m_e, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
+  theme_set(theme_cowplot(12)) +
+  scale_color_manual(values = c("deeppink2","deepskyblue")) +
+  scale_fill_manual(values = c("grey","grey")) +
+  scale_x_continuous(name = "Annulus (years)", expand = c(0,0), breaks = seq(1, 15, 1)) +
+  scale_y_continuous(name = "Back-calculated total length (mm)", limits = c(0,700), breaks = seq(0, 700, 100)) +
+  theme(axis.title = element_text(size = 15)) + 
+  theme(axis.text = element_text(size = 15)) +
+  theme(panel.border = element_rect(colour = "black", fill = NA)) +
+  theme(plot.margin = margin(15,15,15,15))
 
+# Plot all von bertalanffy curves
+pdf("figures/sensitivity_predict.pdf", width = 12, height = 9)
 
-# * Summary ----
+plot_grid(f_bs_plot,
+          m_bs_plot,
+          f_e_plot,
+          m_e_plot,
+          ncol = 2,
+          nrow = 2)
 
-# - SMB - NB Females River 1 difference
-length_at_age_diff <- draws[,grepl("pred_length\\[2,",colnames(draws))] - draws[,grepl("pred_length\\[6,",colnames(draws))]
-colnames(length_at_age_diff) <- paste0("Difference at ", 1:8, " annuli")
-length_at_age_diff <- rbind(
-  apply(length_at_age_diff, 2, mean), 
-  apply(length_at_age_diff, 2, function(x) quantile(x, probs=c(.025, 0.05, .5, 0.95, .975)))
-)
-length_at_age_diff <- t(length_at_age_diff)
-
-# - Predicted length-at-age
-length_at_age_smb <- draws[,grepl("pred_length\\[2,",colnames(draws))]
-colnames(length_at_age_smb) <- paste0("SMB ",  1:8, " annuli")
-length_at_age_smb <- rbind(
-  apply(length_at_age_smb, 2, mean), 
-  apply(length_at_age_smb, 2, function(x) quantile(x, probs=c(.025, 0.05, .5, 0.95, .975)))
-)
-length_at_age_smb <- t(length_at_age_smb)
-
-length_at_age_n <- draws[,grepl("pred_length\\[6,",colnames(draws))]
-colnames(length_at_age_n) <- paste0("NB ", 1:8, " annuli")
-length_at_age_n <- rbind(
-  apply(length_at_age_n, 2, mean), 
-  apply(length_at_age_n, 2, function(x) quantile(x, probs=c(.025, 0.05, .5, 0.95, .975)))
-)
-length_at_age_n <- t(length_at_age_n)
-
-write.csv(rbind(length_at_age_smb, length_at_age_n, length_at_age_diff), file = "growth_analysis/Table3_backcalculated_length_at_age.csv")
-
-
+dev.off()
 ```
 
 ### ----------------------- END OF PHASE 2: VON BERTALANFFY GROWTH ANALYSIS ----------------------- ###
