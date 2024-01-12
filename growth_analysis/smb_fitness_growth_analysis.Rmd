@@ -726,6 +726,10 @@ rhats <- rhat(bc_model_fit)
 color_scheme_set("brightblue") # see help("color_scheme_set")
 mcmc_rhat(rhats)
 rhats <- data.frame(Parm = names(rhats), Rhat = rhats)
+
+# Plot prior and posterior density distributions with custom code
+source("growth_analysis/plot_density.R")
+plot_density(bc_model_fit, file_name = "growth_analysis/figures/bc_density.pdf", probs = c(0.01, 0.99))
 ```
 
 ##### 1c.2. Summarize mean and 95 credible intervals for all model coefficients; run the Rmd chunk below:
