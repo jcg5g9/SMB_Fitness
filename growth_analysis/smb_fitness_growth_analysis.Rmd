@@ -960,8 +960,8 @@ f_bs_smb_predicted_length <- matrix(NA,
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Big Sugar Creek
 f_bs_nb_predicted_length <- matrix(NA,
-                                length(bc_model_fit$mu_linf), 
-                                length(ages)) 
+                                   length(bc_model_fit$mu_linf), 
+                                   length(ages)) 
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for female SMB from Elk River
 f_e_smb_predicted_length <- matrix(NA, 
@@ -970,9 +970,8 @@ f_e_smb_predicted_length <- matrix(NA,
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for female NB from Elk River
 f_e_nb_predicted_length <- matrix(NA, 
-                                 length(bc_model_fit$mu_linf),
-                                 length(ages)) 
-
+                                  length(bc_model_fit$mu_linf),
+                                  length(ages)) 
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Big Sugar Creek
 m_bs_smb_predicted_length <- matrix(NA,
@@ -986,13 +985,13 @@ m_bs_nb_predicted_length <- matrix(NA,
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for male SMB from Elk River
 m_e_smb_predicted_length <- matrix(NA, 
-                               length(bc_model_fit$mu_linf), 
-                               length(ages)) 
+                                   length(bc_model_fit$mu_linf), 
+                                   length(ages)) 
 
 # Generate empty matrix to hold predicted length values up to 15 annuli for male NB from Elk River
 m_e_nb_predicted_length <- matrix(NA, 
-                               length(bc_model_fit$mu_linf), 
-                               length(ages)) 
+                                  length(bc_model_fit$mu_linf), 
+                                  length(ages)) 
 
 # Fill empty matrix for female SMB from Big Sugar Creek
 for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
@@ -1032,13 +1031,13 @@ for (i in 1:length(ages)) { # fill empty matrix with predicted values using the 
 
 # Fill empty matrix for male SMB from Elk River
 for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   m_e_smb_predicted_length[,i] = bc_model_fit$`pred_linf[4]` * exp(bc_model_fit$eta_smb_linf) * (1 - exp(-bc_model_fit$`pred_k[4]` * exp(bc_model_fit$eta_smb_k) * (i - bc_model_fit$`pred_t0[4]` -bc_model_fit$eta_smb_t0)))
+   m_e_smb_predicted_length[,i] = bc_model_fit$`pred_linf[4]` * exp(bc_model_fit$eta_smb_linf) * (1 - exp(-bc_model_fit$`pred_k[4]` * exp(bc_model_fit$eta_smb_k) * (i - bc_model_fit$`pred_t0[4]` - bc_model_fit$eta_smb_t0)))
 
 }
 
 # Fill empty matrix for male NB from Elk River
 for (i in 1:length(ages)) { # fill empty matrix with predicted values using the model
-   m_e_nb_predicted_length[,i] = bc_model_fit$`pred_linf[4]` * exp(bc_model_fit$eta_n_linf) * (1 - exp(-bc_model_fit$`pred_k[4]`* exp(bc_model_fit$eta_n_k) * (i - bc_model_fit$`pred_t0[4]` -bc_model_fit$eta_n_t0)))
+   m_e_nb_predicted_length[,i] = bc_model_fit$`pred_linf[4]` * exp(bc_model_fit$eta_n_linf) * (1 - exp(-bc_model_fit$`pred_k[4]`* exp(bc_model_fit$eta_n_k) * (i - bc_model_fit$`pred_t0[4]` - bc_model_fit$eta_n_t0)))
 
 }
 
@@ -1321,7 +1320,7 @@ bc_m_e <- full_bc_data %>%
 
 # Plot females in big sugar creek
 f_bs_plot <- ggplot() + 
-  geom_ribbon(data = f_bs, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = F) +
+  geom_ribbon(data = f_bs, aes(x = ages, ymin = lci, ymax = uci, fill = ancestry, alpha = 0.01), show.legend = T) +
   geom_point(data = bc_f_bs, aes(x = annulus, y = bc_tl), position = position_jitter(width = 0.3), fill = "grey", show.legend = F, size = 3, pch = 21, alpha = 0.6) + 
   geom_line(data = f_bs, aes(x = ages, y = length, color = ancestry), size = 1, show.legend = F) +
   theme_set(theme_cowplot(12)) +
