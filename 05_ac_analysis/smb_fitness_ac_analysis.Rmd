@@ -97,9 +97,6 @@ save(condition_data, file = "data/condition_data.Rda")
 
 ### ----------------------- END OF PHASE 1: PHYSIOLOGICAL CONDITION CALCULATION AND ANALYSIS ----------------------- ###
 
-### ----------------------- END OF ANALYSIS 2: FILTERING ANALYSIS ----------------------- ###
-
-
 ### PHASE 2: LINEAR REGRESSION OF ANCESTRY AND CONDITION
 In this step, we use a generalized linear model in a Bayesian hierarchical framework to assess the correlation between non-native SMB ancestry and body condition in the NB native range. 
 
