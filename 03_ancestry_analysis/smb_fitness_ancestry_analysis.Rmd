@@ -1,5 +1,5 @@
 ---
-title: "Analysis 3: Ancestry Inference and Genetic Group Assignment Analysis"
+title: "Analysis 3: Ancestry Inference Analysis"
 author: "Joe Gunn"
 date: "2022-07-28"
 output: html_document
@@ -13,7 +13,7 @@ For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see 
 
 ## Phases of Analysis
 ### Phase 1: Ancestry inference
-### Phase 2:Ancestry and heterozygosity summary and vizualization
+### Phase 2: Ancestry summary and vizualization
 
 Programs needed:
 
@@ -35,8 +35,6 @@ library(tidyverse)
 library(cowplot)
 library(readxl)
 library(writexl)
-library(genepopedit)
-library(inbreedR)
 ```
 
 ## PHASE 1: ANCESTRY INFERENCE
@@ -45,71 +43,59 @@ In this phase of analysis, we use the software program STRUCTURE (see line 20 ab
 ### STEP 1: Data preparation
 In this step, we prepare all genotype data from the full, filtered dataset (`../filtering_analysis/data/processed_raw_data/full_data.rda`) for ancestry inference in the program STRUCTURE. We subset out all metadata and phenotype data and retain only unique sample IDs and microsatellite genotype information.
 
-#### 1a: Load the fully filtered dataset ('full_data'); run the Rmd chunk below.
+#### 1a: Load the fully filtered dataset ('full_data'), subset only genetic data, and generate excel file to hold genotype data for analysis in STRUCTURE; run the Rmd chunk below.
+In this step, we are sub-setting the fully filtered data to only include samples of interest for analysis of population structure and hybridization between SPB and the SMBC. For this analysis, these data will include all individuals across the whole dataset, but only SNP loci that were found to be diagnostic between SPB and the SMBC (SPB-SNPS)
 
 ##### Load in full, filtered data:
 ```{r}
-load("../filtering_analysis/data/processed_raw_data/full_data.rda")
-```
+load("../filtering_analysis/data/full_data.rda")
 
-#### 1b: Subset the data to include only individuals for the full population structure analysis and SPB diagnostic SNPs
-In this step, we are sub-setting the fully filtered data to only include samples of interest for analysis of population structure and hybridization between SPB and the SMBC. For this analysis, these data will include all individuals across the whole dataset, but only SNP loci that were found to be diagnostic between SPB and the SMBC (SPB-SNPS)
-
-##### 1b.1. Subset full data to include only sample_id and microsatellite genotypes; run the Rmd chunk below:
-
-##### Filter out genotype data:
-```{r}
 ## retain only sample_id column and genotype data
-full_data <- full_data[,c(2,10:37)]
+genotype_data <- full_data[,c(2,10:37)]
+
+## Generate excel files to hold genotype data
+write_xlsx(genotype_data, path = "data/processed_genotype_data/genotype_data.xlsx")
 ```
 
 <b>Details on full genotype dataset:</b> <br>
 <i>N</i><sub>samples</sub> = 136 <br>
 <i>N</i><sub>loci</sub> = 14 <br>
 
-#### 1c: Generate a new excel file with filtered genotype data; run the Rmd chunk below.
-
-##### Generate Excel file, which is stored in the directory `data/processed_genotype_data/`
-```{r}
-## Generate excel files to hold genotype data
-write_xlsx(full_data, path = "data/processed_genotype_data/genotype_data.xlsx")
-```
-
-#### 1d: Generate genepop file format in Excel.
+#### 1b: Generate genepop file format in Excel.
 In this step, we manually converted the Excel file generated in step 1c to basic Genepop format, carefully following the steps below:
 
-##### 1d.1. Remove any metadata columns from the dataset except for "sample_id"
+##### 1b.1. Remove any metadata columns from the dataset except for "sample_id"
 
-##### 1d.2. Add a "," after each sample_id
+##### 1b.2. Add a "," after each sample_id
 
-##### 1d.3. Designate different "populations" and insert a row above each new population in the data. Insert "pop" in the sample_id column in each empty row (the word "pop" should appear for each population)
+##### 1b.3. Designate different "populations" and insert a row above each new population in the data. Insert "pop" in the sample_id column in each empty row (the word "pop" should appear for each population)
 
 For this analysis, we opted to treat each "stream" or "lake" as a distinct population, both in the sample data (Big Sugar Creek and Elk River) and reference data (Crooked Creek, White River, and Tablerock Lake). We therefore chose to split the data by the "FBS" ID series (Big Sugar Creek) and "FER" series (Elk River), and by samples in the reference populations known to occur within each river.
 
-##### 1d.4. Concatenate alleles at each locus. The genotype file contains two columns for each microsatellite locus (28 columns total), one column with one allele, and the other column with a second allele, each a three-digit number. In Excel, concatenate each pair of alleles at each locus to generate only 14 total locus columns
+##### 1b.4. Concatenate alleles at each locus. The genotype file contains two columns for each microsatellite locus (28 columns total), one column with one allele, and the other column with a second allele, each a three-digit number. In Excel, concatenate each pair of alleles at each locus to generate only 14 total locus columns
 
-##### 1d.4. Copy the header row of SNP IDs and transpose paste in a new Excel sheet; each SNP ID should be listed in its own row (number of rows should be equal to numbrer of SNP IDs)
+##### 1b.4. Copy the header row of SNP IDs and transpose paste in a new Excel sheet; each SNP ID should be listed in its own row (number of rows should be equal to numbrer of SNP IDs)
 
-##### 1d.6. Copy all genotype and label data from the original Excel file and paste in the row immediately below the list of SNP IDs
+##### 1b.6. Copy all genotype and label data from the original Excel file and paste in the row immediately below the list of SNP IDs
 
-##### 1d.7. Save the Excel sheet as a .xlsx and a .txt file in a new folder: `data/genepop_data/genepop.txt`, etc.
+##### 1b.7. Save the Excel sheet as a .xlsx and a .txt file in a new folder: `data/genepop_data/genepop.txt`, etc.
 
-#### 1e: Generate STRUCTURE formatted files from genepop format
+#### 1c: Generate STRUCTURE formatted files from genepop format
 In this step, we are reading in, checking, and converting genepop files for combined datasets into STRUCTURE formatted files. There are quite a few tricky and very specific formatting needs for the genepop text file before genepopedit will convert successfully. Follow Step 3a below closely to create a proper genepop format. Use Ctrl + F to find and replace the necessary things.
 
 ##### IMPORTANT NOTE ON DATA: genepopedit requires that sample names be in the format 'popname_01', 'popname_02', etc. where the 'popname' is a signifier for the population of origin for the sample, and the '01', etc. are numerical designations for the samples. 'popname' and the numeric must be separated by a "_", and there can only be a single "_". Otherwise, genepopedit will not read the sample's population of origin correctly. In the case of this project, we are clumping samples together by stream for STRUCTURE analysis to see if there is substructure mapped by stream. Many sample IDs in our dataset were not in the required format, so we added an additional column to the metadata set and associated processed data sets called "structure_ID", which gives a unique sample name in the proper structure format. This column can then be linked back to any other column in downstream analyses if we need to know which specific samples the results came from. 
 
-##### 1e.1 Follow the guide for the library 'genepopedit' (Stanley et al. [year]) to prepare genepop files before converting them to STRUCTURE format.
+##### 1c.1 Follow the guide for the library 'genepopedit' (Stanley et al. [year]) to prepare genepop files before converting them to STRUCTURE format.
 
-##### 1e.1.1 All "," in the genepop text files were manually replaced with " ,  "
+##### 1c.1.1 All "," in the genepop text files were manually replaced with " ,  "
 
-##### 1e.1.2 All "tabs" between six-digit alleles were were manually replaced with " " (a single space).
+##### 1c.1.2 All "tabs" between six-digit alleles were were manually replaced with " " (a single space).
 
-##### 1e.1.3 The top row designating the dataset combination was manually omitted.
+##### 1c.1.3 The top row designating the dataset combination was manually omitted.
 
-##### 1e.1.4. Any additional space at the bottom of the text file was removed.
+##### 1c.1.4. Any additional space at the bottom of the text file was removed.
 
-##### 1e.2. Generate STRUCTURE files from genepop files
+##### 1c.2. Generate STRUCTURE files from genepop files
 Here it is important to not include the 'popgroup = ' unless it is explicitly necessary. Assigning popgroup to a dataframe with population names will cause the STRUCTURE input file to have word strings in the popdata column. Our experience is that STRUCTURE expects an integer here rather than a string, so best not to use popgroup.
 
 ##### Convert genepop to STRUCTURE format: files are stored in the directory `data/structure_data/`
@@ -120,7 +106,7 @@ genepop_structure("data/genepop_data/genepop.txt",
                   path = "data/structure_data/input_data/structure.txt")
 ```
 
-#### 1f: Generate batch list files and shell scripts for running STRUCTURE in parallel
+#### 1d: Generate batch list files and shell scripts for running STRUCTURE in parallel
 In this step, we are creating batch lists of command line code to run STRUCTURE analyses in parallel. Each batch list will contain a separate line of code to run a single replicate at an a priori determined number of populations (<i>K</i>, listed in the chunk above for each dataset). We will run each analysis in 10 replicates at each <i>K</i>, e.g.:
 
 structure -K 1 -m mainparams -e extraparams -i structure_input.txt -o structure_output_1_1
@@ -139,7 +125,7 @@ structure -K 2 -m mainparams -e extraparams -i structure_input.txt -o structure_
 .
 where, in the output name, the first number represents the <i>K</i> value for the run, and the last number represents the replicate.
 
-##### 1f.1. Generate batch list file; run the Rmd chunk below.
+##### 1d.1. Generate batch list file; run the Rmd chunk below.
 The Rmd chunk below generates a list of commands that contains the full cluster paths (/home/data/...) for necessary files.
 
 ##### Generate batch commands: `code/batch_cmd_lists/structure_batch_cmd_list.txt`
@@ -173,7 +159,7 @@ for(ii in 1:nrow(nk)) {
 }
 ```
 
-##### 1f.2. Generate shell script; run the Rmd chunk below.
+##### 1d.2. Generate shell script; run the Rmd chunk below.
 
 ##### IMPORTANT NOTE: This shell script was generated on the server directly, and thus the Rmd chunk below does not need to be run to generate the file. This is purely to keep a record of each script file. 
 
@@ -218,40 +204,40 @@ for(ii in 1:nrow(nk)) {
 #echo "### Ending at: $(date) ###"
 ```
 
-#### 1g: Prepare mainparam and extraparam files for STRUCTURE.
+#### 1e: Prepare mainparam and extraparam files for STRUCTURE.
 In this step, we are preparing the mainparam and extraparam input files for STRUCTURE so that they are unique to each analysis we are running.
 
-##### 1g.1. Edit base mainparam STRUCTURE file (downloaded with STRUCTURE program) and generate a separate, unique mainparam file.
+##### 1e.1. Edit base mainparam STRUCTURE file (downloaded with STRUCTURE program) and generate a separate, unique mainparam file.
 
 <b>mainparam file:</b> <br>
 `../data/structure_data/param_files/mainparams` <br> 
 
-###### 1g.1.1. Edit "maxpops" value to reflect the number of populations designated in Step 3b above. These values should be the following:
+###### 1e.1.1. Edit "maxpops" value to reflect the number of populations designated in Step 3b above. These values should be the following:
 
 <b>Sample and reference populations:</b> 5 <br>
 
-###### 1g.1.2. Set the number of burn-in and MCMC iterations to run; these are the same for each analysis:
+###### 1e.1.2. Set the number of burn-in and MCMC iterations to run; these are the same for each analysis:
 
 <b>Burn-in runs:</b> 500,000 <br>
 <b>MCMC runs:</b> 1,000,000 <br>
 
-###### 1g.1.3. Set the number of individuals. These values should be the following:
+###### 1e.1.3. Set the number of individuals. These values should be the following:
 
 <b>Individuals:</b> 136 <br>
 
-###### 1g.1.4 Set the number of loci. These values should be the following:
+###### 1e.1.4 Set the number of loci. These values should be the following:
 
 <b>Loci:</b> 14 <br>
 
-###### 1g.1.5. Set 'ONEROWPERIND' to '0'.
+###### 1e.1.5. Set 'ONEROWPERIND' to '0'.
 
-###### 1g.1.6. Set 'LABEL' to '1'.
+###### 1e.1.6. Set 'LABEL' to '1'.
 
-###### 1g.1.7. Set 'POPDATA' to '1'.
+###### 1e.1.7. Set 'POPDATA' to '1'.
 
-###### 1g.1.8. Set 'POPFLAG' to '0'.
+###### 1e.1.8. Set 'POPFLAG' to '0'.
 
-##### 1g.2. Edit base extraparam STRUCTURE file (downloaded with STRUCTURE program).
+##### 1e.2. Edit base extraparam STRUCTURE file (downloaded with STRUCTURE program).
 We did not change any of the default settings in the extraparams file (most importantly, we used the default admixture model), so we only used a single extraparams file.
 
 <b>extraparam file:</b> <br>
@@ -409,83 +395,8 @@ save(q, file = "data/structure_data/ancestry_data/q.Rda")
 
 ### ----------------------- END OF PHASE 1: ANCESTRY INFERENCE ----------------------- ###
 
-## PHASE 2: HETEROZYGOSITY INFERENCE
-In this phase of the analysis, we compute standardized multilocus heterozygosity for each individual, which is the individual heterozygosity relative to the global mean heterozygosity value. 
-
-### STEP 1: Read in raw genotype data and convert to input format for inbreedR package.
-In this step, we convert the raw genotype data into the correct input format for the inbreedR package (which is used to assess heterozygosity fitness correlation).
-
-#### 1a: Read in and format raw genotype data; run the Rmd chunk below.
-
-##### Read in and format data for inbreedR:
-```{r}
-# Load genotype data
-load("../filtering_analysis/data/processed_raw_data/genotype_data.Rda")
-
-# Omit sample id column, only retaining raw genotype data
-genotype_data <- genotype_data[,-c(1)]
-
-# generate dataframe for inbreedR; convert sample id column into row names
-ibr <- column_to_rownames(genotype_data, "structure_number")
-
-# Convert data to inbreedR format
-ibr <- convert_raw(ibr)
-
-# Check dataset in inbreedR
-check_data(ibr)
-
-# Save inbreedR data object
-save(ibr, file = "data/inbreedr_data/ibr.Rda")
-```
-
-### STEP 2: Calculate g2 statistic and heterozygosity values (significant g2 indicates that heterozygosity values are correlated such that they are indicative of genome-wide heterozygosity)
-
-#### 2a: Calculate g2 statistic; run the Rmd chunk below:
-
-##### Calculate g2 statistic:
-```{r}
-# Load ibr data
-load("data/inbreedr_data/ibr.Rda")
-
-# Calculate g2 statistic in inbreedR
-g2 <- g2_microsats(ibr,
-                   nperm = 1000, 
-                   nboot = 1000, 
-                   CI = 0.95)
-```
-
-<b>Results Summary:</b> 
-
-p(g2) = 0.019 (significant); there is sufficient power to detect genome-wide heterozygosity
-
-#### 2b: Calculate standardized multilocus heterozygosity; run the Rmd chunk below:
-
-##### Calculate heterozygosity:
-```{r}
-# Load ibr data
-load("data/inbreedr_data/ibr.Rda")
-
-# Compute standardized multi-locus heterozygosity
-h <- sMLH(ibr)
-
-# Convert to data frame
-h <- data.frame(h)
-
-# Convert rownames (sample id) back to column
-h <- rownames_to_column(h, "structure_number")
-
-# Convert characters to factors for sample id column
-h <- h %>%
-  mutate(structure_number = factor(structure_number))
-
-# Save heterozygosity data object
-save(h, file = "data/inbreedr_data/h.Rda")
-```
-
-### ----------------------- END OF PHASE 2: HETEROZYGOSITY INFERENCE ----------------------- ###
-
-## PHASE 3: ANCESTRY AND HETEROZYGOSITY SUMMARY AND VISUALIZATION
-In this phase of analysis, we visualize ancestry coefficients and heterozygosity across the full sample set.
+## PHASE 2: ANCESTRY SUMMARY AND VISUALIZATION
+In this phase of analysis, we visualize ancestry coefficients across the full sample set.
 
 ### STEP 1: Order ancestry data for plotting; run the Rmd chunk below.
 In this step, we arrange samples with the Smallmouth Bass range (reference samples) and samples within the Neosho Bass range (Big Sugar Creek and Elk River samples) in order of Smallmouth Bass ancestry coefficient for effective plotting.
@@ -638,17 +549,17 @@ load("../filtering_analysis/data/processed_raw_data/full_data.Rda")
 
 # Merge full data with ancestry metadata
 full_ancestry_data <- merge(full_data, 
-                   ancestry_metadata, 
-                   by = c("sample_id", 
-                          "structure_number", 
-                          "river_code",
-                          "sample_number", 
-                          "easting", 
-                          "northing", 
-                          "dist_from_df",
-                          "range_id", 
-                          "river",
-                          "population"))
+                            ancestry_metadata, 
+                            by = c("sample_id", 
+                                   "structure_number", 
+                                   "river_code",
+                                   "sample_number", 
+                                   "easting", 
+                                   "northing", 
+                                   "dist_from_df",
+                                   "range_id", 
+                                   "river",
+                                   "population"))
 
 # Save full ancestry data for all downstream analyses
 save(full_ancestry_data, file = "data/processed_ancestry_data/full_ancestry_data.Rda")
@@ -812,3 +723,8 @@ full_ancestry_data %>%
 
 <b>SMB</b><sub>Male</sub>	0.3800947	(0.2240447)
 <b>NB</b><sub>Male</sub> 0.6199053	(0.2240447)
+
+### ----------------------- END OF PHASE 2: ANCESTRY SUMMARY AND VISUALIZATION ----------------------- ###
+
+### ----------------------- END OF ANALYSIS 3: ANCESTRY INFERENCE ANALYSIS ----------------------- ###
+

@@ -60,6 +60,9 @@ metadata <- metadata %>%
   mutate(range_id = factor(range_id)) %>%
   mutate(river = factor(river)) %>%
   mutate(population = factor(population))
+
+# Save metadata
+save(metadata, file = "data/metadata.Rda")
 ```
 
 #### 1b. Enumerate full metadata with samples and reference; run the Rmd chunk below.
@@ -67,6 +70,9 @@ In this step, we conduct a preliminary data summary to see how many samples are 
 
 ##### Summarize metadata:
 ```{r}
+# Load metadata
+load("data/metadata.Rda")
+
 # Get full sample number 
 metadata %>% 
   count()
@@ -100,7 +106,9 @@ metadata %>%
 In this step, we read in genotype data for all fish included in the study, including samples (collected from the Neosho Bass native range) and references (collected from the Smallmouth Bass native range). These genotype data were derived from multiplex PCR (see `../project_info/msat_primer_info/msat_primer_info.docx` for microsatellite primer oligonucleotide flanking sequences and corresponding metadata, including literature references) followed by and fragment analysis and subsequent allele scoring in GeneMarker (Soft Genetics). We manipulate, clean and enumerate the dataset, and fully summarize all samples in PHASE 2 below.
 
 #### 2a. Read in and clean genotype data; run the Rmd chunk below.
-In this step, we read in genotype data for all fish included in the study. Data include: 
+In this step, we read in genotype data for all fish included in the study. We determine the total number of samples in the dataset, and we compare the metadata and genotype data to see if there are any discrepancies in samples between datasets (samples are present in one, but not the other). 
+
+Data include: 
 
    1. "sample_id": same as in metadata
    2. "structure_number": same as in metadata 
@@ -108,6 +116,9 @@ In this step, we read in genotype data for all fish included in the study. Data 
 
 ##### Read in and clean genotype data:
 ```{r}
+# Read in metadata
+load("data/metadata.Rda")
+
 # Read in genotype data
 genotype_data <- read_excel("../raw_data/genotype_data.xlsx") 
 
@@ -115,23 +126,11 @@ genotype_data <- read_excel("../raw_data/genotype_data.xlsx")
 genotype_data <- genotype_data %>%
   mutate(sample_id = factor(sample_id)) %>%
   mutate(structure_number = factor(structure_number))
-```
 
-#### 2b. Enumerate full genotype data; run the Rmd chunk below.
-In this step, we determine the total number of samples in the dataset.
-
-##### Summarize genotype data:
-```{r}
 # Get full sample number (N = 136)
 genotype_data %>% 
   count()
-```
 
-##### 2b.1. Compare metadata and genotype data to check for sample number discrepancies; run the Rmd chunk below.
-In this step, we compare the metadata and genotype data to see if there are any discrepancies in samples between datasets (samples are present in one, but not the other).
-
-##### Resolve sample number discrepancy:
-```{r}
 # Samples in metadata but not in genotype data
 metadata %>% 
   filter(!metadata$sample_id %in% genotype_data$sample_id)
@@ -139,12 +138,17 @@ metadata %>%
 # Samples in genotype data but not in metadata
 genotype_data %>% 
   filter(!genotype_data$sample_id %in% metadata$sample_id)
+
+# Save genotype data
+save(genotype_data, file = "data/genotype_data.Rda")
 ```
 
 We found no discrepancies in the data.
 
 ### STEP 3: Read in phenotype data data for samples
-In this step, we read in phenotype data for all fish included in the study. Data include: 
+In this step, we read in phenotype data for all fish included in the study. We determine the total number of samples in the dataset. We then compare the metadata and phenotype data to see if there are any discrepancies in samples between datasets (samples are present in one, but not the other).
+
+Data include: 
 
    1. "sample_id": same as in metadata and genotype data (followed by "structure_number"; see Analysis 3, Phase 1, step 1e)
    2. "sex": male or female, determined by internal gonad examination, 
@@ -168,6 +172,9 @@ Additionally, we did not collect phenotype data for the reference set (Smallmout
 
 ##### Read in and clean phenotype data:
 ```{r}
+# Load metadata
+load("data/metadata.Rda")
+
 # Read in phenotype data
 phenotype_data <- read_excel("../raw_data/phenotype_data.xlsx") 
 
@@ -189,25 +196,11 @@ phenotype_data <- phenotype_data %>%
   mutate(hl = as.numeric(hl)) %>%
   mutate(ol = as.numeric(ol)) %>%
   mutate(sd_ray = as.numeric(sd_ray))
-```
 
-#### 3b. Enumerate full phenotype data; run the Rmd chunk below.
-In this step, we determine the total number of samples in the phenotype dataset.
-
-##### Summarize phenotype data:
-```{r}
 # Get sample set number
 phenotype_data %>% 
   count()
-```
 
-There was a discrepancy in the number of sample ids present in the metadata for the sample set (<i>N</i> = 136) and the number present in the phenotype data (<i>N</i> = 139). We therefore conducted a direct comparison of the two columns to see where they differed and to identify any sample ids without corresponding data in both datasets.
-
-##### 3b.1. Compare metadata and phenotype data to resolve sample number discrepancy; run the Rmd chunk below.
-In this step, we compare the metadata and phenotype data to see if there are any discrepancies in samples between datasets (samples are present in one, but not the other).
-
-##### Resolve sample number discrepancy:
-```{r}
 # Samples in metadata but not in phenotype data
 metadata %>% 
   filter(!metadata$sample_id %in% phenotype_data$sample_id)
@@ -215,81 +208,60 @@ metadata %>%
 # Samples in genotype data but not in metadata
 phenotype_data %>% 
   filter(!phenotype_data$sample_id %in% metadata$sample_id)
-```
 
-We found that the phenotype data file contained three samples (FBS47, FBS48, FBS49) that were not represented in the metadata after previous filtering (see STEP 2 above). The three unmatched samples were collected at a later time compared to all other samples, and we did not take genotype data on these fish. Samples FBS47, FBS48, and FBS49 were therefore not considered part of the final dataset and were removed from downstream analyses (see Step 3b.2 below).
-
-##### 3b.2. Remove unmatched sample id; run the Rmd chunk below.
-
-##### Resolve sample number discrepancy:
-```{r}
 # Remove sample FER71 from the metadata set
 phenotype_data <- phenotype_data %>%
   filter(sample_id != "FBS47") %>%
   filter(sample_id != "FBS48") %>%
   filter(sample_id != "FBS49")
-```
-
-### STEP 4: Save all datasets for downstream analyses
-In this step, we save all filtered datasets for final merging (see STEP 5 below) and summary (see PHASE 2 below).
-
-#### 4a. Save all datasets
-```{r}
-# Save metadata
-save(metadata, file = "data/processed_raw_data/metadata.Rda")
-
-# Save genotype data
-save(genotype_data, file = "data/processed_raw_data/genotype_data.Rda")
 
 # Save phenotype data
-save(phenotype_data, file = "data/processed_raw_data/phenotype_data.Rda")
+save(phenotype_data, file = "data/phenotype_data.Rda")
 ```
 
-### STEP 5: Merge all datasets (metadata, phenotype_data, genotype_data)
+### STEP 4: Merge all datasets (metadata, phenotype_data, genotype_data)
 In this step, we create three working datasets: 1) metadata and genotype data (`data/processed_raw_data/full_genotype_data.Rda`); 2) metadata and phenotype_data (`data/processed_raw_data/full_phenotype_data.Rda`); and 3) full data, including metadata, genotype data, and full data (`data/processed_raw_data/full_data.Rda`). These files will be used in subsequent analyses and subsetted where necessary.
 
-#### 5a. Merge data sets; run the Rmd chunk below.
+#### 4a. Merge data sets; run the Rmd chunk below.
 
 ##### Merge and create full metadata and full phenotype data
 ```{r}
-# Load in metadata
-load("data/processed_raw_data/metadata.Rda")
-
-# Load in genotype_data
-load("data/processed_raw_data/genotype_data.Rda")
-
-# Load in phenotype_data
-load("data/processed_raw_data/phenotype_data.Rda")
+# Load in all datasets
+load("data/metadata.Rda")
+load("data/genotype_data.Rda")
+load("data/phenotype_data.Rda")
 
 ## Full genotype data
 
 # Get full genotype dataset
 full_genotype_data <- merge(metadata, 
-                   genotype_data,
-                   by = c("sample_id",
-                          "structure_number"))
-
+                            genotype_data,
+                            by = c("sample_id",
+                                   "structure_number"))
 ## Full phenotype data
 
 # Get full phenotype dataset
 full_phenotype_data <- merge(metadata, 
-                   phenotype_data,
-                   by = c("sample_id",
-                          "structure_number"))
+                             phenotype_data,
+                             by = c("sample_id",
+                                    "structure_number"))
 
 # Merge all data
-full_data <- merge(full_genotype_data, 
-                   full_phenotype_data,
-                   by = c("sample_id",
-                          "structure_number",
-                          "river_code",
-                          "sample_number",
-                          "easting",
-                          "northing",
-                          "dist_from_df",
-                          "range_id",
-                          "river",
-                          "population"))
+all_data <- merge(full_genotype_data, 
+                  full_phenotype_data,
+                  by = c("sample_id",
+                         "structure_number",
+                         "river_code",
+                         "sample_number",
+                         "easting",
+                         "northing",
+                         "dist_from_df",
+                         "range_id",
+                         "river",
+                         "population"))
+
+# Save full dataset
+save(all_data, file = "data/all_data.Rda")
 ```
 
 Here, we found that one individual in the Elk River, Neosho Bass range (FER71) was missing data for tl_alive (total length while alive). We were therefore not able to assign this fish to a size category. However, we did have consensus age (age = 2) and tl_dead (total length while dead, 224.0mm). To maximize sample size, we retained this sample by imputing tl_alive as the expected value at 224.0mm for age-2 fish based on a mixed-effect linear model (with stream as a random effect to account for any variation between stream ecologies), where x = tl_dead and y = tl_alive. 
@@ -299,15 +271,18 @@ In this step, we filter the dataset to only age-2 fish, and we examine the linea
 
 ##### Impute tl_alive from tl_dead for sample FER71 and plot linear model: `figures/impute_tl_fer71.pdf`
 ```{r}
+# Read in all data
+load("data/all_data.Rda")
+
 # Filter only age-2 fish and retain only tl_alive, tl_dead, and river columns. Drop NA values.
-full_data_age2 <- full_data %>%
+all_data_age2 <- all_data %>%
   filter(consensus_age == "2") %>%
   select(tl_alive, tl_dead, river, sex) %>% 
   drop_na()
 
 # Run a linear mixed effect model with river and sex as random effects
 model <- lmer(tl_alive ~ tl_dead + (1|river) + (1|sex), 
-              data = full_data_age2)
+              data = all_data_age2)
 
 # Summarize model output and coefficients
 model_coefficients <- summary(model)
@@ -318,7 +293,7 @@ length <- 1.01396*224 + 3.90011
 # Plot linear model
 pdf("figures/impute_tl_fer71.pdf", width = 6, height = 5)
 
-ggplot(full_data_age2, aes(x = tl_dead, y = tl_alive)) + 
+ggplot(all_data_age2, aes(x = tl_dead, y = tl_alive)) + 
   geom_point(fill = "grey", color = "black", pch = 21, size = 2) +
   theme_set(theme_cowplot(12)) +
   geom_smooth(method = "lm", color = "black") +
@@ -344,21 +319,16 @@ Thus, tl_alive = 231.0272, which we rounded to 231 mm. We input this value for t
 
 ##### 5b.1. Input the tl_alive value for sample FER71 (231) in the full dataframe; run the Rmd chunk below.
 ```{r}
+# Read in full dataset
+load("data/all_data.Rda")
+
 # Input the calculated value for tl_alive for sample FER71
-full_data$tl_alive[116] <- "231"
+all_data$tl_alive[116] <- "231"
 
 # Convert tl_alive column back to numeric
-full_data <- full_data %>%
+full_data <- all_data %>%
   mutate(tl_alive = as.numeric(tl_alive))
-```
 
-#### 5b. Create new column in full data to categorize samples by their size bin (25 mm size intervals); run the Rmd chunk below.
-As part of the experimental design of this study, we aimed to collect approximately 10 fish per 25 mm size cohort, starting with 200 mm total length when alive (tl_alive = 200-224.9mm, 225-249.9mm, etc.) in order to run models for individual growth rate and maximum total length (see Analysis 4).
-
-To summarize the number of fish captured within each size cohort, we created a new variable (column) in the dataset (size_bin), assigning each individual to 25 mm size categories.
-
-##### Add size bin column to dataframe
-```{r}
 # Categorize sample ids into 25 mm size bins based on total length while alive (tl_alive)
 full_data$size_bin <- with(full_data, ifelse(tl_alive>=200 & tl_alive<225, "200-225",
                                              ifelse(tl_alive >=225 & tl_alive<250, "225-250",
@@ -375,8 +345,13 @@ full_data <- full_data %>%
   mutate(size_bin = factor(size_bin))
 
 # Save the fully merged and cleaned data
-save(full_data, file = "data/processed_raw_data/full_data.Rda")
+save(full_data, file = "data/full_data.Rda")
 ```
+
+#### 5b. Create new column in full data to categorize samples by their size bin (25 mm size intervals); run the Rmd chunk below.
+As part of the experimental design of this study, we aimed to collect approximately 10 fish per 25 mm size cohort, starting with 200 mm total length when alive (tl_alive = 200-224.9mm, 225-249.9mm, etc.) in order to run models for individual growth rate and maximum total length (see Analysis 4).
+
+To summarize the number of fish captured within each size cohort, we created a new variable (column) in the dataset (size_bin), assigning each individual to 25 mm size categories.
 
 ### ----------------------- END OF PHASE 1: DATA READ-IN AND PREPARATION ----------------------- ###
 
@@ -391,7 +366,7 @@ In this step, we are summarizing the full data to enumerate samples by groups of
 ##### Summarize full genotype data
 ```{r}
 # Load in full dataset
-load("data/processed_raw_data/full_data.Rda")
+load("data/full_data.Rda")
 
 # Count total number of fish analyzed
 full_data %>%

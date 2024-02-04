@@ -56,7 +56,7 @@ For this aim, we cleaned, filtered, and summarized the full genotype data (14 mi
 
 #### Run the code: `02_filtering_analysis/smb_fitness_filtering_analysis.Rmd`
 
-### Analysis 3: Ancestry inference and genetic group assignment analysis
+### Analysis 3: Ancestry inference analysis
 For this aim, we use Bayesian clustering analysis in the program STRUCTURE (see citation below in under "Programs Needed") to assess individual proportions of ancestry derived from Smallmouth Bass and Neosho Bass. We analyze all sample fish (obtained from Big Sugar Creek and Elk River within the Neosho Bass native range) together with reference fish (obtained from Crooked Creek, White River, and Tablerock Lake within the Smallmouth Bass native range). Knowing that Smallmouth Bass in the White River drainage are of pure genomic origin (Gunn et al. 2022), we use the minimum ancestry proportion of Smallmouth Bass derived from our microsatellites as a lower bound to identify "pure" vs. "admixed" fish in the Neosho Bass range. Ancestry groups are then used to assess growth and body condition in subsequent analyses.
 
 #### Run the code: `03_ancestry_analysis/smb_fitness_ancestry_analysis.Rmd`
