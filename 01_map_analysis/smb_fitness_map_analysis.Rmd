@@ -16,24 +16,11 @@ In this analysis, we generate easily readable maps displaying the geographic sco
 
 ## Libraries needed for analysis
 ```{r setup, echo = FALSE, include = FALSE}
-library(readxl)
-library(tidyverse)
-library(cowplot)
-library(riverdist)
-library(sp)
-library(maps)
-library(mapdata)
-library(maptools)
-library(stringr)
-library(rgdal)
 library(sf)
-library(ggsn)
-library(raster)
-library(ggmap)
 ```
 
 ## PHASE 1: GENERATE MAPS
-In this phase of analysis, we are generating two types of species native range maps: 1) a map of the Central Interior Highlands ecoregion, including U.S.A. state outlines, major rivers, and the parapatric native ranges of the two focal species, Neosho Bass (<i>Micropterus velox</i>) and Smallmouth Bass (<i>M. dolomieu</i>); and 2) a close-up map of the two streams of interest for this study (Big Sugar Creek and Elk River). We are reading in the following data layers, which were downloaded from publically avaialbe online GIS databases:
+In this phase of analysis, we are generating two types of species native range maps: 1) a map of the Central Interior Highlands ecoregion, including U.S.A. state outlines, major rivers, and the parapatric native ranges of the two focal species, Neosho Bass (<i>Micropterus velox</i>) and Smallmouth Bass (<i>M. dolomieu</i>); and 2) a close-up map of the two streams of interest for this study (Big Sugar Creek and Elk River). We are reading in the following data layers, which were downloaded from publicly available online GIS databases:
 
 <b>Data layers used:</b> <br><br>
 North America <br>
@@ -47,24 +34,31 @@ Neosho Bass species range <br>
 ##### Read in shape files
 ```{r, include = FALSE}
 # Read in shape files for North America
-shape_na <- readOGR(dsn = "data/north_america_shape_files", 
-                    layer = "north_america")
+north_america <- read_sf(dsn = "data/north_america", 
+                         layer = "north_america")
 
 # Read in shape files for the states of the United States
-shape_state <- readOGR(dsn = "data/states_shape_files",
+states <- read_sf(dsn = "data/states",
                        layer = "states")
 
 # Read in shape files for rivers in the area of interest
-shape_river <- readOGR(dsn = "data/river_shape_files", 
+rivers <- read_sf(dsn = "data/rivers", 
                        layer = "rivers")
 
 # Read in shape files for the Smallmouth Bass native range
-shape_smb <- readOGR(dsn = "data/species_range_shape_files/smb", 
+smb <- read_sf(dsn = "data/species_ranges/smb", 
                      layer = "smb") 
 
 # Read in shape files for the Neosho Bass native range
-shape_neosho <- readOGR(dsn = "data/species_range_shape_files/neosho", 
-                        layer = "neosho") 
+nb <- read_sf(dsn = "data/species_ranges/nb", 
+                        layer = "nb") 
+
+# Save Rda files for downstream analyses
+save(north_america, file = "data/north_america.Rda")
+save(states, file = "data/states.Rda")
+save(rivers, file = "data/rivers.Rda")
+save(smb, file = "data/smb.Rda")
+save(nb, file = "data/nb.Rda")
 ```
 
 ### STEP 2: Generate maps
@@ -75,20 +69,19 @@ shape_neosho <- readOGR(dsn = "data/species_range_shape_files/neosho",
 
 ##### Generate full range map: `figures/full_range.pdf`
 ```{r}
+# Load Rda files
+load("data/north_america.Rda")
+load("data/states.Rda")
+load("data/canada.Rda")
+load("data/rivers.Rda")
+load("data/smb.Rda")
+load("data/nb.Rda")
+
 # Generate a full range map 
 pdf("figures/full_range.pdf", width=7, height = 5)
 
 # Plot North America first
-plot(shape_na, 
-     col= alpha("white", 0.8), 
-     border = "black", 
-     axes = T, 
-     ylim = c(25,51), 
-     xlim = c(-126,-60)) 
-
-# Plot Canada second
-plot(shape_canada, 
-     add = T,
+plot(north_america, 
      col= alpha("white", 0.8), 
      border = "black", 
      axes = T, 
@@ -96,7 +89,7 @@ plot(shape_canada,
      xlim = c(-126,-60)) 
 
 # Plot states in the United States third
-plot(shape_state, 
+plot(states, 
      add = T,
      col= alpha("white", 0.8), 
      border = "black", 
@@ -105,7 +98,7 @@ plot(shape_state,
      xlim = c(-126,-60)) 
 
 # Plot smallmouth bass fourth
-plot(shape_smb, 
+plot(smb, 
      add = T,
      col = alpha("grey84", 0.8), 
      border = T, 
@@ -114,7 +107,7 @@ plot(shape_smb,
      xlim = c(-126,-60))
 
 # Plot neosho bass fifth
-plot(shape_neosho, 
+plot(nb, 
      add = T,
      col = alpha("grey24", 0.9), 
      border = T, 
@@ -141,11 +134,19 @@ dev.off()
 
 ##### Generate CIH range map: `figures/cih.pdf`
 ```{r}
+# Load Rda files
+load("data/north_america.Rda")
+load("data/states.Rda")
+load("data/canada.Rda")
+load("data/rivers.Rda")
+load("data/smb.Rda")
+load("data/nb.Rda")
+
 # Generate full range map
 pdf("figures/cih.pdf", width = 9, height = 8) 
 
 # Plot states first
-plot(shape_state, 
+plot(states, 
      col=alpha("white", 0.3), 
      border = "black", 
      axes = T, 
@@ -154,7 +155,7 @@ plot(shape_state,
      cex.axis = 1.6)
 
 # Plot smallmouth bass range second
-plot(shape_smb, 
+plot(smb, 
      add = T, 
      col = "gray94",
      border = T, 
@@ -164,7 +165,7 @@ plot(shape_smb,
      cex.axis = 2)
 
 # Plot neosho bass range third
-plot(shape_neosho, 
+plot(nb, 
      add = T, 
      col = "grey74", 
      border = T, 
@@ -174,7 +175,7 @@ plot(shape_neosho,
      cex.axis = 2)
 
 # Plot rivers fourth
-plot(shape_river, 
+plot(rivers, 
      add = T, 
      col="blue", 
      border = F, 
@@ -184,15 +185,14 @@ plot(shape_river,
      cex.axis = 2)
 
 # Plot scalebar last
-scalebar(transform = T,
-         location = "bottomleft",
-         x.min = -96,
-         x.max = -91,
-         y.min = 35,
-         y.max = 38,
-         dist = 50,
-         dist_unit = "km")
-
+annotation_scale(transform = T,
+                 location = "bottomleft",
+                 x.min = -96,
+                 x.max = -91,
+                 y.min = 35,
+                 y.max = 38,
+                 dist = 50,
+                 dist_unit = "km")
 dev.off()
 ```
 
