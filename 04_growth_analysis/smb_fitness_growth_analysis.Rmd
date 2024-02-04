@@ -13,8 +13,8 @@ For this aim, parameterized the von Bertlanffy individual growth model for Neosh
 
 ## Phases of Analysis
 ### Phase 1: Intra- and inter-observer error analysis for otolith annuli estimates
-### Phase 1: Linear back-calculation
-### Phase 2: von Bertlanffy growth analysis
+### Phase 2: Linear back-calculation
+### Phase 3: von Bertlanffy growth analysis
 
 ### Libraries needed for analysis
 ```{r}
