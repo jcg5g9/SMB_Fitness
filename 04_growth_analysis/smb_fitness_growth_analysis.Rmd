@@ -52,44 +52,54 @@ sample(otos, size = 12, replace = FALSE)
 
 <b>Michael</b>: FER54.PNG, FER48.PNG, FER33.PNG, FER34.PNG, FBS09.PNG, FBS03.PNG, FER62.PNG, FER60.PNG, FBS25.PNG, FBS24.PNG, FER70.PNG, FBS15.PNG
 
-### STEP 2: Calculate intra-observer error; run the Rmd chunk below.
+### STEP 2: Calculate intra-observer error
 We calculated intra-observer error for each observer individually. We opted to calculate error as the number of discrepancies (number of individual samples for which there was a difference between the original annulus count on the sagittal otolith and the recount (which was conducted after 2 years)) divided by the total number of comparisons. 
 
 Each observer recounted 12 randomly assigned samples (see STEP 1 above), so error was calculated as: error = discrepancies/12
 
 We then calculated the mean of intra-observer error values across observers and reported this error in the final manuscript.
 
-##### Calculate intra-observer error:
+#### 2a: Prepare data for calculation; run the Rmd chunk below.
+
+##### Prepare data for calculating intra-observer error:
 ```{r}
 # Load in full ancestry data curated in Analysis 3 
-load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+load("../03_ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
-# Read in recount data for each observer
+# Read in recount data for eddie
 eddie_recount <- read_excel("data/otolith_recounts/eddie_recount.xlsx")
+
+# Read in recount data for joe
 joe_recount <- read_excel("data/otolith_recounts/joe_recount.xlsx")
+
+# Read in recount data for michael
 michael_recount <- read_excel("data/otolith_recounts/michael_recount.xlsx")
 
-# format recount data
+# format recount data by converting sample ids to factors for eddie
 eddie_recount <- eddie_recount %>%
   mutate(sample_id = factor(sample_id))
 
+# format recount data by converting sample ids to factors for joe
 joe_recount <- joe_recount %>%
   mutate(sample_id = factor(sample_id))
 
+# format recount data by converting sample ids to factors for michael
 michael_recount <- michael_recount %>%
   mutate(sample_id = factor(sample_id))
 
-# Get original count data from each observer
+# Get original count data for eddie only
 eddie_original <- full_ancestry_data %>%
-  select(sample_id, eddie_age)
+  dplyr::select(sample_id, eddie_age)
 
+# Get original count data for joe only
 joe_original <- full_ancestry_data %>%
-  select(sample_id, joe_age)
+  dplyr::select(sample_id, joe_age)
 
+# Get original count data for michael only
 michael_original <- full_ancestry_data %>%
-  select(sample_id, michael_age)
+  dplyr::select(sample_id, michael_age)
 
-# merge original and recount data
+# merge original and recount data for eddie
 eddie <- merge(eddie_original, 
                eddie_recount, 
                by = "sample_id")
@@ -97,81 +107,132 @@ eddie <- merge(eddie_original,
 # rename second column
 colnames(eddie)[2] <- c("age")
 
-joe <- merge(joe_original, 
-               joe_recount, 
-               by = "sample_id")
+# merge original and recount data for joe
+joe <- merge(joe_original,
+             joe_recount, 
+             by = "sample_id")
 
 # rename second column
 colnames(joe)[2] <- c("age")
 
+# merge original and recount data for michael
 michael <- merge(michael_original, 
-               michael_recount, 
-               by = "sample_id")
+                 michael_recount, 
+                 by = "sample_id")
 
 # rename second column
 colnames(michael)[2] <- c("age")
 
+# Save error datasets for downstream analyses
+save(eddie, file = "data/otolith_recounts/eddie_error.Rda")
+save(joe, file = "data/otolith_recounts/joe_error.Rda")
+save(michael, file = "data/otolith_recounts/michael_error.Rda")
+```
 
-# Create column in recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference)
-michael$diff <- as.numeric(with(michael, ifelse(age==recount, "0", "1")))
-joe$diff <- as.numeric(with(joe, ifelse(age==recount, "0", "1")))
-eddie$diff <- as.numeric(with(eddie, ifelse(age==recount, "0", "1")))
+#### 2b: Calculate intra-observer error; run the Rmd chunk below.
+In this step, we create columns in the recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference). We then calculate individual and average intra-observer error as described above.
 
+##### Calculate intra-observer error:
+```{r}
+# Load error data
+load("data/otolith_recounts/eddie_error.Rda")
+load("data/otolith_recounts/joe_error.Rda")
+load("data/otolith_recounts/michael_error.Rda")
 
-# Calcualte intra-observer error by dividing the number of count discrepancies divided by the total number of observations
-michael_error <- sum(michael$diff)/(nrow(michael))
-joe_error <- sum(joe$diff)/(nrow(joe))
-eddie_error <- sum(eddie$diff)/(nrow(eddie))
+# For eddie
+eddie <- eddie %>%
+  mutate(diff = as.numeric(ifelse(age == recount, "0", "1")),
+         observer = factor(rep("eddie", times = nrow(eddie))))
 
-# Calculate average error
-average_error <- (michael_error + joe_error + eddie_error)/3
+# For joe
+joe <- joe %>%
+  mutate(diff = as.numeric(ifelse(age == recount, "0", "1")),
+         observer = factor(rep("joe", times = nrow(joe))))
+
+# For michael
+michael <- michael %>%
+  mutate(diff = as.numeric(ifelse(age == recount, "0", "1")),
+         observer = factor(rep("michael", times = nrow(michael))))
+
+# Rbind error datasets
+error <- rbind(eddie,
+               joe,
+               michael)
+
+# Calculate intra-observer error by dividing the number of count discrepancies by the total number of observations
+error %>%
+  group_by(observer) %>%
+  summarize(intra_observer_error = mean(diff))
+
+# Calculate average intra-observer error 
+error %>%
+   summarize(intra_observer_error = mean(diff))
 ```
 
 We calculated an average intra-observer error of 0.05555556.
 
-### STEP 2: Calculate inter-observer error; run the Rmd chunk below.
+### STEP 3: Calculate inter-observer error; run the Rmd chunk below.
 We calculated inter-observer error between each pair of observers (eddie and joe, eddie and michael, and michael and joe. We opted to calculate error as the number of discrepancies (number of individual samples for which there was a difference between the original observer annulus estimates) divided by the total number of comparisons. 
 
 Each observer originally counted 116 samples (the full sample set), so error was calculated as: error = discrepancies/116
 
 We then calculated the mean of inter-observer error values across inter-observer comparisons and reported this average error in the final manuscript.
 
-##### Calculate intra-observer error:
+#### 3a: Prepare data for calculation; run the Rmd chunk below.
+
+##### Prepare data for calculating inter-observer error:
 ```{r}
 # Load in full ancestry data curated in Analysis 3 
-load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+load("../03_ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
-# Get original count data for each observer
+# Get original count data for eddie
 eddie_original <- full_ancestry_data %>%
   select(sample_id, eddie_age)
 
+# Get original count data for joe
 joe_original <- full_ancestry_data %>%
   select(sample_id, joe_age)
 
+# Get original count data for michael
 michael_original <- full_ancestry_data %>%
   select(sample_id, michael_age)
 
 # bind columns of counts from each observer
 originals <- data.frame(cbind("eddie" = eddie_original[,-1],
-                   "joe" = joe_original[,-1], 
-                   "michael" = michael_original[,-1]))
+                              "joe" = joe_original[,-1], 
+                              "michael" = michael_original[,-1]))
 
 # Drop NAs from data (SMB samples without age estimates)
 originals <- originals %>%
   drop_na()
 
+# Save original count data for downstream analyses
+save(originals, file = "data/otolith_recounts/originals.Rda")
+```
+
+#### 2b: Calculate inter-observer error; run the Rmd chunk below.
+In this step, we create columns in the recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference). We then calculate individual and average inter-observer error as described above.
+
+##### Calculate inter-observer error:
+```{r}
+# Load original count data
+save(originals, file = "data/otolith_recounts/originals.Rda")
+
 # Create column in recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference)
-originals$eddie_joe_diff <- as.numeric(with(originals, ifelse(eddie==joe, "0", "1")))
-originals$eddie_michael_diff <- as.numeric(with(originals, ifelse(eddie==michael, "0", "1")))
-originals$joe_michael_diff <- as.numeric(with(originals, ifelse(joe==michael, "0", "1")))
+observer_diffs <- originals %>%
+  mutate(eddie_joe_diff = as.numeric(ifelse(eddie == joe, "0", "1")),
+         eddie_michael_diff = as.numeric(ifelse(eddie == michael, "0", "1")),
+         joe_michael_diff = as.numeric(ifelse(joe == michael, "0", "1"))) %>%
+  gather(eddie_joe_diff:joe_michael_diff, key = "observers", value = "diff")
 
-# Calcualte intra-observer error by dividing the number of count discrepancies divided by the total number of observations
-eddie_joe_error <- sum(originals$eddie_joe_diff)/(nrow(originals))
-eddie_michael_error <- sum(originals$eddie_michael_diff)/(nrow(originals))
-joe_michael_error <- sum(originals$joe_michael_diff)/(nrow(originals))
+# Calcualte intra-observer error for each observer
+observer_diffs %>%
+  group_by(observers) %>%
+  summarize(interobserver_error = mean(diff))
 
-# Calculate average error
-average_error <- (eddie_joe_error + eddie_michael_error + joe_michael_error)/3
+# Calculate average inter-observer error
+observer_diffs %>%
+  summarize(intra_observer_error = mean(diff))
 ```
 
 We calculated an average inter-observer error of 0.1494253
@@ -415,7 +476,7 @@ In this step, we merge the annuli radii data generated above with the full ances
 ##### Merge radius data with full ancestry data:
 ```{r}
 # Load in full ancestry data curated in Analysis 3 
-load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+load("../03_ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
 # Filter dataset to keep only fish with total length and consensus age data ("sample"; NOT "reference")
 full_ancestry_data <- full_ancestry_data %>%

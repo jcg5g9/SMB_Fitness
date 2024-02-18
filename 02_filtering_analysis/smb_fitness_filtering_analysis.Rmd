@@ -406,84 +406,84 @@ full_data %>%
 ### Data summary:
 
 ## Total
-<b><i>N</i><sub>total</sub> = 136 </b><br>
+<b><i>N</i><sub>total</sub></b> = 136 </b><br>
 
 ## By species (native range)
-<b><i>N</i><sub>Neosho_Bass</sub> = 116 </b><br>
-<i>N</i><sub>Smallmouth Bass</sub> = 20 <br>
+<b><i>N</i><sub>nb</sub></b> = 116 </b><br>
+<b><i>N</i><sub>smb</sub></b> = 20 <br>
 
 ## By river (wihtin species)
-<i>N</i><sub>nb_elk</sub> = 70 <br>
-<i>N</i><sub>nb_bigsugar</sub> = 46 <br>
+<b><i>N</i><sub>nb_elk</sub></b> = 70 <br>
+<b><i>N</i><sub>nb_bigsugar</sub></b> = 46 <br>
 
-<i>N</i><sub>smb_white</sub> = 2 <br>
-<i>N</i><sub>smb_tablerock</sub> = 8 <br>
-<i>N</i><sub>smb_crooked</sub> = 10 <br>
+<b><i>N</i><sub>smb_white</sub></b> = 2 <br>
+<b><i>N</i><sub>smb_tablerock</sub></b> = 8 <br>
+<b><i>N</i><sub>smb_crooked</sub></b> = 10 <br>
 
 ## By sex (within Neosho Bass range)
-<i>N</i><sub>male</sub> = 57 <br>
-<i>N</i><sub>female</sub> = 59 <br>
+<b><i>N</i><sub>male</sub></b> = 57 <br>
+<b><i>N</i><sub>female</sub></b> = 59 <br>
 
 ## By sex within river
-<i>N</i><sub>elk_male</sub> = 38 <br>
-<i>N</i><sub>elk_female</sub> = 32 <br>
+<b><i>N</i><sub>elk_male</sub></b> = 38 <br>
+<b><i>N</i><sub>elk_female</sub></b> = 32 <br>
 
-<i>N</i><sub>bigsugar_male</sub> = 19 <br>
-<i>N</i><sub>bigsugar_female</sub> = 27 <br>
+<b><i>N</i><sub>bigsugar_male</sub></b> = 19 <br>
+<b><i>N</i><sub>bigsugar_female</sub></b> = 27 <br>
 
 ## By size bin within river
-<i>N</i><sub>bigsugar_200-225</sub> = 10 <br>
-<i>N</i><sub>bigsugar_225-250</sub> = 5 <br>
-<i>N</i><sub>bigsugar_250-275</sub> = 3 <br>
-<i>N</i><sub>bigsugar_275-300</sub> = 8 <br>
-<i>N</i><sub>bigsugar_300-325</sub> = 11 <br>
-<i>N</i><sub>bigsugar_325-350</sub> = 4 <br>
-<i>N</i><sub>bigsugar_350-375</sub> = 1 <br>
-<i>N</i><sub>bigsugar_375-400+</sub> = 4 <br>
+<b><i>N</i><sub>bigsugar_200-225</sub></b> = 10 <br>
+<b><i>N</i><sub>bigsugar_225-250</sub></b> = 5 <br>
+<b><i>N</i><sub>bigsugar_250-275</sub></b> = 3 <br>
+<b><i>N</i><sub>bigsugar_275-300</sub></b> = 8 <br>
+<b><i>N</i><sub>bigsugar_300-325</sub></b> = 11 <br>
+<b><i>N</i><sub>bigsugar_325-350</sub></b> = 4 <br>
+<b><i>N</i><sub>bigsugar_350-375</sub></b> = 1 <br>
+<b><i>N</i><sub>bigsugar_375-400+</sub></b> = 4 <br>
 
-<i>N</i><sub>elk_200-225</sub> = 10 <br>
-<i>N</i><sub>elk_225-250</sub> = 14 <br>
-<i>N</i><sub>elk_250-275</sub> = 17 <br>
-<i>N</i><sub>elk_275-300</sub> = 12 <br>
-<i>N</i><sub>elk_300-325</sub> = 7 <br>
-<i>N</i><sub>elk_325-350</sub> = 3 <br>
-<i>N</i><sub>elk_350-375</sub> = 1 <br>
-<i>N</i><sub>elk_375-400+</sub> = 6 <br>
+<b><i>N</i><sub>elk_200-225</sub></b> = 10 <br>
+<b><i>N</i><sub>elk_225-250</sub></b> = 14 <br>
+<b><i>N</i><sub>elk_250-275</sub></b> = 17 <br>
+<b><i>N</i><sub>elk_275-300</sub></b> = 12 <br>
+<b><i>N</i><sub>elk_300-325</sub></b> = 7 <br>
+<b><i>N</i><sub>elk_325-350</sub></b> = 3 <br>
+<b><i>N</i><sub>elk_350-375</sub></b> = 1 <br>
+<b><i>N</i><sub>elk_375-400+</sub></b> = 6 <br>
 
 ## By size bin within sex within river
-<i>N</i><sub>bigsugar_200-225_female</sub> = 6 <br>
-<i>N</i><sub>bigsugar_200-225_male</sub> = 4 <br>
-<i>N</i><sub>bigsugar_225-250_female</sub> = 1 <br>
-<i>N</i><sub>bigsugar_225-250_male</sub> = 4 <br>
-<i>N</i><sub>bigsugar_250-275_female</sub> = 3 <br>
-<i>N</i><sub>bigsugar_250-275_male</sub> = 0 <br>
-<i>N</i><sub>bigsugar_275-300_female</sub> = 5 <br>
-<i>N</i><sub>bigsugar_275-300_male</sub> = 3 <br>
-<i>N</i><sub>bigsugar_300-325_female</sub> = 5 <br>
-<i>N</i><sub>bigsugar_300-325_male</sub> = 6 <br>
-<i>N</i><sub>bigsugar_325-350_female</sub> = 4 <br>
-<i>N</i><sub>bigsugar_325-350_male</sub> = 0 <br>
-<i>N</i><sub>bigsugar_350-375_female</sub> = 0 <br>
-<i>N</i><sub>bigsugar_350-375_male</sub> = 1 <br>
-<i>N</i><sub>bigsugar_375-400+_female</sub> = 3 <br>
-<i>N</i><sub>bigsugar_375-400+_male</sub> = 1 <br>
+<b><i>N</i><sub>bigsugar_200-225_female</sub></b> = 6 <br>
+<b><i>N</i><sub>bigsugar_200-225_male</sub></b> = 4 <br>
+<b><i>N</i><sub>bigsugar_225-250_female</sub></b> = 1 <br>
+<b><i>N</i><sub>bigsugar_225-250_male</sub></b> = 4 <br>
+<b><i>N</i><sub>bigsugar_250-275_female</sub></b> = 3 <br>
+<b><i>N</i><sub>bigsugar_250-275_male</sub></b> = 0 <br>
+<b><i>N</i><sub>bigsugar_275-300_female</sub></b> = 5 <br>
+<b><i>N</i><sub>bigsugar_275-300_male</sub></b> = 3 <br>
+<b><i>N</i><sub>bigsugar_300-325_female</sub></b> = 5 <br>
+<b><i>N</i><sub>bigsugar_300-325_male</sub></b> = 6 <br>
+<b><i>N</i><sub>bigsugar_325-350_female</sub></b> = 4 <br>
+<b><i>N</i><sub>bigsugar_325-350_male</sub></b> = 0 <br>
+<b><i>N</i><sub>bigsugar_350-375_female</sub></b> = 0 <br>
+<b><i>N</i><sub>bigsugar_350-375_male</sub></b> = 1 <br>
+<b><i>N</i><sub>bigsugar_375-400+_female</sub></b> = 3 <br>
+<b><i>N</i><sub>bigsugar_375-400+_male</sub></b> = 1 <br>
 
-<i>N</i><sub>elk_200-225_female</sub> = 4 <br>
-<i>N</i><sub>elk_200-225_male</sub> = 6 <br>
-<i>N</i><sub>elk_225-250_female</sub> = 8 <br>
-<i>N</i><sub>elk_225-250_male</sub> = 6 <br>
-<i>N</i><sub>elk_250-275_female</sub> = 8 <br>
-<i>N</i><sub>elk_250-275_male</sub> = 9 <br>
-<i>N</i><sub>elk_275-300_female</sub> = 5 <br>
-<i>N</i><sub>elk_275-300_male</sub> = 7 <br>
-<i>N</i><sub>elk_300-325_female</sub> = 2 <br>
-<i>N</i><sub>elk_300-325_male</sub> = 5 <br>
-<i>N</i><sub>elk_325-350_female</sub> = 2 <br>
-<i>N</i><sub>elk_325-350_male</sub> = 1 <br>
-<i>N</i><sub>elk_350-375_female</sub> = 1 <br>
-<i>N</i><sub>elk_350-375_male</sub> = 0 <br>
-<i>N</i><sub>elk_375-400+_female</sub> = 2 <br>
-<i>N</i><sub>elk_375-400+_male</sub> = 4 <br>
+<b><i>N</i><sub>elk_200-225_female</sub></b> = 4 <br>
+<b><i>N</i><sub>elk_200-225_male</sub></b> = 6 <br>
+<b><i>N</i><sub>elk_225-250_female</sub></b> = 8 <br>
+<b><i>N</i><sub>elk_225-250_male</sub></b> = 6 <br>
+<b><i>N</i><sub>elk_250-275_female</sub></b> = 8 <br>
+<b><i>N</i><sub>elk_250-275_male</sub></b> = 9 <br>
+<b><i>N</i><sub>elk_275-300_female</sub></b> = 5 <br>
+<b><i>N</i><sub>elk_275-300_male</sub></b> = 7 <br>
+<b><i>N</i><sub>elk_300-325_female</sub></b> = 2 <br>
+<b><i>N</i><sub>elk_300-325_male</sub></b> = 5 <br>
+<b><i>N</i><sub>elk_325-350_female</sub></b> = 2 <br>
+<b><i>N</i><sub>elk_325-350_male</sub></b> = 1 <br>
+<b><i>N</i><sub>elk_350-375_female</sub></b> = 1 <br>
+<b><i>N</i><sub>elk_350-375_male</sub></b> = 0 <br>
+<b><i>N</i><sub>elk_375-400+_female</sub></b> = 2 <br>
+<b><i>N</i><sub>elk_375-400+_male</sub></b> = 4 <br>
 
 These sample sizes were used as the basis for Table S1 in the final manuscript.
 
