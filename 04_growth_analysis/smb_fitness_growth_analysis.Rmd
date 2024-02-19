@@ -425,7 +425,10 @@ for(ii in 1:nrow(rds_files)) {
 }
 
 # Concatenate all data frame elements in the list using the list.rbind() function from the package "rlist"
-bc <- data.frame(list.rbind(rds_list))
+bc_raw <- data.frame(list.rbind(rds_list))
+
+# Save raw bc data 
+save(bc_raw, file = "data/bc_data/bc_raw.Rda")
 ```
 
 #### 4b: Clean and filter radial measurement data for downstream back-calculation; run the Rmd chunk below.
@@ -441,31 +444,34 @@ Data from the compiled rds files include:
 
 ##### Clean and filter, and merge radial measurement data:
 ```{r}
+# Load raw bc data
+load("data/bc_data/bc_raw.Rda")
+
 # Omit rownames
-rownames(bc) <- NULL
+rownames(bc_raw) <- NULL
 
 # Omit empty "reading" column
-bc <- bc %>%
+bc_clean <- bc_raw %>%
   select(-c(reading))
 
 # Modify column names to be more sensible
-colnames(bc) <- c("sample_id", "consensus_age", "annulus", "annulus_radius", "otolith_radius")
+colnames(bc_clean) <- c("sample_id", "consensus_age", "annulus", "annulus_radius", "otolith_radius")
 
 # Here, I added a row for each of the samples we did not do radius measurements for. I included these as individual rows, because without them, the merging procedure in step 5 results in "NA" values for these individuals since they do not have radial measurements and cannot be used for back-calculation.
-bc[451,] <- c("FER08", "2", "2", "1.0000000", "1.0000000")
-bc[452,] <- c("FER47", "2", "2", "1.0000000", "1.0000000")
-bc[453,] <- c("FER70", "2", "2", "1.0000000", "1.0000000")
+bc_clean[451,] <- c("FER08", "2", "2", "1.0000000", "1.0000000")
+bc_clean[452,] <- c("FER47", "2", "2", "1.0000000", "1.0000000")
+bc_clean[453,] <- c("FER70", "2", "2", "1.0000000", "1.0000000")
 
 # Convert characters to factors
-bc <- bc %>%
+bc_clean <- bc_clean %>%
   mutate(sample_id = factor(sample_id)) %>%
   mutate(consensus_age = as.numeric(consensus_age)) %>%
   mutate(annulus = as.numeric(annulus)) %>%
   mutate(annulus_radius = as.numeric(annulus_radius)) %>%
   mutate(otolith_radius = as.numeric(otolith_radius))
 
-# Save radius data for donwtream analyses
-save(bc, file = "data/bc_data/bc.Rda")
+# Save clean radius data for donwtream analyses
+save(bc_clean, file = "data/bc_data/bc_clean.Rda")
 ```
 
 ### STEP 5: Merge radius data with full ancestry data (Analysis 3) and perform linear back-calculation 
@@ -478,22 +484,25 @@ In this step, we merge the annuli radii data generated above with the full ances
 # Load in full ancestry data curated in Analysis 3 
 load("../03_ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
+# Load clean bc data
+load("data/bc_data/bc_clean.Rda")
+
 # Filter dataset to keep only fish with total length and consensus age data ("sample"; NOT "reference")
 full_ancestry_data <- full_ancestry_data %>%
   filter(population == "sample")
 
-# Load in bc data calculated in Steps 3-4 above
-load("data/bc_data/bc.Rda")
-
 # Merge full ancestry data with bc data 
-bc_data <- full_join(full_ancestry_data, 
-                     bc, 
-                     by = c("sample_id", "consensus_age"))
+bc_calc <- merge(full_ancestry_data, 
+                 bc_clean, 
+                 by = c("sample_id", "consensus_age"))
 
 # Perform back-calculation using the Dahl-Lee model
-bc_data <- bc_data %>%
+bc_calc <- bc_calc %>%
   mutate(bc_ratio = annulus_radius/otolith_radius) %>%
   mutate(bc_tl = tl_alive*(annulus_radius/otolith_radius))
+
+# Save calculated bc data
+save(bc_calc, file = "data/bc_data/bc_calc.Rda")
 ```
 
 #### 5b: Remove all length data corresponding to an annulus-to-otolith radial ratio of 1.00; run the Rmd chunk below.
@@ -503,8 +512,11 @@ From this point further, the column for "consensus_age", which was the age agree
 
 ##### Remove fish with annulus-to-otolith radial ratio of 1.00:
 ```{r}
+# Load calculated bc data 
+load("data/bc_data/bc_calc.Rda")
+
 # Remove fish with annulus-to-otolith radial ratio of 1.00
-full_bc_data <- bc_data %>%
+full_bc_data <- bc_calc %>%
   filter(bc_ratio != 1.0000000)
 
 ## Verify that the three samples not back-calculated ((FER08, FER47, FER70) were removed from the dataset
@@ -645,8 +657,8 @@ full_bc_data <- full_bc_data %>%
 age <- full_bc_data$annulus
 length <- full_bc_data$bc_tl
 group <- as.numeric(as.factor(full_bc_data$ancestry_group)) 
-sample.id <- as.numeric(as.factor(as.character(full_bc_data$sample_id)))
-Nind <- length(unique(sample.id))
+sample_id <- as.numeric(as.factor(as.character(full_bc_data$sample_id)))
+Nind <- length(unique(sample_id))
 
 # Set up model matrix (sex/river) where nrow = number of ind
 model_matrix <- full_bc_data %>%
@@ -658,7 +670,7 @@ model_matrix <- full_bc_data %>%
   arrange(sample_id)
 
 # Define data for model
-bc_model_data = list(Nobs = length(length),
+bc_model_data_test = list(Nobs = length(length),
                      Nages = 15,
                      length = length,
                      age = age,
@@ -677,7 +689,7 @@ bc_model_data = list(Nobs = length(length),
                      id = sample.id)
 
 # Save data for back-calculated growth model
-save(bc_model_data, file = "data/growth_model_data/bc_model_data.Rda")
+save(bc_model_data_test, file = "data/growth_model_data/bc_model_data_test.Rda")
 ```
 
 #### 1b: Run von Bertalanffy model for back-calculated length at age; run the Rmd chunk below.
@@ -728,7 +740,6 @@ sampler_params <- get_sampler_params(bc_model_fit, inc_warmup = TRUE)
 
 # Summarize model fit
 summary(do.call(rbind, sampler_params), digits = 2)
-
 
 # Convergence diagnostics ----
 #https://mc-stan.org/bayesplot/articles/visual-mcmc-diagnostics.html

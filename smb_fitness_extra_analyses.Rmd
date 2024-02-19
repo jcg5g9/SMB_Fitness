@@ -1429,7 +1429,7 @@ In this step, I read in the fully filtered raw data, filter to only the genotype
 ##### Read in full raw data filter genotype data: 
 ```{r}
 # Load in full ancestry data curated in Analysis 3 
-load("../ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+load("../03_ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
 
 # Filter out only sample id and genotype columns
 genotype_data <- full_ancestry_data %>%
