@@ -216,7 +216,7 @@ In this step, we create columns in the recount data to represent difference betw
 ##### Calculate inter-observer error:
 ```{r}
 # Load original count data
-save(originals, file = "data/otolith_recounts/originals.Rda")
+load("data/otolith_recounts/originals.Rda")
 
 # Create column in recount data to represent difference between original age and recount estimates (0 if there are no differences, and 1 if there is a difference)
 observer_diffs <- originals %>%
@@ -236,6 +236,38 @@ observer_diffs %>%
 ```
 
 We calculated an average inter-observer error of 0.1494253
+
+#### 2c: Calculate and plot coefficient of variation across ages for inter-observer error; run the Rmd chunk below.
+In this step, we calculate the coefficient of variation (CV; standard deviation divided by the mean) across readers for each individual fish to determine whether there was a trend in the error associated with age estimation.
+
+##### Calculate coefficient of variation across observers and ages:
+```{r}
+# Load original count data
+load("data/otolith_recounts/originals.Rda")
+
+# Load in full ancestry data curated in Analysis 3 
+load("../03_ancestry_analysis/data/processed_ancestry_data/full_ancestry_data.Rda")
+
+# calculate coefficient of variation across readers for each fish
+cv <- data.frame("cv" = apply(originals, 1, function(x) sd(x)/mean(x) * 100))
+
+# column bind cv values with consensus age
+age <- full_ancestry_data %>%
+  dplyr::select(consensus_age)
+
+# column bind cv values with consensus age
+cv <- cbind(age, cv)
+
+# Calculate mean cv values by age
+cv_mean <- cv %>%
+  group_by(consensus_age) %>%
+  summarize(n = n(),
+            mean_cv = mean(cv),
+            sd_cv = sd(cv))
+
+# save cv_mean values for plotting
+save(cv_mean, file = "data/otolith_recounts/cv.Rda")
+```
 
 ## PHASE 2: LINEAR BACK CALCULATION
 In this phase of analysis, we conduct linear back-calculation on a subset of relatively high-age fish in our dataset to generate estimates of total length for fish at earlier ages. These estimates are not to be considered independent measurements of age and length, because they are calculated based on the assumption of a direct, one-to-one proportional relationship between an individual's total length and the radii of each annulus in the individual's otolith. Each back-calculated length is therefore an estimate of that individual's length at an earlier age. However, given a large sample size, these estimates can be used to approximate or represent lower age estimates within a population.
