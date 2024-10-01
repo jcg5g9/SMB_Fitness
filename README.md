@@ -1,11 +1,11 @@
-# Reproduce analyses for Gunn et al. [DATE]
-<font size="+1">Follow the steps listed below in the <b><i>Analyses</i></b> section to reproduce analyses for Gunn et al. (DATE). Each step below gives a summary of the analysis and directs you to a general code file which then works through the analysis step-by-step. This general file will usually point you to other Rmd code, bash shell scripts, or python scripts. Each analysis is contained within subdirectories of the same name in the main R project directory.</font>
+# Reproduce analyses for Gunn et al. 2024
+<font size="+1">Follow the steps listed below in the <b><i>Analyses</i></b> section to reproduce analyses for Gunn et al. 2024. Each step below gives a summary of the analysis and directs you to a general code file which then works through the analysis step-by-step. This general file will usually point you to other Rmd code, bash shell scripts, or python scripts. Each analysis is contained within subdirectories of the same name in the main R project directory.</font>
 
 ## Project: Effects of admixture on fitness in Neosho Bass populations 
 We assessed the effect of admixture on fitness in two stream populations within the native range of the Neosho Bass (<i>M. velox</i>; NB) which are known to have extensively hybridized with Smallmouth Bass (<i>Micropterus dolomieu</i>; SMB). Specifically, we used 14 microsatellite loci in a Bayesian analysis of population structure to estimate proportions of interspecific ancestry in individuals collected from Big Sugar Creek and the Elk River in southwestern Missouri (Central Interior Highlands ecoregion (CIH), North America). We used ancestry inference to estimate the proportion of ancestry derived from SMB and NB. For each individual, we measured age and total length and projected individual growth using the standard parameterization of the von Bertalanffy growth model. Finally, we used body condition as a proxy for fitness and generated an ancestry-condition correlation across the global dataset. We ultimately sought to understand the short-term genetic consequences of admixture for NB populations in order to better inform management and long-term viability of distinct, economically and ecologically important sportfish species in the CIH.
 
 ## General information on repository structure
-This is a publicly visible GitHub repository storing code (and a small amount of data, although we have done our best to avoid uploading large amounts of data due to the limited storage in GitHub) for Gunn et al. (DATE). In the home directory of the repository (SMB_Fitness), you will find a README.md file (the source script for this information), the R Project file (SMB_Fitness.Rproj), a project info folder (project_info, which includes all important information on data procurement for this project), a .gitignore file, and "analysis" directories, each of which corresponds with a specific analysis conducted in our study:
+This is a publicly visible GitHub repository storing code (and a small amount of data, although we have done our best to avoid uploading large amounts of data due to the limited storage in GitHub) for Gunn et al. 2024. In the home directory of the repository (SMB_Fitness), you will find a README.md file (the source script for this information), the R Project file (SMB_Fitness.Rproj), a project info folder (project_info, which includes all important information on data procurement for this project), a .gitignore file, and "analysis" directories, each of which corresponds with a specific analysis conducted in our study:
 
 1) 01_map_analysis (generation of map images)
 2) 02_filtering_analysis (raw data manipulation, cleaning, and filtering)
@@ -27,20 +27,21 @@ Once you have downloaded the repository and located the code directory, you shou
 The data directory will store all processed data and metadata needed for analysis. The figures folder will contain any raw figures generated in ggplot for each analysis. Ideally, the Rmd script should have paths set up so that the code reads all data and scripts and generates figures seamlessly.
 
 ## Using the code
-To reproduce all analyses in Gunn et al. [DATE], download this data repository and place in a desired home directory. This may be done on your local machine, but we recommend downloading to a high-performance computing cluster so that all code will run seamlessly in one environment, as long as Rstudio is installed and the GUI can be called on the cluster.
+To reproduce all analyses in Gunn et al. 2024, download this data repository and place in a desired home directory. This may be done on your local machine, but we recommend downloading to a high-performance computing cluster so that all code will run seamlessly in one environment, as long as Rstudio is installed and the GUI can be called on the cluster.
 
 Once all directories are downloaded, create a new sub-directory within the home directory (same level as the five analysis directories, .Rproj, README.md, etc.) called "raw_data". This is where you will store the raw genomic data and associated sample metadata (see <i><b>Data</i></b> section below).
 
 ## Data
 
-Raw genotype data and accompanying metadata are available at Zenodo.org: [LINK]
+Raw genotype data and accompanying metadata are available on Dryad: https://doi.org/10.5061/dryad.xksn02vr6
 
 Download these data into to your `/raw_data` directory within the home working directory.
 
 You should have 2 new items in the directory: <br>
 
-1.  <br>
-2.  <br>
+1.  genotype_data.xlsx <br>
+2.  phenotype_data.xlsx <br>
+3.  metadata.xlsx <br>
 
 If you have any questions or issues with data and/or code, please don't hesitate to contact me: jcgunn@uvm.edu
 
