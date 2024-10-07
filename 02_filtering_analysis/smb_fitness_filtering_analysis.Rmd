@@ -299,7 +299,7 @@ ggplot(all_data_age2, aes(x = tl_dead, y = tl_alive)) +
   geom_smooth(method = "lm", color = "black") +
   geom_vline(xintercept = 224, linetype = "longdash", size = 0.8) + 
   geom_hline(yintercept = 231, linetype = "longdash", size = 0.8) +
-  labs(x = "Total length dead (mm)", y = "Total length alive (mm)") +
+  labs(x = "Total length at processing (mm)", y = "Total length at capture (mm)") +
   theme(axis.text = element_text(size = 15)) + 
   theme(axis.title = element_text(size = 15)) +
   scale_x_continuous(expand = c(0,0)) + 
