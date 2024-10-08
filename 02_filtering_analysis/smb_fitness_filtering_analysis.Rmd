@@ -291,7 +291,7 @@ model_coefficients <- summary(model)
 length <- 1.01396*224 + 3.90011 
 
 # Plot linear model
-pdf("figures/impute_tl_fer71.pdf", width = 6, height = 5)
+jpeg("figures/impute_tl_fer71.jpeg", width = 1500, height = 1300, res = 300)
 
 ggplot(all_data_age2, aes(x = tl_dead, y = tl_alive)) + 
   geom_point(fill = "grey", color = "black", pch = 21, size = 2) +

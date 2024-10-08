@@ -338,7 +338,7 @@ colnames(smb_unscaled) <- c("smb_us")
 predicted_condition <- cbind(smb_unscaled, predicted_condition)
 
 # Plot von Bertalanffy curve for global data
-pdf("figures/ac_predict.pdf", width = 6, height = 5)
+jpeg("figures/ac_predict.jpeg", width = 1600, height = 1300, res = 300)
 
 ggplot() + 
   geom_point(data = condition_data, aes(x = smb, y = condition_mg_cm), fill = "grey", show.legend = F, size = 3, pch = 21) + 
