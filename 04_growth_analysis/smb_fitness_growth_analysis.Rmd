@@ -1805,7 +1805,7 @@ sensitivity_fixed <- sensitivity_fixed %>%
   mutate(parameter = factor(parameter))
 
 # Select only posterior densities for stream- and sex-specific fixed effects
-stream_sex_betas <- bc_fixed %>%
+stream_sex_betas <- sensitivity_fixed %>%
   filter(parameter == "beta_linf[1]" |
            parameter == "beta_linf[2]" |
            parameter == "beta_k[1]" |
