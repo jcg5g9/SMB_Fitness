@@ -272,16 +272,16 @@ save(cv_mean, file = "data/otolith_recounts/cv.Rda")
 ## PHASE 2: LINEAR BACK CALCULATION
 In this phase of analysis, we conduct linear back-calculation on a subset of relatively high-age fish in our dataset to generate estimates of total length for fish at earlier ages. These estimates are not to be considered independent measurements of age and length, because they are calculated based on the assumption of a direct, one-to-one proportional relationship between an individual's total length and the radii of each annulus in the individual's otolith. Each back-calculated length is therefore an estimate of that individual's length at an earlier age. However, given a large sample size, these estimates can be used to approximate or represent lower age estimates within a population.
 
-### STEP 1: Set "device type" in the package RFishBC (Ogle, 2022) so that the GUI will be readible by MAC OS; run the Rmd chunk below.
+### STEP 1: Set "device type" in the package RFishBC (Ogle, 2022) so that the GUI will be readible by MAC OS (this will change depending on your operating system); run the Rmd chunk below.
 In this step, I needed to run a line of code built into the RFishBC package to set the computing device type to "X11", which allows the package's GUI to run on a MAC OS. 
 
-##### Set device type to MAC (X11):
+##### Set device type to MAC (X11); this will change depending on your operating system:
 ```{r}
 RFBCoptions(deviceType = "X11")
 ```
 
 ### STEP 2: Copy raw otolith images into the working directory (`growth_analysis/`).
-The RFishBC package requires that raw otolith images being read for back-calculation are placed in the working directory for the Rmd file, which, in this case, is the growth_analysis folder. We therefore *temporarily* copied all raw otolith camera images (`../raw_data/otolith_images/raw/`) into the current working directory.
+The RFishBC package requires that raw otolith images being read for back-calculation are placed in the working directory for the Rmd file, which, in this case, is the growth_analysis folder. We therefore *temporarily* copied all raw otolith camera images (`../raw_data/otolith_images/`) into the current working directory.
 
 ### STEP 3: Estimate radial measurements of otolith annuli.
 In this step, we run the function "digitizeRadii()" from the package RFishBC on each otolith image independently (we list the function for all unique image IDs), which allows interactive radial measurements by drawing radius transects directly on the image. The user is asked to (1) input a unique image ID, (2) draw a linear transect from the nucleus (centroid) to the outer edge of the otolith, and (3) identify each annulus along the transect to match the inferred age of the fish. One output of the function is a data table ("radii", an element of the .rds object) giving the total radius of the otolith and the radii for each individual annulus.

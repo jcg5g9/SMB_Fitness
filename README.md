@@ -37,15 +37,18 @@ Once all directories are downloaded, create a new sub-directory within the home 
 
 ## Data
 
-Raw genotype data and accompanying metadata are available on Dryad: https://doi.org/10.5061/dryad.xksn02vr6
+Raw genotype data, accompanying metadata, and data descriptions are available on Dryad: https://doi.org/10.5061/dryad.xksn02vr6. Data descriptions are also provided in the Rmarkdown files associated with each analysis in this Rproject. Detailed instructions are given for 
 
 Download these data into to your `/raw_data` directory within the home working directory.
 
-You should have 3 new items in the directory: <br>
+You should have 4 new items in the directory: <br>
 
 1.  genotype_data.xlsx <br>
 2.  phenotype_data.xlsx <br>
 3.  metadata.xlsx <br>
+4.  otolith_images.zip <br>
+
+Un-compressed the "otolith_images.zip" folder, which contains all raw otolith images collected for individual fish in this study. You should now have a folder called "otolith_images" in your `/raw_data` directory
 
 If you have any questions or issues with data and/or code, please don't hesitate to contact me: jcgunn@uvm.edu
 
