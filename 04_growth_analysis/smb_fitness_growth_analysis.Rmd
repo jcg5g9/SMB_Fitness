@@ -941,7 +941,7 @@ t0 <- ggplot(t0_p_diffs, aes(x = parameter, y = estimate)) +
   theme(plot.margin = margin(10,10,10,10))
 
 # Plot posterior difference 95% CIs
-pdf("figures/bc_p_diffs.pdf", width = 9, height = 5)
+jpeg("figures/bc_p_diffs.jpeg", width = 3000, height = 1500, res = 500)
 
 plot_grid(linf,
           k,
@@ -1006,7 +1006,7 @@ sex_betas$parameter <- factor(sex_betas$parameter, levels = c("beta_linf[1]", "b
 stream_betas$parameter <- factor(stream_betas$parameter, levels = c("beta_linf[2]", "beta_k[2]", "beta_t0[2]"))
 
 # Plot sex beta coefficient 95% CIs
-jpeg("figures/bc_sex_betas.jpeg", width = 1500, height = 1100, res = 300)
+jpeg("figures/bc_sex_betas.jpeg", width = 2000, height = 1500, res = 500)
 
 ggplot(sex_betas, aes(x = parameter, y = estimate)) +
   geom_boxplot(fill = "grey") +
@@ -1022,7 +1022,7 @@ ggplot(sex_betas, aes(x = parameter, y = estimate)) +
 dev.off()
 
 # Plot sex beta coefficient 95% CIs
-jpeg("figures/bc_stream_betas.jpeg", width = 1500, height = 1100, res = 300)
+jpeg("figures/bc_stream_betas.jpeg", width = 2000, height = 1500, res = 500)
 
 ggplot(stream_betas, aes(x = parameter, y = estimate)) +
   geom_boxplot(fill = "grey") +
@@ -1483,7 +1483,7 @@ m_e_plot <- ggplot() +
   theme(plot.margin = margin(15,15,15,15))
 
 # Plot all von bertalanffy curves
-jpeg("figures/bc_predict.jpeg", width = 3000, height = 2400, res = 300)
+jpeg("figures/bc_predict.jpeg", width = 4600, height = 3900, res = 500)
 
 plot_grid(f_bs_plot,
           m_bs_plot,

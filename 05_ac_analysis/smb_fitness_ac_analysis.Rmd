@@ -244,7 +244,7 @@ betas <- ac_fit %>%
            parameter == "beta4")
 
 # Plot beta coefficient 95% CIs
-pdf("figures/ac_betas.pdf", width = 6, height = 5)
+jpeg("figures/ac_betas.jpeg", width = 2400, height = 1900, res = 500)
 
 ggplot(betas, aes(x = parameter, y = estimate)) +
   geom_boxplot(fill = "grey") +
@@ -338,7 +338,7 @@ colnames(smb_unscaled) <- c("smb_us")
 predicted_condition <- cbind(smb_unscaled, predicted_condition)
 
 # Plot von Bertalanffy curve for global data
-jpeg("figures/ac_predict.jpeg", width = 1600, height = 1300, res = 300)
+jpeg("figures/ac_predict.jpeg", width = 2400, height = 1900, res = 500)
 
 ggplot() + 
   geom_point(data = condition_data, aes(x = smb, y = condition_mg_cm), fill = "grey", show.legend = F, size = 3, pch = 21) + 
